@@ -49,7 +49,8 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 	// Set missing IDs
 
 	// Always generate new Application Number
-	req.Service.ServiceCode, _ = r.generateServiceCode(ctx, req.Service.TenantId, req.Service.Module, req.Service.BusinessService)
+
+	//req.Service.ServiceCode, _ = r.generateServiceCode(ctx, req.Service.TenantId, req.Service.Module, req.Service.BusinessService)
 
 	// Marshal complex fields
 	additionalDetailsJSON, _ := json.Marshal(req.Service.AdditionalDetails)

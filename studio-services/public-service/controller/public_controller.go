@@ -8,15 +8,18 @@ import (
 	"net/http"
 	"public-service/model"
 	"public-service/service"
+	"public-service/utils"
 )
 
 type PublicController struct {
 	service *service.PublicService
+	enrichmentService  *service.EnrichmentService
 }
 
-func NewServiceController(service *service.PublicService) *PublicController {
+func NewServiceController(service *service.PublicService,enrichmentService *service.EnrichmentService) *PublicController {
 	return &PublicController{
 		service: service,
+		enrichmentService: enrichmentService,
 	}
 }
 
@@ -36,6 +39,12 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 
 	if req.Service.TenantId == "" {
 		req.Service.TenantId = tenantID
+	}
+
+    req, err = c.enrichmentService.EnrichServiceWithIdGen(req,"service")
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Enrichment failed: "+err.Error())
+	    return
 	}
 	ctx := context.Background()
 	res, err := c.service.CreateService(ctx, req, tenantID)
@@ -88,6 +97,12 @@ func (c *PublicController) SearchServiceHandler(w http.ResponseWriter, r *http.R
 	tenantID := r.Header.Get("X-Tenant-Id")
 	if tenantID == "" {
 		http.Error(w, "X-Tenant-Id header is required", http.StatusBadRequest)
+		return
+	}
+
+	AuthToken := r.Header.Get("auth-token")
+	if AuthToken == "" {
+		http.Error(w, "auth-token header is required", http.StatusBadRequest)
 		return
 	}
 

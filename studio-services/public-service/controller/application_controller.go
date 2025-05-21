@@ -66,7 +66,11 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		return
 	}
 
-	req = c.enrichmentService.EnrichApplicationsWithIdGen(req)
+	req, err = c.enrichmentService.EnrichApplicationsWithIdGen(req,"application")
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Enrichment failed: "+err.Error())
+	    return
+	}
 	log.Println(req)
 	for i := range req.Application.Applicants {
 		applicant := req.Application.Applicants[i]

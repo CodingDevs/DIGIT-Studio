@@ -77,7 +77,7 @@ func main() {
 
 	// Initialize controllers
 	appCtrl := controller.NewApplicationController(appSvc, workflowIntegrator, individualSvc, enrichSvc, smsService)
-	serviceCtrl := controller.NewServiceController(serviceSvc)
+	serviceCtrl := controller.NewServiceController(serviceSvc,enrichSvc)
 
 	// Setup router
 	router := mux.NewRouter()

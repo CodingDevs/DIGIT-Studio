@@ -3,8 +3,8 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math/big"
@@ -15,6 +15,7 @@ import (
 	"public-service/model/individual"
 	"strconv"
 	"strings"
+
 	"github.com/google/uuid"
 )
 
@@ -28,7 +29,7 @@ type EnrichmentService struct {
 }
 
 func NewEnrichmentService(individualService *IndividualService, demandService *DemandService, mdmsService *MDMSService, mdmsServiceV2 *MDMSV2Service, idGenService *IdGenService, smsService *SMSService) *EnrichmentService {
-	return &EnrichmentService{individualService: individualService, DemandService: demandService, MDMSService: mdmsService, MDMSV2Service: mdmsServiceV2, IdGenService: idGenService,SMSService: smsService}
+	return &EnrichmentService{individualService: individualService, DemandService: demandService, MDMSService: mdmsService, MDMSV2Service: mdmsServiceV2, IdGenService: idGenService, SMSService: smsService}
 }
 
 func (s *EnrichmentService) EnrichApplicationsWithIndividuals(apps []model.Application, criteria model.SearchCriteria) []model.Application {
@@ -94,8 +95,6 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 			return apps
 		}
 
-		
-
 		// Step 2: Extract taxHeadCode from bill.taxHead
 		var taxHeadCode string
 		if taxHeads, ok := billData["taxHead"].([]interface{}); ok {
@@ -134,10 +133,10 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		// Step 4: Extract businessService from bill.BusinessService
 		var businessService string
 		if bsMap, ok := billData["BusinessService"].(map[string]interface{}); ok {
-				if code, ok := bsMap["code"].(string); ok {
-					businessService = code
-				}
-			
+			if code, ok := bsMap["code"].(string); ok {
+				businessService = code
+			}
+
 		}
 		if businessService == "" {
 			businessService = apps.Application.BusinessService // fallback
@@ -230,7 +229,7 @@ func logJSON(message string, data interface{}) {
 	}
 }
 
-func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRequest) model.ApplicationRequest {
+func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRequest, typeOfApplication string) (model.ApplicationRequest, error) {
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
@@ -243,7 +242,7 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
 	if !ok || len(mdmsList) == 0 {
 		log.Println("MDMS data missing or invalid")
-		return apps
+		return apps, errors.New("MDMS data missing or invalid")
 	}
 
 	var format string
@@ -251,18 +250,19 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 	firstEntry, ok := mdmsList[0].(map[string]interface{})
 	if !ok {
 		log.Println("Invalid MDMS format: first entry is not a map")
-		return apps
+		return apps, errors.New("Invalid MDMS format: first entry is not a map")
 	}
 
 	data, ok := firstEntry["data"].(map[string]interface{})
 	if !ok {
 		log.Println("Invalid MDMS format: missing or invalid 'data'")
-		return apps
+		return apps, errors.New("Invalid MDMS format: missing or invalid 'data'")
 	}
 
 	idGens, ok := data["idgen"].([]interface{})
 	if !ok || len(idGens) == 0 {
 		log.Println("No 'idgen' section in MDMS data")
+		return apps, errors.New("No 'idgen' section in MDMS data")
 	}
 
 	for _, item := range idGens {
@@ -270,7 +270,79 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 		if !ok {
 			continue
 		}
-		if idGenType, _ := idGen["Type"].(string); idGenType == "application" {
+		idGenType, _ := idGen["type"].(string)
+
+		// Use dynamic comparison
+		if idGenType == typeOfApplication {
+			format, _ = idGen["format"].(string)
+			name, _ = idGen["idname"].(string)
+			break
+		}
+	}
+
+	// Validate if name and format were found
+	if name == "" || format == "" {
+		return apps, errors.New("id name or format is empty")
+	}
+
+	// Count should be at least 1
+	ids, err := s.IdGenService.GetId(apps.RequestInfo, apps.Application.TenantId, name, format, 1)
+	if err != nil {
+		log.Printf("Error getting ID from IDGenService: %v", err)
+		return apps, fmt.Errorf("error getting ID from IDGenService: %w", err)
+	}
+	if len(ids) > 0 {
+		apps.Application.ApplicationNumber = ids[0]
+	}
+
+	return apps, nil
+}
+
+func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, typeOfApplication string) (model.ServiceRequest, error) {
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
+		apps.Service.TenantId,
+		schemaCode,
+		apps.Service.BusinessService,
+		apps.Service.Module,
+		apps.RequestInfo,
+	)
+
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return apps, errors.New("MDMS data missing or invalid")
+	}
+
+	var format string
+	var name string
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	if !ok {
+		log.Println("Invalid MDMS format: first entry is not a map")
+		return apps, errors.New("Invalid MDMS format: first entry is not a map")
+	}
+
+	data, ok := firstEntry["data"].(map[string]interface{})
+	if !ok {
+		log.Println("Invalid MDMS format: missing or invalid 'data'")
+		return apps, errors.New("Invalid MDMS format: missing or invalid 'data'")
+	}
+
+	idGens, ok := data["idgen"].([]interface{})
+	if !ok || len(idGens) == 0 {
+		log.Println("No 'idgen' section in MDMS data")
+		return apps, errors.New("No 'idgen' section in MDMS data")
+	}
+
+	for _, item := range idGens {
+		idGen, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		idGenType, _ := idGen["type"].(string)
+
+		// Use dynamic comparison
+		if idGenType == typeOfApplication {
 			format, _ = idGen["format"].(string)
 			name, _ = idGen["name"].(string)
 			break
@@ -279,25 +351,20 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 
 	// Validate if name and format were found
 	if name == "" || format == "" {
-		log.Println("IDGen config not found for application type")
-		name = "public-service.application.id"
-		format = "APL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
-
+		return apps, errors.New("id name or format is empty")
 	}
-	name = "public-service.application.id"
-	format = "APL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
 
 	// Count should be at least 1
-	ids, err := s.IdGenService.GetId(apps.RequestInfo, apps.Application.TenantId, name, format, 1)
+	ids, err := s.IdGenService.GetId(apps.RequestInfo, apps.Service.TenantId, name, format, 1)
 	if err != nil {
 		log.Printf("Error getting ID from IDGenService: %v", err)
-		return apps
+		return apps, fmt.Errorf("error getting ID from IDGenService: %w", err)
 	}
 	if len(ids) > 0 {
-		apps.Application.ApplicationNumber = ids[0]
+		apps.Service.ServiceCode = ids[0]
 	}
 
-	return apps
+	return apps, nil
 }
 
 func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]demand.DemandDetail, error) {
@@ -455,10 +522,6 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 
 	return nil, errors.New("no valid calculator config found")
 }
-
-
-
-
 
 // makeAPICall sends a POST/GET/etc request with the ApplicationRequest as JSON
 func makeAPICall(url, method string, req model.ApplicationRequest) ([]byte, error) {
