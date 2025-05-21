@@ -60,7 +60,7 @@ func main() {
 	demandSvc := service.NewDemandService(restRepo)
 	individualSvc := service.NewIndividualService(restRepo)
 	mdmsSvc := service.NewMDMSService(restRepo)
-	mdmsv2sSvc := service.NewMDMSV2Service(restRepo)
+	mdmsv2sSvc := service.NewMDMSV2Service(restRepo,dbConn)
 	idgenSvc := service.NewIdGenService(restRepo)
 	localizationService := service.NewLocalizationService(restRepo)
 	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc)

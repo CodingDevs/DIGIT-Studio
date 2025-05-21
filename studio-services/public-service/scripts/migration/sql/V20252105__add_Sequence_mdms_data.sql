@@ -1,0 +1,3 @@
+CREATE SEQUENCE IF NOT EXISTS mdms_action_test_id_sequence
+    START WITH 9990
+    INCREMENT BY 1;

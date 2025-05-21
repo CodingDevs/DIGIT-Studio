@@ -333,7 +333,7 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 		log.Println("No 'idgen' section in MDMS data")
 		return apps, errors.New("No 'idgen' section in MDMS data")
 	}
-
+    
 	for _, item := range idGens {
 		idGen, ok := item.(map[string]interface{})
 		if !ok {
@@ -344,7 +344,7 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 		// Use dynamic comparison
 		if idGenType == typeOfApplication {
 			format, _ = idGen["format"].(string)
-			name, _ = idGen["name"].(string)
+			name, _ = idGen["idname"].(string)
 			break
 		}
 	}
@@ -363,7 +363,10 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 	if len(ids) > 0 {
 		apps.Service.ServiceCode = ids[0]
 	}
-
+    _,err = s.MDMSV2Service.createMDMSActionTest(apps.Service.TenantId,apps.Service.ServiceCode,apps.RequestInfo)
+	if err !=nil {
+		return apps, fmt.Errorf("error creating MDMS for Action-test / role_mapping : %w", err)
+	}
 	return apps, nil
 }
 
