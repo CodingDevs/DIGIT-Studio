@@ -257,12 +257,18 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 		req.Application.ServiceCode = serviceCode
 	}
 	ctx := context.Background()
-	c.enrichmentService.EnrichApplicationsWithDemand(req)
+	req,err =c.enrichmentService.EnrichApplicationsWithDemand(req)
+	if err != nil {
+		log.Printf("Deamnd Creation failed: %v", err)
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	// Call workflow integrator on success
 	err = c.workflowIntegrator.CallWorkflow(&req)
 	if err != nil {
 		log.Printf("Workflow integration failed: %v", err)
-		// Optional: return HTTP error or log only
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	res, err := c.service.UpdateApplication(ctx, req, serviceCode)
 	if err != nil {

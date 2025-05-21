@@ -70,7 +70,7 @@ func (s *EnrichmentService) EnrichApplicationsWithIndividuals(apps []model.Appli
 	return apps
 }
 
-func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationRequest) model.ApplicationRequest {
+func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationRequest) (model.ApplicationRequest, error ){
 	if apps.Application.Workflow.Action == "VERIFY_AND_FORWARD" {
 		schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 		mdmsData, _ := s.MDMSV2Service.SearchMDMS(
@@ -84,7 +84,7 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		mdmsList, ok := mdmsData["mdms"].([]interface{})
 		if !ok || len(mdmsList) == 0 {
 			log.Println("MDMS data missing or invalid")
-			return apps
+			return apps, errors.New("MDMS data missing or invalid")
 		}
 
 		firstEntry, _ := mdmsList[0].(map[string]interface{})
@@ -92,31 +92,28 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		billData, ok := data["bill"].(map[string]interface{})
 		if !ok {
 			log.Println("No 'bill' section in MDMS data")
-			return apps
+			return apps,errors.New("No 'bill' section in MDMS data")
 		}
-
-		// Step 2: Extract taxHeadCode from bill.taxHead
-		var taxHeadCode string
-		if taxHeads, ok := billData["taxHead"].([]interface{}); ok {
-			for _, item := range taxHeads {
-				taxHead, _ := item.(map[string]interface{})
-				if taxHead["service"] == apps.Application.BusinessService && taxHead["code"] == "TL_TAX" {
-					taxHeadCode = taxHead["code"].(string)
-					break
-				}
+        // Step 2: Extract businessService from bill.BusinessService
+		var businessService string
+		if bsMap, ok := billData["BusinessService"].(map[string]interface{}); ok {
+			if code, ok := bsMap["code"].(string); ok {
+				businessService = code
 			}
-		}
-		if taxHeadCode == "" {
-			log.Println("No matching taxHeadCode found, defaulting")
-			taxHeadCode = "TL_TAX"
-		}
 
-		// Step 3: Extract taxPeriodFrom and taxPeriodTo from bill.taxPeriod
+		}
+		// Step 3: Extract taxHeadCode from bill.taxHead
+
+		//demandDetais model.DemandDe
+		demandDetails,err := s.GetCalculation(apps)
+
+		
+		// Step 4: Extract taxPeriodFrom and taxPeriodTo from bill.taxPeriod
 		var taxPeriodFrom, taxPeriodTo *int64
 		if taxPeriods, ok := billData["taxPeriod"].([]interface{}); ok {
 			for _, item := range taxPeriods {
 				tp, _ := item.(map[string]interface{})
-				if tp["service"] == apps.Application.BusinessService {
+				if tp["service"] == businessService {
 					if from, ok := tp["fromDate"].(float64); ok {
 						fromInt := int64(from)
 						taxPeriodFrom = &fromInt
@@ -130,17 +127,6 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 			}
 		}
 
-		// Step 4: Extract businessService from bill.BusinessService
-		var businessService string
-		if bsMap, ok := billData["BusinessService"].(map[string]interface{}); ok {
-			if code, ok := bsMap["code"].(string); ok {
-				businessService = code
-			}
-
-		}
-		if businessService == "" {
-			businessService = apps.Application.BusinessService // fallback
-		}
 		var payerUser model.User // Replace with your actual User struct type
 		if len(apps.Application.Applicants) > 0 {
 			individualId := apps.Application.Applicants[0].UserId // Assuming this exists
@@ -164,7 +150,7 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 				parsedUUID, err := uuid.Parse(individual.UserUuid)
 				if err != nil {
 					log.Printf("Invalid UUID format for UserUuid: %v", err)
-					return apps
+					return apps,errors.New("Invalid UUID format for UserUuid to enrich payer ")
 				}
 				payerUser = model.User{
 					Uuid:         parsedUUID,
@@ -179,14 +165,6 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		} else {
 			log.Println("No applicants found to assign as payer")
 		}
-		demandDetail := demand.DemandDetail{
-			ID:                uuid.NewString(),
-			TaxHeadMasterCode: taxHeadCode,
-			TaxAmount:         big.NewFloat(50.0),
-			CollectionAmount:  big.NewFloat(0.0),
-			TenantID:          apps.Application.TenantId,
-			AuditDetails:      nil,
-		}
 
 		d := demand.Demand{
 			ID:              uuid.NewString(),
@@ -197,7 +175,7 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 			Payer:           &payerUser,
 			TaxPeriodFrom:   taxPeriodFrom,
 			TaxPeriodTo:     taxPeriodTo,
-			DemandDetails:   []demand.DemandDetail{demandDetail},
+			DemandDetails:   demandDetails,
 			AuditDetails:    nil,
 		}
 		var demands []demand.Demand
@@ -206,6 +184,8 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		createdDemands, err := s.DemandService.SaveDemand(apps.RequestInfo, demands)
 		if err != nil {
 			log.Printf("Failed to save demand: %v", err)
+			return apps, fmt.Errorf("Failed to save demand: %v", err)
+
 		} else {
 			logJSON("Saved Demands Response", createdDemands)
 			_, err2 := s.SMSService.SendSMS(apps, apps.Application.TenantId, "DIGIT_STUDIO_DEMAND_CREATED", apps.Application.Applicants)
@@ -218,7 +198,7 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 		// Optional: attach the demand to the application if needed
 	}
 
-	return apps
+	return apps,nil
 }
 
 func logJSON(message string, data interface{}) {
@@ -398,130 +378,131 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 		return nil, errors.New("No calculator data found in MDMS")
 	}
 
-	for _, v := range calculatorData {
-		calcConf, _ := v.(map[string]interface{})
-		calcTypeRaw, ok := calcConf["type"].(string)
-		if !ok {
-			continue
-		}
-		calcType := strings.ToLower(calcTypeRaw)
-
-		if calcType == "custom" {
-			slabs, ok := calcConf["billingSlabs"].([]interface{})
-			if !ok || len(slabs) == 0 {
-				return nil, errors.New("No billingSlabs in custom calculator")
-			}
-
-			for _, slab := range slabs {
-				slabData, ok := slab.(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				key, ok := slabData["key"].(string)
-				if !ok {
-					continue
-				}
-
-				var floatVal float64
-				switch v := slabData["value"].(type) {
-				case float64:
-					floatVal = v
-				case int:
-					floatVal = float64(v)
-				default:
-					return nil, errors.New("Unsupported value type for billing slab")
-				}
-
-				detail := demand.DemandDetail{
-					ID:                uuid.NewString(),
-					TaxHeadMasterCode: key,
-					TaxAmount:         big.NewFloat(floatVal),
-					CollectionAmount:  big.NewFloat(0.0),
-					TenantID:          apps.Application.TenantId,
-					AuditDetails:      nil,
-				}
-				demandDetails = append(demandDetails, detail)
-
-				log.Printf("Using custom billing slab: %s = %v\n", key, floatVal)
-			}
-			return demandDetails, nil
-
-		} else if calcType == "api" {
-			apiConf, ok := calcConf["api"].(map[string]interface{})
-			if !ok {
-				return nil, errors.New("invalid or missing API config")
-			}
-
-			hosts := strings.Split(apiConf["host"].(string), "||")
-			endpoint := apiConf["endpoint"].(string)
-			method := strings.ToUpper(apiConf["method"].(string))
-
-			var responseBody []byte
-			var apiErr error
-			for _, host := range hosts {
-				url := strings.TrimSuffix(host, "/") + endpoint
-				responseBody, apiErr = makeAPICall(url, method, apps)
-				if apiErr == nil {
-					log.Println("API call successful:", url)
-					break
-				}
-				log.Printf("Failed API call to %s: %v", url, apiErr)
-			}
-
-			if apiErr != nil {
-				return nil, fmt.Errorf("all API hosts failed: %w", apiErr)
-			}
-
-			// Example API response decoding
-			var apiResponse map[string]interface{}
-			err = json.Unmarshal(responseBody, &apiResponse)
-			if err != nil {
-				return nil, fmt.Errorf("error decoding API response: %w", err)
-			}
-
-			// Expecting array of demandDetails: apiResponse["demandDetails"] = [{...}, {...}]
-			rawList, ok := apiResponse["demandDetails"].([]interface{})
-			if !ok {
-				return nil, errors.New("expected demandDetails as array in API response")
-			}
-
-			for _, rawItem := range rawList {
-				item, ok := rawItem.(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				key, ok := item["taxHeadCode"].(string)
-				if !ok {
-					continue
-				}
-
-				var floatVal float64
-				switch v := item["taxAmount"].(type) {
-				case float64:
-					floatVal = v
-				case int:
-					floatVal = float64(v)
-				default:
-					return nil, errors.New("unsupported taxAmount type in API response")
-				}
-
-				detail := demand.DemandDetail{
-					ID:                uuid.NewString(),
-					TaxHeadMasterCode: key,
-					TaxAmount:         big.NewFloat(floatVal),
-					CollectionAmount:  big.NewFloat(0.0),
-					TenantID:          apps.Application.TenantId,
-					AuditDetails:      nil,
-				}
-				demandDetails = append(demandDetails, detail)
-			}
-
-			log.Printf("Collected %d demand details from API\n", len(demandDetails))
-			return demandDetails, nil
-		}
+	calcConf := calculatorData
+	if !ok {
+		return nil, errors.New("invalid calculator config format")
 	}
+	
+	calcTypeRaw, ok := calcConf["type"].(string)
+	if !ok {
+		return nil, errors.New("missing calculator type")
+	}
+	calcType := strings.ToLower(calcTypeRaw)
+	
+	if calcType == "custom" {
+		slabs, ok := calcConf["billingSlabs"].([]interface{})
+		if !ok || len(slabs) == 0 {
+			return nil, errors.New("no billingSlabs in custom calculator")
+		}
+	
+		for _, slab := range slabs {
+			slabData, ok := slab.(map[string]interface{})
+			if !ok {
+				continue
+			}
+	
+			key, ok := slabData["key"].(string)
+			if !ok {
+				continue
+			}
+	
+			var floatVal float64
+			switch v := slabData["value"].(type) {
+			case float64:
+				floatVal = v
+			case int:
+				floatVal = float64(v)
+			default:
+				return nil, errors.New("unsupported value type for billing slab")
+			}
+	
+			detail := demand.DemandDetail{
+				ID:                uuid.NewString(),
+				TaxHeadMasterCode: key,
+				TaxAmount:         big.NewFloat(floatVal),
+				CollectionAmount:  big.NewFloat(0.0),
+				TenantID:          apps.Application.TenantId,
+				AuditDetails:      nil,
+			}
+			demandDetails = append(demandDetails, detail)
+	
+			log.Printf("Using custom billing slab: %s = %v\n", key, floatVal)
+		}
+		return demandDetails, nil
+	
+	} else if calcType == "api" {
+		apiConf, ok := calcConf["api"].(map[string]interface{})
+		if !ok {
+			return nil, errors.New("invalid or missing API config")
+		}
+	
+		hosts := strings.Split(apiConf["host"].(string), "||")
+		endpoint := apiConf["endpoint"].(string)
+		method := strings.ToUpper(apiConf["method"].(string))
+	
+		var responseBody []byte
+		var apiErr error
+		for _, host := range hosts {
+			url := strings.TrimSuffix(host, "/") + endpoint
+			responseBody, apiErr = makeAPICall(url, method, apps)
+			if apiErr == nil {
+				log.Println("API call successful:", url)
+				break
+			}
+			log.Printf("Failed API call to %s: %v", url, apiErr)
+		}
+	
+		if apiErr != nil {
+			return nil, fmt.Errorf("all API hosts failed: %w", apiErr)
+		}
+	
+		var apiResponse map[string]interface{}
+		err = json.Unmarshal(responseBody, &apiResponse)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding API response: %w", err)
+		}
+	
+		rawList, ok := apiResponse["demandDetails"].([]interface{})
+		if !ok {
+			return nil, errors.New("expected demandDetails as array in API response")
+		}
+	
+		for _, rawItem := range rawList {
+			item, ok := rawItem.(map[string]interface{})
+			if !ok {
+				continue
+			}
+	
+			key, ok := item["taxHeadCode"].(string)
+			if !ok {
+				continue
+			}
+	
+			var floatVal float64
+			switch v := item["taxAmount"].(type) {
+			case float64:
+				floatVal = v
+			case int:
+				floatVal = float64(v)
+			default:
+				return nil, errors.New("unsupported taxAmount type in API response")
+			}
+	
+			detail := demand.DemandDetail{
+				ID:                uuid.NewString(),
+				TaxHeadMasterCode: key,
+				TaxAmount:         big.NewFloat(floatVal),
+				CollectionAmount:  big.NewFloat(0.0),
+				TenantID:          apps.Application.TenantId,
+				AuditDetails:      nil,
+			}
+			demandDetails = append(demandDetails, detail)
+		}
+	
+		log.Printf("Collected %d demand details from API\n", len(demandDetails))
+		return demandDetails, nil
+	}
+	
 
 	return nil, errors.New("no valid calculator config found")
 }
