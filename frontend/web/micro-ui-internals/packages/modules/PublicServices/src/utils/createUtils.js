@@ -1,4 +1,4 @@
-export const transformIndividualCreateData = (data) => {
+export const transformIndividualCreateData = (data)=>{
     return {
         Individual: {
             tenantId: "pg.citya",
@@ -221,8 +221,8 @@ export const transformCreateCheckList = (id, accid, data) => {
                     });
                 }
                 if (value[value.code]) {
-                    for (const k in value[value.code]) {
-                        processField(k, value[value.code][k], parentKey ? `${parentKey}.${key}.${value.code}` : `${key}.${value.code}`);
+                    for(const k in value[value.code]){
+                    processField(k,value[value.code][k], parentKey ? `${parentKey}.${key}.${value.code}`: `${key}.${value.code}`);
                     }
                 }
             }

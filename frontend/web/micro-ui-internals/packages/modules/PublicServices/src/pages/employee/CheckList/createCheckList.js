@@ -19,6 +19,18 @@ const CreateCheckList = () => {
 
   const [config, setConfig] = useState(null);
 
+   const closeToast = () => {
+    setTimeout(() => {
+      setShowToast(null)
+    }, 5000);
+  }
+ 
+  setTimeout(() => {
+    setShowToast(null);
+  }, 20000);
+
+
+
   const def_search_request = {
     url: "/health-service-request/service/definition/v1/_search",
     params: {},
@@ -134,11 +146,12 @@ const CreateCheckList = () => {
 
   useEffect(() => {
     if (cardItems && cardItems.length > 0) {
-      setConfig(CheckListConfig(cardItems));
+      setConfig(CreateCheckListConfig(cardItems));
     }
   }, [cardItems]);
 
   const onSubmit = async (data) => {
+    console.log(data, "data");
     const fetchdata = async (data) => {
       await cmutation.mutate(
         {
@@ -152,9 +165,15 @@ const CreateCheckList = () => {
         {
           onSuccess: (res) => {
             console.log(res, "application_response");
+            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".","_").toUpperCase()}_CREATE_SUCCESS_CHECKLIST`) })
+            setCardItems(res?.ServiceDefinitions || []);
+            setTimeout(() => {
+              window.history.back();
+            }, 3000);
           },
           onError: () => {
             console.log("Error occurred");
+            setCardItems([]);
           },
         }
       )
@@ -163,7 +182,6 @@ const CreateCheckList = () => {
   };
 
   const handleFormValueChange = (updatedFormData) => {
-    console.log(updatedFormData,"form_data");
     if (JSON.stringify(updatedFormData) !== JSON.stringify(formData)) {
       setFormData(updatedFormData);
       setConfig(updateCheckListConfig(config, updatedFormData));
@@ -214,6 +232,16 @@ const CreateCheckList = () => {
         />
       ) : (
         <Loader />
+      )}
+      {showToast && (
+        <Toast
+          type={showToast?.type}
+          label={t(showToast?.label)}
+          onClose={() => {
+            setShowToast(null);
+          }}
+          isDleteBtn={showToast?.isDleteBtn}
+        />
       )}
     </div>
   );
