@@ -1,7 +1,8 @@
 
-# digit-studio
+# DIGIT Studio Frontend
 
-A React App built on top of DIGIT UI Core.
+A modern, component-based UI system for DIGIT Studio built on React and Tailwind CSS using Digit UI Framework.
+
 
 # DIGIT
 
@@ -12,22 +13,47 @@ DIGIT (Digital Infrastructure for Governance, Impact & Transformation) is India'
 DIGIT platform is microservices based API platform enabling quick rebundling of services as per specific needs. This is a repo that lays down the core platform on top of which other mission services depend.
 
 
-# DIGIT UI 
+## Overview
+
+DIGIT Studio Frontend provides a comprehensive UI framework for building administrative interfaces for the DIGIT platform. It follows a modular architecture with reusable components, consistent styling, and clear separation of concerns.
+
+## Architecture
+
+The frontend is organized into several key packages:
+
+### UI Components
+
+A library of React components following atomic design principles:
+- **Atoms**: Fundamental building blocks like buttons, inputs, and cards
+- **Molecules**: Compound components composed of multiple atoms
+- **Organisms**: Complex components that form functional sections of the UI
+
+### CSS Package
+
+Provides styling built on Tailwind CSS with:
+- Base styles and normalization
+- Component-specific styling
+- Utility classes
+
+### PublicServices Module
+
+A sample module demonstrating how to build feature modules using the core framework.
 
 
-This repository contains source code for web implementation of the new Digit UI modules with dependencies and libraries.
+## Getting Started
 
-Workbench module is used to Manage the master data (MDMS V2 Service) used across the DIGIT Services / Applications
+### Prerequisites
 
-It is also used to manage the Localisation data present in the system (Localisation service)
+- Node.js 14 or higher
+- Yarn package manager
 
 
-## Run Locally
+### Installation
 
 Clone the project
 
 ```bash
-  git clone https://github.com/egovernments/DIGIT-Frontend.git
+  git clone https://github.com/egovernments/DIGIT-Studio.git
 ```
 
 Go to the Sub directory to run UI
@@ -67,7 +93,7 @@ To run this project, you will need to add the following environment variables to
 
 `SKIP_PREFLIGHT_CHECK` :: `true`
 
-[sample .env file](https://github.com/egovernments/Digit-Core/blob/workbench/frontend/micro-ui/web/micro-ui-internals/example/.env-unifieddev)
+[sample .env file](https://github.com/egovernments/Digit-Frontend/blob/workbench/frontend/micro-ui/web/micro-ui-internals/example/.env-unifieddev)
 
 ## Tech Stack
 
@@ -105,12 +131,27 @@ For support, add the issues in https://github.com/egovernments/DIGIT-core/issues
 
 ## Modules
 
-    1. Core
-    2. Workbench
-    3. HRMS
-    4. Dashboard
-    5. Engagement
-    6. Payment
+    1. Core (From NPM)
+    2. Workbench (From NPM)
+    3. HRMS (From NPM)
+    4. Public Service
+
+## Creating a New Module
+To create a new feature module:
+
+### Create a new directory in packages/modules/
+- Set up the package structure following the PublicServices example
+- Implement your module-specific components, pages, and services
+- Register your module in the main application
+- See the PublicServices module README for detailed instructions.
+
+### Best Practices
+- Use functional components with hooks
+- Follow atomic design principles for UI components
+- Implement unit tests for components and business logic
+- Use the existing theming system for consistent styling
+- Leverage the built-in form handling and data fetching utilities
+
 
 ## Starting with Digit-UI App (Impelmentation Teams) - MICRO-UI
 

@@ -3,384 +3,274 @@
   "moduleName": "CommonService",
   "ServiceConfiguration": [
     {
-      "module": "Tradelicence",
+      "module": "Tradelicense",
       "service": "NewTL",
       "fields": [
         {
-          "name": "tradeStructureType",
-          "label": "Trade Structure Type ",
-          "type": "string",
-          "reference": "mdms",
-          "required": true,
-          "schema": "Tradelicence.TradeStructureType"
-        },
-        {
-          "name": "tradeStructureSubType",
-          "label": "Trade Structure Sub Type ",
-          "type": "string",
-          "reference": "mdms",
-          "dependencies": [
-            "tradeStructureType"
-          ],
-          "required": true,
-          "schema": "Tradelicence.TradeStructureSubType"
-        },
-        {
-          "name": "tradeLicenceType",
-          "label": "Trade Licence Type ",
-          "type": "string",
-          "reference": "mdms",
-          "required": true,
-          "schema": "Tradelicence.TradeLicenceType"
-        },
-        {
-          "name": "tradeCategory",
-          "label": "Trade Category ",
-          "type": "string",
-          "reference": "mdms",
-          "required": true,
-          "schema": "Tradelicence.TradeCategory"
-        },
-        {
-          "name": "tradeType",
-          "label": "Trade Type ",
-          "type": "string",
-          "reference": "mdms",
-          "required": true,
-          "schema": "Tradelicence.TradeType"
-        },
-        {
-          "name": "tradeSubType",
-          "label": "Trade Sub Type ",
-          "type": "string",
-          "reference": "mdms",
-          "dependencies": [
-            "tradeType"
-          ],
-          "required": true,
-          "schema": "Tradelicence.TradeSubType"
-        },
-        {
-          "name": "tradeName",
-          "label": "Trade Name ",
-          "type": "string",
-          "maxLength": 128,
-          "minLength": 2,
-          "validation": {
-            "regex": "^[A-Za-z0-9 ]+$",
-            "message": "Only letters and numbers allowed"
-          },
-          "required": true,
-          "orderNumber": 1
+          "name": "tradeDetails",
+          "type": "object",
+          "label": "Trade Details ",
+          "properties": [
+            {
+              "name": "financialYear",
+              "type": "string",
+              "label": "Financial Year ",
+              "format": "radioordropdown",
+              "schema": "egf-master.FinancialYear2",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 1
+            },
+            {
+              "name": "licenseType",
+              "type": "string",
+              "label": "License Type ",
+              "format": "radioordropdown",
+              "required": false,
+              "orderNumber": 2,
+              "defaultValue": "PERMANENT"
+            },
+            {
+              "name": "tradeName",
+              "type": "string",
+              "label": "Trade Name ",
+              "format": "text",
+              "required": false,
+              "maxLength": 128,
+              "minLength": 2,
+              "validation": {
+                "regex": "^[A-Za-z0-9 ]+$",
+                "message": "Only letters and numbers allowed"
+              },
+              "orderNumber": 3
+            },
+            {
+              "name": "tradeStructureType",
+              "type": "string",
+              "label": "Trade Structure Type ",
+              "format": "radioordropdown",
+              "schema": "Tradelicence.StructureType",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 4
+            },
+            {
+              "name": "tradeStructureSubType",
+              "type": "string",
+              "label": "Trade Structure Sub Type ",
+              "format": "radioordropdown",
+              "schema": "Tradelicence.StructureSubType",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 5,
+              "dependencies": [
+                "tradeStructureType"
+              ]
+            },
+            {
+              "name": "tradeCommencementDate",
+              "type": "date",
+              "label": "Trade Commencement Date ",
+              "format": "date",
+              "required": false,
+              "orderNumber": 6
+            }
+          ]
         },
         {
           "name": "tradeUnits",
+          "type": "object",
           "label": "Trade Units ",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": [
-              {
-                "name": "type",
-                "label": "Trade type ",
-                "type": "string"
-              },
-              {
-                "name": "count",
-                "label": "Trade count ",
-                "type": "number"
-              }
-            ]
-          }
+          "properties": [
+            {
+              "name": "tradeCategory",
+              "type": "string",
+              "label": "Trade Category ",
+              "format": "radioordropdown",
+              "schema": "Tradelicence.TradeCategory",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 1
+            },
+            {
+              "name": "tradeType",
+              "type": "string",
+              "label": "Trade Type ",
+              "format": "radioordropdown",
+              "schema": "Tradelicence.TradeType",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 2
+            },
+            {
+              "name": "tradeSubType",
+              "type": "string",
+              "label": "Trade Sub Type ",
+              "format": "radioordropdown",
+              "schema": "Tradelicence.TradeSubType",
+              "required": false,
+              "reference": "mdms",
+              "orderNumber": 3
+            }
+          ]
         },
         {
           "name": "accessories",
-          "label": "Trade accessories ",
           "type": "array",
           "items": {
             "type": "object",
             "properties": [
               {
-                "name": "type",
-                "label": "accessories type ",
-                "type": "string"
-              },
-              {
-                "name": "count",
-                "label": "accessories count ",
-                "type": "number"
+                "name": "accessoryType",
+                "type": "string",
+                "label": "Accessory type ",
+                "format": "radioordropdown",
+                "schema": "TradeLicense.AccessoriesCategory",
+                "required": false,
+                "reference": "mdms",
+                "orderNumber": 1
               }
             ]
-          }
+          },
+          "label": "Trade accessories "
         }
       ],
-      "workflow": {
-        "businessService": "NewTL",
-        "details": [
-          {
-            "tenantId": "pg",
-            "businessService": "CONTRACT",
-            "business": "contract-service",
-            "businessServiceSla": 604800000,
-            "states": [
-              {
-                "sla": null,
-                "state": null,
-                "applicationStatus": null,
-                "docUploadRequired": false,
-                "isStartState": true,
-                "isTerminateState": false,
-                "isStateUpdatable": true,
-                "actions": [
-                  {
-                    "action": "CREATE",
-                    "nextState": "PENDING_FOR_VERIFICATION",
-                    "roles": [
-                      "WORK_ORDER_CREATOR"
-                    ]
-                  }
-                ]
-              },
-              {
-                "sla": 172800000,
-                "state": "PENDING_FOR_VERIFICATION",
-                "applicationStatus": "INWORKFLOW",
-                "docUploadRequired": false,
-                "isStartState": false,
-                "isTerminateState": false,
-                "isStateUpdatable": true,
-                "actions": [
-                  {
-                    "action": "VERIFY_AND_FORWARD",
-                    "nextState": "PENDING_FOR_APPROVAL",
-                    "roles": [
-                      "WORK_ORDER_VERIFIER"
-                    ]
-                  },
-                  {
-                    "action": "SEND_BACK",
-                    "nextState": "PENDING_FOR_CORRECTION",
-                    "roles": [
-                      "WORK_ORDER_VERIFIER"
-                    ]
-                  }
-                ]
-              },
-              {
-                "sla": 86400000,
-                "state": "PENDING_FOR_APPROVAL",
-                "applicationStatus": "INWORKFLOW",
-                "docUploadRequired": false,
-                "isStartState": false,
-                "isTerminateState": false,
-                "isStateUpdatable": true,
-                "actions": [
-                  {
-                    "action": "APPROVE",
-                    "nextState": "PENDING_FOR_ACCEPTANCE",
-                    "roles": [
-                      "WORK_ORDER_APPROVER"
-                    ]
-                  },
-                  {
-                    "action": "SEND_BACK",
-                    "nextState": "PENDING_FOR_VERIFICATION",
-                    "roles": [
-                      "WORK_ORDER_APPROVER"
-                    ]
-                  },
-                  {
-                    "action": "REJECT",
-                    "nextState": "REJECTED",
-                    "roles": [
-                      "WORK_ORDER_APPROVER"
-                    ]
-                  },
-                  {
-                    "action": "SEND_BACK_TO_ORIGINATOR",
-                    "nextState": "PENDING_FOR_CORRECTION",
-                    "roles": [
-                      "WORK_ORDER_APPROVER"
-                    ]
-                  }
-                ]
-              },
-              {
-                "sla": 604800000,
-                "state": "PENDING_FOR_ACCEPTANCE",
-                "applicationStatus": "INWORKFLOW",
-                "docUploadRequired": false,
-                "isStartState": false,
-                "isTerminateState": false,
-                "isStateUpdatable": true,
-                "actions": [
-                  {
-                    "action": "ACCEPT",
-                    "nextState": "ACCEPTED",
-                    "roles": [
-                      "ORG_ADMIN"
-                    ]
-                  },
-                  {
-                    "action": "DECLINE",
-                    "nextState": "PENDING_FOR_CORRECTION",
-                    "roles": [
-                      "ORG_ADMIN"
-                    ]
-                  }
-                ]
-              },
-              {
-                "sla": 86400000,
-                "state": "PENDING_FOR_CORRECTION",
-                "applicationStatus": "INWORKFLOW",
-                "docUploadRequired": false,
-                "isStartState": true,
-                "isTerminateState": false,
-                "isStateUpdatable": true,
-                "actions": [
-                  {
-                    "action": "EDIT",
-                    "nextState": "PENDING_FOR_VERIFICATION",
-                    "roles": [
-                      "WORK_ORDER_CREATOR"
-                    ]
-                  },
-                  {
-                    "action": "REJECT",
-                    "nextState": "REJECTED",
-                    "roles": [
-                      "WORK_ORDER_CREATOR"
-                    ]
-                  }
-                ]
-              },
-              {
-                "sla": null,
-                "state": "ACCEPTED",
-                "applicationStatus": "ACTIVE",
-                "docUploadRequired": false,
-                "isStartState": false,
-                "isTerminateState": true,
-                "isStateUpdatable": false,
-                "actions": []
-              },
-              {
-                "sla": null,
-                "state": "REJECTED",
-                "applicationStatus": "INACTIVE",
-                "docUploadRequired": false,
-                "isStartState": false,
-                "isTerminateState": true,
-                "isStateUpdatable": false,
-                "actions": []
-              }
-            ]
-          }
-        ],
-        "ACTIVE": [
-          "APPROVED"
-        ],
-        "INACTIVE": [
-          "REJECTED",
-          "WITHDRAWN"
-        ]
-      },
-      "documents": [
+      "pdf": [
         {
+          "key": "studio-application",
+          "type": "application",
           "states": [
             "applied",
             "approved"
-          ],
-          "category": "address-proof",
-          "documentTypes": [
-            "aadhar",
-            "voter"
-          ],
-          "active": true,
-          "isMandatory": false,
-          "allowedFileTypes": [
-            "pdf",
-            "doc",
-            "docx",
-            "xlsx",
-            "xls",
-            "jpeg",
-            "jpg",
-            "png"
-          ],
-          "maxSizeInMB": 5,
-          "maxFilesAllowed": 1
+          ]
         },
         {
-          "category": "identity-proof",
-          "documentTypes": [
-            "aadhar",
-            "voter"
-          ],
-          "active": true,
-          "isMandatory": true,
-          "allowedFileTypes": [
-            "pdf",
-            "doc",
-            "docx",
-            "xlsx",
-            "xls",
-            "jpeg",
-            "jpg",
-            "png"
-          ],
-          "maxSizeInMB": 5,
-          "maxFilesAllowed": 1
+          "key": "tl-bill",
+          "type": "bill",
+          "states": [
+            "approved"
+          ]
         },
         {
-          "category": "owner-photo",
-          "documentTypes": [
-            "photo"
-          ],
-          "active": true,
-          "isMandatory": true,
-          "allowedFileTypes": [
-            "jpeg",
-            "jpg",
-            "png"
-          ],
-          "maxSizeInMB": 5,
-          "maxFilesAllowed": 1
+          "key": "tl-receipt",
+          "type": "receipt",
+          "states": [
+            "approved"
+          ]
         }
       ],
-      "idgen":[ {
-        "type":"application"
-        "format": "tl.application.number",
-        "sequence": "BILL-[SEQ_EGOV_COMMON_TEST_AUTOCRE]"
-      },{
-        "type":"bill"
-        "format": "tl.application.number",
-        "sequence": "BILL-[SEQ_EGOV_COMMON_TEST_AUTOCRE]"
-      }],
-      "localization": {
-        "modules": [
-          "digit-tradelicence"
-        ]
+      "bill": {
+        "taxHead": [
+          {
+            "code": "TL_TAX",
+            "name": "tl tax",
+            "order": "2",
+            "isDebit": false,
+            "service": "NewTL",
+            "category": "TAX",
+            "isRequired": false,
+            "isActualDemand": true
+          },
+          {
+            "code": "TL_ROUNDOFF",
+            "name": "tl roundoff",
+            "order": "0",
+            "isDebit": false,
+            "service": "NewTL",
+            "category": "TAX",
+            "isRequired": false,
+            "isActualDemand": true
+          },
+          {
+            "code": "TL_ADHOC_REBATE",
+            "name": "tl adhoc rebate",
+            "order": "0",
+            "isDebit": true,
+            "service": "NewTL",
+            "category": "TAX",
+            "isRequired": false,
+            "isActualDemand": false
+          },
+          {
+            "code": "TL_ADHOC_PENALTY",
+            "name": "tl adhoc penalty",
+            "order": "1",
+            "isDebit": false,
+            "service": "NewTL",
+            "category": "TAX",
+            "isRequired": false,
+            "isActualDemand": true
+          }
+        ],
+        "taxPeriod": [
+          {
+            "code": "TLAN2018",
+            "toDate": 1554076799000,
+            "service": "NewTL",
+            "fromDate": 1522540800000,
+            "periodCycle": "ANNUAL",
+            "financialYear": "2018-19"
+          }
+        ],
+        "BusinessService": {
+          "code": "NewTL",
+          "businessService": "NewTL",
+          "demandUpdateTime": 86400000,
+          "isAdvanceAllowed": false,
+          "minAmountPayable": 100,
+          "partPaymentAllowed": true,
+          "isVoucherCreationEnabled": true,
+          "collectionModesNotAllowed": [
+            "DD",
+            "OFFLINE_NEFT",
+            "OFFLINE_RTGS",
+            "POSTAL_ORDER"
+          ]
+        }
       },
-      "applicant": {
-        "minimum": 1,
-        "maximum": 3,
-        "types": [
-          "individual",
-          "organisation"
-        ]
-      },
-      "boundary": {
-        "hierarchyType": "REVENUE",
-        "lowestLevel": "locality"
-      },
-      "notification": {
-        "sms": {
-          "TODO": "will fill later"
+      "idgen": [
+        {
+          "name": "public-service.application.id",
+          "type": "application",
+          "format": "APL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
         },
-        "email": {
-          "TODO": "will fill later"
+        {
+          "name": "public-service.service.id",
+          "type": "service",
+          "format": "SVL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
+        },
+        {
+          "name": "public-service.service.id",
+          "type": "bill",
+          "format": "SVL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
+        },
+        {
+          "name": "public-service.service.id",
+          "type": "payment",
+          "format": "SVL-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]"
+        }
+      ],
+      "rules": {
+        "registry": {
+          "type": "api||none",
+          "service": "Tradelicense"
+        },
+        "calculator": {
+          "type": "api||custom||none",
+          "service": "Tradelicense",
+          "customFunction": "eitherhookname||function"
+        },
+        "references": [
+          {
+            "type": "initiate",
+            "service": "Tradelicense"
+          }
+        ],
+        "validation": {
+          "type": "schema||api||custom||none",
+          "service": "Tradelicense",
+          "schemaCode": "Tradelicense.apply",
+          "customFunction": "eitherhookname||function"
         }
       },
       "access": {
@@ -393,139 +283,287 @@
           }
         ]
       },
-      "rules": {
-        "validation": {
-          "type": "schema||api||custom||none",
-          "service": "tradelicence",
-          "schemaCode": "tradelicence.apply",
-          "customFunction": "eitherhookname||function"
-        },
-        "calculator": {
-          "type": "api||custom||none",
-          "service": "tradelicence",
-          "customFunction": "eitherhookname||function"
-        },
-        "registry": {
-          "type": "api||none",
-          "service": "tradelicence"
-        },
-        "references": [
-          {
-            "type": "initiate",
-            "service": "tradelicence"
-          }
-        ]
-      },
-      "pdf": [
-        {
-          "key": "tl-application",
-          "type": "application",
-          "states": [
-            "applied",
-            "approved"
-          ]
-        },
-        {
-          "key": "tl-bill",
-          "type": "bill",
-          "states": [
-            "applied",
-            "approved"
-          ]
-        },
-        {
-          "key": "tl-receipt",
-          "type": "receipt",
-          "states": [
-            "applied",
-            "approved"
-          ]
-        }
+      "enabled": [
+        "citizen",
+        "employee"
       ],
-      "bill": {
-        "businessService": "NewTL",
-        "code": "NewTL",
-        "collectionModesNotAllowed": [
-          "DD",
-          "OFFLINE_NEFT",
-          "OFFLINE_RTGS",
-          "POSTAL_ORDER"
-        ],
-        "partPaymentAllowed": true,
-        "minAmountPayable": 100,
-        "isAdvanceAllowed": false,
-        "demandUpdateTime": 86400000,
-        "isVoucherCreationEnabled": true,
-        "taxPeriod": [
-          {
-            "fromDate": 1522540800000,
-            "toDate": 1554076799000,
-            "periodCycle": "ANNUAL",
-            "service": "NewTL",
-            "code": "TLAN2018",
-            "financialYear": "2018-19"
-          }
-        ],
-        "taxHead": [
-          {
-            "category": "TAX",
-            "service": "NewTL",
-            "name": "tl tax",
-            "code": "TL_TAX",
-            "isDebit": false,
-            "isActualDemand": true,
-            "order": "2",
-            "isRequired": false
-          },
-          {
-            "category": "TAX",
-            "service": "NewTL",
-            "name": "tl roundoff",
-            "code": "TL_ROUNDOFF",
-            "isDebit": false,
-            "isActualDemand": true,
-            "order": "0",
-            "isRequired": false
-          },
-          {
-            "category": "TAX",
-            "service": "NewTL",
-            "name": "tl adhoc rebate",
-            "code": "TL_ADHOC_REBATE",
-            "isDebit": true,
-            "isActualDemand": false,
-            "order": "0",
-            "isRequired": false
-          },
-          {
-            "category": "TAX",
-            "service": "NewTL",
-            "name": "tl adhoc penalty",
-            "code": "TL_ADHOC_PENALTY",
-            "isDebit": false,
-            "isActualDemand": true,
-            "order": "1",
-            "isRequired": false
-          }
-        ]
-      },
       "payment": {
         "gateway": "TODO"
       },
+      "boundary": {
+        "lowestLevel": "locality",
+        "hierarchyType": "REVENUE"
+      },
+      "workflow": {
+        "ACTIVE": [
+          "APPROVED"
+        ],
+        "states": [
+          {
+            "sla": null,
+            "state": null,
+            "actions": [
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "CREATE",
+                "nextState": "PENDING_FOR_VERIFICATION"
+              }
+            ],
+            "isStartState": true,
+            "isStateUpdatable": true,
+            "isTerminateState": false,
+            "applicationStatus": null,
+            "docUploadRequired": false
+          },
+          {
+            "sla": 172800000,
+            "state": "PENDING_FOR_VERIFICATION",
+            "actions": [
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "VERIFY_AND_FORWARD",
+                "nextState": "PENDING_FOR_PAYMENT"
+              },
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "SEND_BACK",
+                "nextState": "PENDING_FOR_CORRECTION"
+              }
+            ],
+            "isStartState": false,
+            "isStateUpdatable": true,
+            "isTerminateState": false,
+            "applicationStatus": "INWORKFLOW",
+            "docUploadRequired": false
+          },
+          {
+            "sla": 604800000,
+            "state": "PENDING_FOR_PAYMENT",
+            "actions": [
+              {
+                "roles": [
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "PAY",
+                "nextState": "PENDING_FOR_APPROVAL"
+              }
+            ],
+            "isStartState": false,
+            "isStateUpdatable": true,
+            "isTerminateState": false,
+            "applicationStatus": "INWORKFLOW",
+            "docUploadRequired": false
+          },
+          {
+            "sla": 86400000,
+            "state": "PENDING_FOR_APPROVAL",
+            "actions": [
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "APPROVE",
+                "nextState": "APPROVED"
+              },
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "SEND_BACK",
+                "nextState": "PENDING_FOR_VERIFICATION"
+              },
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "REJECT",
+                "nextState": "REJECTED"
+              },
+              {
+                "roles": [
+                  "CITIZEN",
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "SEND_BACK_TO_ORIGINATOR",
+                "nextState": "PENDING_FOR_CORRECTION"
+              }
+            ],
+            "isStartState": false,
+            "isStateUpdatable": true,
+            "isTerminateState": false,
+            "applicationStatus": "INWORKFLOW",
+            "docUploadRequired": false
+          },
+          {
+            "sla": 86400000,
+            "state": "PENDING_FOR_CORRECTION",
+            "actions": [
+              {
+                "roles": [
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "EDIT",
+                "nextState": "PENDING_FOR_VERIFICATION"
+              },
+              {
+                "roles": [
+                  "ARCHITECT",
+                  "STUDIO_ADMIN"
+                ],
+                "action": "REJECT",
+                "nextState": "REJECTED"
+              }
+            ],
+            "isStartState": true,
+            "isStateUpdatable": true,
+            "isTerminateState": false,
+            "applicationStatus": "INWORKFLOW",
+            "docUploadRequired": false
+          },
+          {
+            "sla": null,
+            "state": "APPROVED",
+            "actions": [],
+            "isStartState": false,
+            "isStateUpdatable": false,
+            "isTerminateState": true,
+            "applicationStatus": "ACTIVE",
+            "docUploadRequired": false
+          },
+          {
+            "sla": null,
+            "state": "REJECTED",
+            "actions": [],
+            "isStartState": false,
+            "isStateUpdatable": false,
+            "isTerminateState": true,
+            "applicationStatus": "INACTIVE",
+            "docUploadRequired": false
+          }
+        ],
+        "INACTIVE": [
+          "REJECTED",
+          "WITHDRAWN"
+        ],
+        "business": "public-services",
+        "businessService": "Tradelicense.NewTL",
+        "businessServiceSla": 5184000000
+      },
       "apiconfig": [
         {
-          "type": "register",
           "host": "https://staging.digit.org||http://tl-services.egov:8080",
-          "endpoint": "/tl-services/v1/create",
+          "type": "register",
           "method": "post",
-          "service": "tradelicence"
+          "service": "Tradelicense",
+          "endpoint": "/tl-services/v1/create"
         },
         {
-          "type": "register||calculate||validate||authenticate",
           "host": "https://staging.digit.org||http://tl-services.egov:8080",
-          "endpoint": "/tl-services/v1/search",
+          "type": "register||calculate||validate||authenticate",
           "method": "post",
-          "service": "tradelicence"
+          "service": "Tradelicense",
+          "endpoint": "/tl-services/v1/search"
+        }
+      ],
+      "applicant": {
+        "types": [
+          "individual",
+          "organisation"
+        ],
+        "maximum": 3,
+        "minimum": 1
+      },
+      "documents": [
+        {
+          "action": [
+            "apply"
+          ],
+          "active": true,
+          "category": "address-proof",
+          "isMandatory": false,
+          "maxSizeInMB": 5,
+          "templatePDFKey": null,
+          "templatedownloadURL": null,
+          "documentTypes": [
+            "aadhar",
+            "voter"
+          ],
+          "maxFilesAllowed": 1,
+          "allowedFileTypes": [
+            "pdf",
+            "doc",
+            "docx",
+            "xlsx",
+            "xls",
+            "jpeg",
+            "jpg",
+            "png"
+          ]
+        },
+        {
+          "action": [
+            "apply"
+          ],
+          "active": true,
+          "category": "identity-proof",
+          "isMandatory": true,
+          "maxSizeInMB": 5,
+          "documentTypes": [
+            "aadhar",
+            "voter"
+          ],
+          "maxFilesAllowed": 1,
+          "allowedFileTypes": [
+            "pdf",
+            "doc",
+            "docx",
+            "xlsx",
+            "xls",
+            "jpeg",
+            "jpg",
+            "png"
+          ]
+        },
+        {
+          "action": [
+            "apply"
+          ],
+          "active": true,
+          "templatePDFKey": "studio-blank-application",
+          "templatedownloadURL": null,
+          "category": "owner-photo",
+          "isMandatory": true,
+          "maxSizeInMB": 5,
+          "documentTypes": [
+            "photo"
+          ],
+          "maxFilesAllowed": 1,
+          "allowedFileTypes": [
+            "jpeg",
+            "jpg",
+            "png"
+          ]
         }
       ],
       "calculator": {
@@ -536,10 +574,115 @@
           }
         ]
       },
-      "enabled": [
-        "citizen",
-        "employee"
-      ]
+      "localization": {
+        "modules": [
+          "digit-tradelicence"
+        ]
+      },
+      "notification": {
+        "sms": [
+          {
+            "states": [
+              "applied"
+            ],
+            "code": "DIGIT_STUDIO_NEW_APPLICATION",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is received"
+          },
+          {
+            "states": [
+              "approved"
+            ],
+            "code": "DIGIT_STUDIO_APPLY_APPROVED",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is approved"
+          },
+          {
+            "states": [
+              "pending_payment"
+            ],
+            "code": "DIGIT_STUDIO_DEMAND_CREATED",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
+          }
+        ],
+        "email": [
+          {
+            "states": [
+              "applied"
+            ],
+            "code": "DIGIT_STUDIO_NEW_APPLICATION",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is received"
+          },
+          {
+            "states": [
+              "approved"
+            ],
+            "code": "DIGIT_STUDIO_APPLY_APPROVED",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is approved"
+          },
+          {
+            "states": [
+              "pending_payment"
+            ],
+            "code": "DIGIT_STUDIO_DEMAND_CREATED",
+            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
+          }
+        ]
+      },
+      "inbox": {
+        "module": "public-service",
+        "index": "public-service-index",
+        "allowedSearchCriteria": [
+          {
+            "name": "tenantId",
+            "path": "Data.tenantId.keyword",
+            "isMandatory": true,
+            "operator": "EQUAL"
+          },
+          {
+            "name": "status",
+            "path": "Data.workflowStatus",
+            "isMandatory": false
+          },
+          {
+            "name": "applicationNumber",
+            "path": "Data.applicationNumber.keyword",
+            "isMandatory": false
+          },
+          {
+            "name": "module",
+            "path": "Data.module.keyword",
+            "isMandatory": false
+          },
+          {
+            "name": "businessService",
+            "path": "Data.businessService.keyword",
+            "isMandatory": false
+          },
+          {
+            "name": "locality",
+            "path": "Data.address.locality.keyword",
+            "isMandatory": false
+          },
+          {
+            "name": "assignee",
+            "path": "Data.currentProcessInstance.assignes.uuid.keyword",
+            "isMandatory": false
+          }
+        ],
+        "sortBy": {
+          "path": "Data.auditDetails.createdTime",
+          "defaultOrder": "DESC"
+        },
+        "sourceFilterPathList": [
+          "Data.businessService",
+          "Data.applicationNumber",
+          "Data.currentProcessInstance",
+          "Data.auditDetails",
+          "Data.additionalDetails",
+          "Data.module",
+          "Data.locality",
+          "Data.status"
+        ]
+      }
     },
     {
       "module": "Tradelicence",

@@ -397,6 +397,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Reference'
+        documents:
+          type: array
+          description: Any attachments of the contract. 
+          items:
+            $ref: 'https://raw.githubusercontent.com/egovernments/DIGIT-OSS/master/core-services/docs/common-contract_v1-1.yml#/components/schemas/Document'
 
         workflowStatus:
           type: string

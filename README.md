@@ -214,18 +214,23 @@ Current Version Features:
 | ------------------------------------- | --------------------------------------------------------- | ----------- |
 | **Apply**                             | 🟡 *In Progress – Positive flow implemented and deployed* |    v1       |
 | **View & Workflow Transition**        | 🟡 *In Progress – Positive flow implemented and deployed* |    v1       |
-| **Inbox**                             | 🔄 *In Progress – Pending deployment*                     |    v1       |
-| **Search**                            | 🔄 *In Progress – Pending deployment*                     |    v1       |
+| **Inbox**                             | 🔄 *In Progress – Positive flow implemented and deployed* |    v1       |
+| **Search**                            | 🔄 *In Progress – Positive flow implemented and deployed* |    v1       |
 | **Other Misc. (e.g., Tenant Config)** | 🔄 *In Progress – Pending deployment*                     |    v1       |
-| **Applicant – Individual Support**    | 🚫 *Not started*                                          |    v1       |
-| **Applicant – Organization Support**  | 🚫 *Not started*                                          |    v2       |
-| **Bill & Payment**                    | 🚫 *Not started*                                          |    v1       |
-| **PDF Generation & Integration**      | 🚫 *Not started*                                          |    v1       |
+| **Applicant – Individual Support**    | 🚫 *In Progress – Positive flow implemented and deployed* |    v1       |
+| **Bill & Payment**                    | 🚫 *In Progress – Positive flow implemented and deployed* |    v1       |
+| **PDF Generation & Integration**      | 🚫 *In Progress – Positive flow implemented and deployed* |    v1       |
 | **SMS Integration**                   | 🚫 *Not started*                                          |    v1       |
-| **Checklist Integration**             | 🚫 *Not started*                                          |    v1       |
+| **Checklist Integration**             | 🚫 *In Progress – Positive flow implemented and deployed* |    v1       |
+| **Applicant – Organization Support**  | 🚫 *Not started*                                          |    v2       |
 | **Edit & Resubmit Application**       | 🚫 *Not started*                                          |    v2       |
 | **User Type Enablement**              | 🚫 *Not started*                                          |    v2       |
 | **Service Initialization**            | 🚫 *Not started*                                          |    v2       |
+| **Dependent Fields**                  | 🚫 *Not started*                                          |    v2       |
+| **UI Schema**                         | 🚫 *Not started*                                          |    v2       |
+| **External Registry Integration**     | 🚫 *Not started*                                          |    v2       |
+| **Data Transformer**                  | 🚫 *Not started*                                          |    v2       |
+| **Import/Export Configs**             | 🚫 *Not started*                                          |    v2       |
 | **Console**                           | 🚫 *Not started*                                          |    v3       |
 
 

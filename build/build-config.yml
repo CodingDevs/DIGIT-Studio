@@ -31,3 +31,9 @@ config:
       - work-dir: "frontend/"
         dockerfile: "frontend/web/docker/Dockerfile"
         image-name: "digit-studio"
+
+# utilities
+  - name: "builds/DIGIT-Studio/utilities/studio-pdf"
+    build:
+      - work-dir: "utilities/studio-pdf"
+        image-name: "studio-pdf"
