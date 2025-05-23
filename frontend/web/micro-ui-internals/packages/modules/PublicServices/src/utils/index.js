@@ -1,6 +1,8 @@
 import _ from "lodash";
 import { UICustomizations } from "../configs/UICustomizations";
 import { useQuery, useQueryClient } from "react-query";
+import cloneDeep from "lodash/cloneDeep";
+
 
   /* To Overide any existing libraries  we need to use similar method */
   const setupLibraries = (Library, service, method) => {
@@ -92,7 +94,7 @@ import { useQuery, useQueryClient } from "react-query";
     return documents;
   };  
 
-  export const transformToApplicationPayload = (formData, configMap, service, tenantId) => {
+  export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails) => {
     const currentConfig = configMap?.ServiceConfiguration?.find(ob => ob?.service === service);
   
     const serviceDetails = getServiceDetails(formData);
@@ -140,9 +142,10 @@ import { useQuery, useQueryClient } from "react-query";
           ref1: "val1" 
         },
         Workflow: {
-          action: "CREATE",
+          action: workflowDetails?.BusinessServices?.[0]?.states.filter((ob) => ob?.state === null)?.[0]?.actions?.[0]?.action,
           comment: "",
-          assignees: []
+          assignees: [],
+          businessService: config?.data?.workflow?.businessService
         }
       }
     };
@@ -152,7 +155,7 @@ import { useQuery, useQueryClient } from "react-query";
 
 
 
-  export const generateViewConfigFromResponse = (application, t) => {
+  export const generateViewConfigFromResponse = (application, t, currentBusinessService, serviceConfig) => {
   
     const extractSectionValues = (data, prefix) => {
       const shouldTranslate = (value) => {
@@ -317,7 +320,7 @@ import { useQuery, useQueryClient } from "react-query";
       sections: [
         {
           type: "WFHISTORY",
-          businessService: application.businessService,
+          businessService: currentBusinessService || serviceConfig?.data?.workflow?.businessService,
           applicationNo: application.applicationNumber,
           tenantId: application.tenantId,
           timelineStatusPrefix: `WF_${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}`,
@@ -405,7 +408,7 @@ import { useQuery, useQueryClient } from "react-query";
   
     const { isLoading, error, isError, data } = useQuery(
         ["workFlowDetailsWorks", tenantId, id, moduleCode, role, config],
-        () => Digit.WorkflowService.getDetailsByIdWorks({ tenantId, id, moduleCode, role, getTripData }),
+        () => getDetailsByIdWorks({ tenantId, id, moduleCode, role, getTripData }),
         getStaleData ? { ...staleDataConfig, ...config } : config
     );
   
@@ -413,6 +416,195 @@ import { useQuery, useQueryClient } from "react-query";
   
     return { isLoading, error, isError, data, revalidate: () => queryClient.invalidateQueries(["workFlowDetailsWorks", tenantId, id, moduleCode, role]) };
   };
+
+  export const  getDetailsByIdWorks = async ({ tenantId, id, moduleCode }) => {
+    
+    //process instance search
+    const workflow = await Digit.WorkflowService.getByBusinessId(tenantId, id , { businessService : moduleCode });
+    const applicationProcessInstance = cloneDeep(workflow?.ProcessInstances);
+    //business service search
+    const businessServiceResponse = (await Digit.WorkflowService.init(tenantId, moduleCode))?.BusinessServices[0]?.states;
+
+    if (workflow && workflow.ProcessInstances) {
+      const processInstances = workflow.ProcessInstances;
+      const nextStates = processInstances[0]?.nextActions.map((action) => ({ action: action?.action, nextState: processInstances[0]?.state.uuid }));
+      const nextActions = nextStates.map((id) => ({
+        action: id.action,
+        state: businessServiceResponse?.find((state) => state.uuid === id.nextState),
+      }));
+
+      /* To check state is updatable and provide edit option*/
+      const currentState = businessServiceResponse?.find((state) => state.uuid === processInstances[0]?.state.uuid);
+      
+      // if current state is editable then we manually append an edit action
+      //(doing only for muster)
+      //beacuse in other module edit action is defined in workflow
+      
+      // if (currentState && currentState?.isStateUpdatable && moduleCode==="muster-roll-approval" ) {
+      //   nextActions.push({ action: "EDIT", state: currentState });
+      //  }
+      // Check when to add Edit action(In Estimate only when send back to originator action is taken)
+
+      const getStateForUUID = (uuid) => businessServiceResponse?.find((state) => state.uuid === uuid);
+
+      //this actionState is used in WorkflowActions component
+      const actionState = businessServiceResponse
+        ?.filter((state) => state.uuid === processInstances[0]?.state.uuid)
+        .map((state) => {
+          let _nextActions = state.actions?.map?.((ac) => {
+            let actionResultantState = getStateForUUID(ac.nextState);
+            let assignees = actionResultantState?.actions?.reduce?.((acc, act) => {
+              return [...acc, ...act.roles];
+            }, []);
+            return { ...actionResultantState, assigneeRoles: assignees, action: ac.action, roles: ac.roles };
+          });
+          // if (state?.isStateUpdatable && moduleCode==="MR") {
+          //   _nextActions.push({ action: "RE-SUBMIT", ...state, roles: state?.actions?.[0]?.roles })
+          // }
+          //CHECK WHEN EDIT ACTION TO BE SHOWN
+          return { ...state, nextActions: _nextActions, roles: state?.action, roles: state?.actions?.reduce((acc, el) => [...acc, ...el.roles], []) };
+        })?.[0];
+
+
+        //mapping nextActions with suitable roles
+      const actionRolePair = nextActions?.map((action) => ({
+        action: action?.action,
+        roles: action.state?.actions?.map((action) => action.roles).join(","),
+      }));
+
+
+      if (processInstances.length > 0) {
+        // const EnrichedWfData = await makeCommentsSubsidariesOfPreviousActions(processInstances)
+        //if any documents are there this fn will add thumbnails to show
+        
+        await makeCommentsSubsidariesOfPreviousActionsWorks(processInstances)
+
+        let timeline = processInstances.map((instance, ind) => {
+          let checkPoint = {
+            performedAction: instance.action,
+            status: instance.state.applicationStatus,
+            state: instance.state.state,
+            assigner: instance?.assigner,
+            rating: instance?.rating,
+            // wfComment: instance?.wfComments?.map(e => e?.comment),
+            comment:instance?.comment,
+            wfDocuments: instance?.documents,
+            thumbnailsToShow: { thumbs: instance?.thumbnailsToShow?.thumbs, fullImage: instance?.thumbnailsToShow?.images },
+            assignes: instance.assignes,
+            caption: instance.assignes ? instance.assignes?.map((assignee) => ({ name: assignee.name, mobileNumber: assignee.mobileNumber })) : null,
+            auditDetails: {
+              created: Digit.DateUtils.ConvertEpochToDate(instance.auditDetails.createdTime),
+              lastModified: Digit.DateUtils.ConvertEpochToDate(instance.auditDetails.lastModifiedTime),
+              lastModifiedEpoch: instance.auditDetails.lastModifiedTime,
+            },
+            isTerminateState : instance?.state?.isTerminateState
+          };
+          return checkPoint;
+        });
+
+        const details = {
+          timeline,
+          nextActions:actionRolePair,
+          actionState,
+          applicationBusinessService: workflow?.ProcessInstances?.[0]?.businessService,
+          processInstances: applicationProcessInstance,
+          triggerParallelWorkflow: businessServiceResponse?.filter((state) => state.uuid === workflow?.ProcessInstances?.[0]?.state.uuid)?.[0]?.triggerParallelWorkflows || ["FIRE","HEALTH","BUILDING"],
+        };
+        
+
+        return details;
+      }
+    } else {
+      throw new Error("error fetching workflow services");
+    }
+    return {};
+  }
+
+  export const getAllDetails = async (tenantId, id, moduleCodes) => {
+    try {
+      const results = await Promise.all(
+        moduleCodes.map((code) =>
+          getDetailsByIdWorks({ tenantId, id, moduleCode: code }).catch((err) => {
+            console.error(`Error fetching for ${code}:`, err);
+            return null; // or return an error object
+          })
+        )
+      );
+  
+      // Filter out failed or null results if needed
+      const validResults = results.filter((res) => res !== null);
+  
+      return validResults;
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      return [];
+    }
+  };
+
+  export const processBusinessServices = async(serviceConfig,tenantId,applicationNumber,workflowDetails,userRoles,t) => {
+    let matchedBusinessServices = [{
+      code: serviceConfig?.data?.workflow?.businessService,
+      displayname: t(`SERVICE_${serviceConfig?.data?.workflow?.businessService}`) || serviceConfig?.data?.workflow?.businessService
+    }];
+  
+    const allDetails = await getAllDetails(
+      tenantId,
+      applicationNumber,
+      workflowDetails?.triggerParallelWorkflow
+    );
+  
+    const filtered = allDetails.reduce((acc, detail) => {
+      if (!detail?.nextActions || !detail?.applicationBusinessService) return acc;
+  
+      const hasMatchingRole = detail.nextActions.some((action) => {
+        const roles = action.roles?.split(",") || [];
+        return roles.some((role) => userRoles.includes(role));
+      });
+  
+      if (hasMatchingRole) {
+        acc.push({
+          code: detail.applicationBusinessService,
+          displayname: t(`SERVICE_${detail.applicationBusinessService}`) || detail.applicationBusinessService
+        });
+      }
+  
+      return acc;
+    }, []);
+
+  matchedBusinessServices = [...matchedBusinessServices, ...filtered];
+
+  return matchedBusinessServices;
+}
+
+  const getThumbnailsWorks = async (ids, tenantId, documents = []) => {
+
+    const res = await Digit.UploadServices.Filefetch(ids, tenantId);
+    if (res.data.fileStoreIds && res.data.fileStoreIds.length !== 0) {
+      return {
+        thumbs: res.data.fileStoreIds.map((o) => o.url.split(",")[3] || o.url.split(",")[0]),
+        images: res.data.fileStoreIds.map((o) => Digit.Utils.getFileUrl(o.url))
+      };
+    } else {
+      return null;
+    }
+  };
+  
+  const makeCommentsSubsidariesOfPreviousActionsWorks = async (wf) => {
+    const TimelineMap = new Map();
+    // const tenantId = window.location.href.includes("/obps/") ? Digit.ULBService.getStateId() : wf?.[0]?.tenantId;
+   
+    
+    for (const eventHappened of wf) {
+      
+      //currenlty in workflow documentUid is getting populated so while update we are sending fileStoreId in documentUid field
+      if (eventHappened?.documents) {
+        eventHappened.thumbnailsToShow = await getThumbnailsWorks(eventHappened?.documents?.map(e => e?.documentUid || e?.fileStoreId), eventHappened?.tenantId, eventHappened?.documents)
+      }
+  
+        
+    }
+   
+  }
   
   
   
