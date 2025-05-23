@@ -42,8 +42,9 @@ const CheckListCard = (props) => {
             {
                 onSuccess: (res) => {
                     let field = res.Services.filter(items => items.serviceDefId == id);
+                    const allValid = field[0].attributes.every(attr => attr.value !== "NOT_SELECTED");
                     if (field && field.length > 0) {
-                        setFilled(true);
+                        setFilled(allValid);
                     }
                     setLoading(true);
                 },
