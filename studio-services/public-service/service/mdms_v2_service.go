@@ -3,12 +3,14 @@ package service
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"public-service/model"
 	"public-service/repository"
 	"strconv"
-	"fmt"
+	"strings"
+	"time"
 )
 
 const (
@@ -76,6 +78,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	}
 
 	log.Printf("Calling MDMS Create RoleActionMapping\nURL: %s\nPayload: %+v\n", url, payload)
+	b, _ := json.MarshalIndent(payload, "", "  ")
+	fmt.Println("Final Payload:\n", string(b))
 
 	var resp map[string]interface{}
 	err := s.restCallRepo.Post(url, payload, &resp)
@@ -134,7 +138,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	log.Printf("Calling MDMS Create ActionTest\nURL: %s\nPayload: %+v\n", url, payload)
 
 	b, _ := json.MarshalIndent(payload, "", "  ")
-    fmt.Println("Final Payload:\n", string(b))
+	fmt.Println("Final Payload:\n", string(b))
 
 	var resp map[string]interface{}
 	err = s.restCallRepo.Post(url, payload, &resp)
@@ -145,10 +149,25 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 
 	respJSON, _ := json.MarshalIndent(resp, "", "  ")
 	log.Println("MDMS Create ActionTest Response:\n", string(respJSON))
-	_, err = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), requestInfo)
-	if err != nil {
-		log.Printf("Error creating RoleActionMapping: %v", err)
-		return resp, err
+	var roleMappingErr error
+	const attempts = 10    //we are doing this aspersister was taking sometimetopersist the above action-test data hence was getting reference doesn't exist error 
+	for i := 0; i < attempts; i++ {
+		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), requestInfo)
+		if roleMappingErr == nil {
+			break
+		}
+		if strings.Contains(roleMappingErr.Error(), "REFERENCE_VALIDATION_ERR") && i < attempts-1 {
+			log.Println("Retrying RoleActionMapping due to REFERENCE_VALIDATION_ERR...")
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
 	}
+
+	if roleMappingErr != nil {
+		log.Printf("Error creating RoleActionMapping: %v", roleMappingErr)
+		return resp, roleMappingErr
+	}
+
 	return resp, nil
 }
