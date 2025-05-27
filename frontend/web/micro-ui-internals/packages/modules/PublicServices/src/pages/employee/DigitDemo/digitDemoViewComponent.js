@@ -1,22 +1,23 @@
-import { Header, ActionBar, SubmitBar, Menu, Card, Loader, ViewComposer, MultiLink } from "@egovernments/digit-ui-react-components";
+import { Header, SubmitBar, Menu, Card, Loader, ViewComposer, MultiLink } from "@egovernments/digit-ui-react-components";
+import { Button } from "@egovernments/digit-ui-components";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import { generateViewConfigFromResponse } from "../../../utils";
 import WorkflowActions from "../../../components/WorkflowActions";
 import ViewCheckListCards from "../CheckList/viewCheckListCards";
-import { useWorkflowDetailsWorks } from "../../../utils";
-
+import { useWorkflowDetailsWorks, processBusinessServices } from "../../../utils";
 const DigitDemoViewComponent = () => {
   const { t } = useTranslation();
   const history = useHistory();
   const tenantId = Digit.ULBService.getCurrentTenantId();
-
+  const [selectedBusinessService, setSelectedBusinessService] = useState(null);
   const userInfo = Digit.UserService.getUser();
+  const { module, service } = useParams();
   const userRoles = userInfo?.info?.roles?.map((roleData) => roleData?.code);
   const [current, setCurrent] = useState(Date.now());
+  const [matchedBusinessServices, setMatchedBusinessServices] = useState([]);
   const queryStrings = Digit.Hooks.useQueryParams();
-
   const request = {
     url : `/public-service/v1/application/${queryStrings?.serviceCode|| "SVC-DEV-TRADELICENSE-NEWTL-04"}`,
     headers: {
@@ -30,23 +31,64 @@ const DigitDemoViewComponent = () => {
     }
   }
   const {isLoading, data} = Digit.Hooks.useCustomAPIHook(request);
-
   let response =  data ? data?.Application?.[0] : {};
-  let config = generateViewConfigFromResponse(response,t);
+
+  const requestCriteria = {
+    url: "/egov-mdms-service/v2/_search",
+    body: {
+      MdmsCriteria: {
+        tenantId: tenantId,
+        schemaCode: "Studio.ServiceConfiguration",
+      },
+    },
+  };
+
+  const { isLoading: ServiceConfigLoading, data: serviceConfigData } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+
+  const serviceConfig = serviceConfigData?.mdms?.find((item) =>
+    item?.uniqueIdentifier.toLowerCase() === `${module}.${service}`.toLowerCase()
+  );
 
   let {data :workflowDetails, isLoading: workflowLoading} = useWorkflowDetailsWorks(
     {
       tenantId: tenantId,
       id: queryStrings?.applicationNumber,
-      moduleCode: response?.businessService,
+      moduleCode: queryStrings?.businessService || serviceConfig?.data?.workflow?.businessService,
+      //moduleCode: "NewTL",
       config: {
-        enabled: response ? true : false,
+        enabled: response && serviceConfig ? true : false,
         cacheTime: 0
       }
     }
   );
+
+  let config = generateViewConfigFromResponse(response,t, queryStrings?.businessService, serviceConfig);
+
+useEffect(() => {
+  // Guard clause to avoid calling with missing inputs
+  if (!serviceConfig || !tenantId || !queryStrings?.applicationNumber || !workflowDetails) return;
+
+  processBusinessServices(
+    serviceConfig,
+    tenantId,
+    queryStrings?.applicationNumber,
+    workflowDetails,
+    userRoles,
+    t
+  ).then((matched) => {
+    setMatchedBusinessServices(matched);
+  });
+}, [
+  workflowDetails,
+]);
+
+useEffect(() => {
+  if (matchedBusinessServices.length === 1 && !selectedBusinessService) {
+    setSelectedBusinessService(matchedBusinessServices[0]);
+  }
+}, [matchedBusinessServices, selectedBusinessService]);
   let checkListCodes = workflowDetails ? [`${response?.businessService}.${workflowDetails?.processInstances[0].state?.state}`] : [];
-  if (isLoading || workflowLoading) {
+  if (isLoading || workflowLoading || ServiceConfigLoading) {
     return <Loader />;
   }
 
@@ -63,52 +105,32 @@ const DigitDemoViewComponent = () => {
       }
       <ViewComposer data={config} isLoading={false} />
       <ViewCheckListCards applicationId={data?.Application?.[0]?.id} checkListCodes={checkListCodes} />
-      <WorkflowActions
+        { <WorkflowActions
           forcedActionPrefix={`WF_${response?.businessService}_ACTION`}
-          businessService={response?.businessService}
+          businessService={selectedBusinessService?.code || matchedBusinessServices[0]?.code}
           applicationNo={response?.applicationNumber}
           tenantId={tenantId}
           applicationDetails={response}
-          url={`/public-service/v1/application/SVC-DEV-TRADELICENSE-NEWTL-04/${response?.id}`}
+          serviceConfig={serviceConfig}
+          url={`/public-service/v1/application/SVC-DEV-TRADELICENSE-NEWTL-04`}
           //setStateChanged={setStateChanged}
+          isDisabled={!selectedBusinessService}
           moduleCode={response?.module}
-          //editApplicationNumber={""}
-          // WorflowValidation={(setShowModal) => {
-          //   try {
-          //     let validationFlag = false;
-          //     for (const validation of mbValidationMr?.musterRollValidation) {
-          //       if (validation?.type === "error") {
-          //         validationFlag = true;
-          //         setShowToast({ type: "error", label: t(validation?.message) });
-          //         break;
-          //       } else if (validation?.type === "warn") {
-          //         validationFlag = true;
-          //         setShowPopUp({ setShowWfModal: setShowModal, label: t(validation?.message) });
-          //         break;
-          //       }
-          //     }
-          //     if (!validationFlag) setShowModal(true);
-          //   } catch (error) {
-          //     showToast(error.message);
-          //   }
-          // }}
-          // editCallback={() => {
-          //   setModify(true);
-          //   setshowEditTitle(true);
-          //   setSaveAttendanceState((prevState) => {
-          //     return {
-          //       ...prevState,
-          //       displaySave: true,
-          //       updatePayload: data?.applicationData?.individualEntries?.map((row) => {
-          //         return {
-          //           totalAttendance: row?.modifiedTotalAttendance || row?.actualTotalAttendance,
-          //           id: row?.id,
-          //         };
-          //       }),
-          //     };
-          //   });
-          // }}
-        />
+          {...(matchedBusinessServices.length > 1 && {
+            actionFields: [
+              <Button
+                t={t}
+                type={"actionButton"}
+                options={matchedBusinessServices}
+                label={"Business Service"}
+                variation={"primary"}
+                optionsKey={"displayname"}
+                isSearchable={false}
+                onOptionSelect={(value) => setSelectedBusinessService(value)}
+              />,
+            ],
+          })}
+        />}
       {/* <ActionBar>
         {displayMenu ? <Menu localeKeyPrefix={"WORKS"} options={actionULB} optionKey={"name"} t={t} onSelect={onActionSelect} /> : null}
         <SubmitBar label={t("ACTIONS")} onSubmit={() => setDisplayMenu(!displayMenu)} />
@@ -116,5 +138,4 @@ const DigitDemoViewComponent = () => {
     </React.Fragment>
   );
 };
-
 export default DigitDemoViewComponent;

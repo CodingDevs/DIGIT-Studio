@@ -198,7 +198,7 @@ const transformViewCheckList = (code) => {
     return requestBody;
 }
 
-export const transformCreateCheckList = (id, accid, data) => {
+export const transformCreateCheckList = (id, accid, data, action = "SUBMIT") => {
     const tenantId = Digit.ULBService.getCurrentTenantId();
     const buildAttributes = () => {
         const att = [];
@@ -259,7 +259,8 @@ export const transformCreateCheckList = (id, accid, data) => {
             "serviceDefId": id,
             "accountId": accid,
             "tenantId": tenantId,
-            "attributes": buildAttributes()
+            "attributes": buildAttributes(),
+            "additionalFields": [{"action":  action}]
         },
         "apiOperation": "CREATE"
     }

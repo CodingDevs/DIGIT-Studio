@@ -7,6 +7,7 @@ import { updateCheckListConfig } from "../../../configs/createCheckListConfig.js
 import { useParams } from "react-router-dom";
 import transformViewCheckList from "../../../utils/createUtils.js";
 import { transformCreateCheckList } from "../../../utils/createUtils.js";
+import { transformViewApplication } from "../../../utils/createUtils.js";
 
 const CreateCheckList = () => {
   const { accid, id, code } = useParams();
@@ -16,6 +17,7 @@ const CreateCheckList = () => {
   const [defValues,setDefValues]=useState({});
   const [update,setUpdate]=useState(false);
   const [ loading, setLoading]=useState(false);
+  const [showToast, setShowToast] = useState(null);
 
   const [config, setConfig] = useState(null);
 
@@ -149,14 +151,14 @@ const CreateCheckList = () => {
     }
   }, [cardItems]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data,action) => {
     console.log(data, "data");
     const fetchdata = async (data) => {
       await cmutation.mutate(
         {
           url: "/health-service-request/service/v1/_create",
           method: "POST",
-          body: transformCreateCheckList(id, accid, data),
+          body: transformCreateCheckList(id, accid, data, action),
           config: {
             enable: false,
           },
@@ -188,12 +190,13 @@ const CreateCheckList = () => {
   };
 
   const onSaveAsDraft = async (data)  =>{
+    let action = "SAVE_AS_DRAFT";
     const updatefetchdata = async (data) => {
       await umutation.mutate(
         {
           url: "/health-service-request/service/v1/_update",
           method: "POST",
-          body: transformCreateCheckList(id, accid, data),
+          body: transformCreateCheckList(id, accid, data, action),
           config: {
             enable: false,
           },
@@ -212,7 +215,7 @@ const CreateCheckList = () => {
     updatefetchdata(data);
     }
     else{
-      onSubmit(data);
+      onSubmit(data,action);
     }
   }
 
@@ -226,7 +229,7 @@ const CreateCheckList = () => {
           onFormValueChange={(setValue, formData) => { handleFormValueChange(formData) }}
           onSubmit={onSaveAsDraft}
           fieldStyle={{ marginRight: 2 }}
-          secondaryActionLabel={t("Save as Draft")}
+          draftLabel={t("Save as Draft")}
           onSecondayActionClick={onSaveAsDraft}
         />
       ) : (

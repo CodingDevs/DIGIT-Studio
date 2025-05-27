@@ -19,7 +19,7 @@ const DigitDemoComponent = () => {
 
   // Load from localStorage
   const savedStep = parseInt(localStorage.getItem("currentStep"), 10) || 1;
-  const savedFormData = JSON.parse(localStorage.getItem("formData") || "{}");
+   let savedFormData = JSON.parse(localStorage.getItem("formData") || "{}");
 
   const [currentStep, setCurrentStep] = useState(savedStep);
   const [formData, setFormData] = useState(savedFormData);
@@ -40,6 +40,18 @@ const DigitDemoComponent = () => {
   const config = data?.mdms?.find((item) =>
     item?.uniqueIdentifier.toLowerCase() === `${module}.${service}`.toLowerCase()
   );
+  const workflowrequestCriteria = {
+    url: "/egov-workflow-v2/egov-wf/businessservice/_search",
+    params: {
+      tenantId: tenantId,
+      businessServices : config?.data?.workflow?.businessService,
+    },
+    config:{
+      enabled : config?.data?.workflow?.businessService ? true : false
+    }
+  };
+
+  const { isLoading: workflowDetailsLoading, data : workflowDetails } = Digit.Hooks.useCustomAPIHook(workflowrequestCriteria);
 
   const Updatedconfig = {
     ServiceConfiguration: [config?.data],
@@ -102,7 +114,7 @@ const DigitDemoComponent = () => {
           params: {},
           headers: { "x-tenant-id": tenantId },
           method: "POST",
-          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId),
+          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails),
           config: {
             enable: true,
           },
@@ -167,7 +179,7 @@ const DigitDemoComponent = () => {
     setShowToast(false);
   };
 
-  if (moduleListLoading) {
+  if (moduleListLoading || workflowDetailsLoading) {
     return <Loader />;
   }
 
@@ -180,6 +192,7 @@ const DigitDemoComponent = () => {
         activeSteps={currentStep}
       />
       <FormComposerV2
+        key={currentFormConfig?.name}
         heading={t(`${serviceCode}_HEADING`)}
         label={currentStep === steps.length ? t(`${serviceCode}_SUBMIT`) : t(`${serviceCode}_NEXT`)}
         config={[

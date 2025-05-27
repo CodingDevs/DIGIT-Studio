@@ -43,7 +43,7 @@ const useUpdateCustom = ( url,headers ) => {
   return useMutation((applicationData) => ApplicationUpdateActionsCustom({url,body:applicationData,headers}));
 };
 
-const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActionPrefix, ActionBarStyle = {}, MenuStyle = {}, applicationDetails, url, setStateChanged, moduleCode,editApplicationNumber,editCallback ,callback, WorflowValidation, fullData}) => {
+const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActionPrefix, ActionBarStyle = {}, MenuStyle = {}, applicationDetails, url, setStateChanged, moduleCode,editApplicationNumber,editCallback ,callback, WorflowValidation, fullData, isDisabled, ...props}) => {
   
   const history = useHistory()
   const { estimateNumber, mbNumber, workOrderNumber } = Digit.Hooks.useQueryParams();
@@ -134,7 +134,7 @@ const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActio
     setSelectedAction(action);
     if(action.action === "PAY")
     {
-      history.push(`/${window.contextPath}/employee/openpayment/open-view?consumerCode=${applicationNo}&tenantId=${tenantId}&businessService=${businessService}`, {
+      history.push(`/${window.contextPath}/employee/openpayment/open-view?consumerCode=${applicationNo}&tenantId=${tenantId}&businessService=${props?.serviceConfig?.data?.bill?.BusinessService?.code}`, {
         redirectionUrl :  `/${window.contextPath}/employee/publicservices/${module}/${service}/ViewScreen?applicationNumber=${applicationNo}&serviceCode=${queryStrings?.serviceCode}`,
 
       });
@@ -220,14 +220,15 @@ const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActio
   }
 
   actions?.forEach(action => {
-    action.displayname = `WF_${module.toUpperCase()}_${businessService.toUpperCase()?.replaceAll(/[./-]/g,"_")}_ACTION_${action?.action?.replaceAll(/[./-]/g, "_")}`;
+    action.displayname = `WF_${module.toUpperCase()}_${businessService?.toUpperCase()?.replaceAll(/[./-]/g,"_")}_ACTION_${action?.action?.replaceAll(/[./-]/g, "_")}`;
   });
   return (
     <React.Fragment>
       {!workflowDetails?.isLoading && isMenuBotton && !isSingleButton && (
         <ActionBar
           style={{ ...ActionBarStyle }}
-          actionFields={[
+          actionFields={props?.actionFields?.length > 0 ? [
+            ...props?.actionFields,
             <Button
               t={t}
               type={workflowDetails?.data?.actionState?.nextActions || workflowDetails?.data?.nextActions ? "actionButton" : "submit"}
@@ -236,6 +237,22 @@ const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActio
               variation={"primary"}
               optionsKey={"displayname"}
               isSearchable={false}
+              isDisabled={isDisabled}
+              onOptionSelect={(option) => {
+                onActionSelect(option);
+              }}
+              menuStyles={MenuStyle}
+            ></Button>,
+          ] : [
+            <Button
+              t={t}
+              type={workflowDetails?.data?.actionState?.nextActions || workflowDetails?.data?.nextActions ? "actionButton" : "submit"}
+              options={actions}
+              label={t(`${module.toUpperCase()}_${service.toUpperCase()}_ACTIONS`)}
+              variation={"primary"}
+              optionsKey={"displayname"}
+              isSearchable={false}
+              isDisabled={isDisabled}
               onOptionSelect={(option) => {
                 onActionSelect(option);
               }}
@@ -250,13 +267,15 @@ const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActio
         <ActionBar
           style={{ ...ActionBarStyle }}
           actionFields={[
+            ...actionFields,
             <Button
               type={"submit"}
               value={actions?.[0]?.action}
               name={actions?.[0]?.action}
+              isDisabled={isDisabled}
               label={t(
                 Digit.Utils.locale.getTransformedLocale(
-                  `${forcedActionPrefix || `WF_${module.toUpperCase()}_${businessService?.toUpperCase()}_ACTION`}_${actions?.[0]?.action}`
+                  `${forcedActionPrefix || `WF_${module?.toUpperCase()}_${businessService?.toUpperCase()}_ACTION`}_${actions?.[0]?.action}`
                 )
               )}
               variation={"primary"}
