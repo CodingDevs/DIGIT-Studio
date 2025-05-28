@@ -37,6 +37,9 @@ func (s *ApplicationService) SearchApplication(ctx context.Context, criteria mod
 	// Prepare RequestInfo with authToken
 	requestInfo := model.RequestInfo{
 		AuthToken: authToken,
+		UserInfo: &model.User{
+			
+		},
 	}
 
 	// Iterate through applications and enrich with workflow data
