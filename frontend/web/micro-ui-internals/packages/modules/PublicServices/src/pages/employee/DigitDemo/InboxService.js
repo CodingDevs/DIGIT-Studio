@@ -49,7 +49,7 @@ const InboxService = () => {
         updateDependent: [
           {
             key: "businessService",
-            value: servicesData.map((ob) => ({
+            value: servicesData.filter((ob) => ob?.module?.toLowerCase() === module?.toLowerCase()).map((ob) => ({
               code: ob?.businessService,
               name: ob?.businessService,
             })),

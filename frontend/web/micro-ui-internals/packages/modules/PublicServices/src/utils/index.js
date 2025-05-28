@@ -605,6 +605,41 @@ import cloneDeep from "lodash/cloneDeep";
     }
    
   }
+
+  export const downloadStudioPDF = async (
+    pdfRoute,
+    queryParams={},
+    fileName="application.pdf"
+  ) => {
+    const response =await Digit.CustomService.getResponse({ url:`/studio-pdf/download/${pdfRoute}`, params:queryParams, useCache:false,setTimeParam:false ,userDownload:true})
+    const responseStatus = parseInt(response.status, 10);
+    if (responseStatus === 201 || responseStatus === 200) {
+      downloadPdf(new Blob([response.data], { type: "application/pdf" }), fileName);
+    }
+  };
+
+  export const  downloadPdf = (blob, fileName) => {
+    if (window.mSewaApp && window.mSewaApp.isMsewaApp() && window.mSewaApp.downloadBase64File) {
+      var reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = function () {
+        var base64data = reader.result;
+        window.mSewaApp.downloadBase64File(base64data, fileName);
+      };
+    } else {
+      const link = document.createElement("a");
+      // create a blobURI pointing to our Blob
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      // some browser needs the anchor to be in the doc
+      document.body.append(link);
+      link.click();
+      link.remove();
+      // in case the Blob uses a lot of memory
+      setTimeout(() => URL.revokeObjectURL(link.href), 7000);
+    }
+  };
+
   
   
   

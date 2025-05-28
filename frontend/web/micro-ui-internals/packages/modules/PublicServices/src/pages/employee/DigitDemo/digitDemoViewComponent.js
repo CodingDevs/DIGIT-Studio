@@ -3,7 +3,7 @@ import { Button } from "@egovernments/digit-ui-components";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory, useParams } from "react-router-dom";
-import { generateViewConfigFromResponse } from "../../../utils";
+import { downloadStudioPDF, generateViewConfigFromResponse } from "../../../utils";
 import WorkflowActions from "../../../components/WorkflowActions";
 import ViewCheckListCards from "../CheckList/viewCheckListCards";
 import { useWorkflowDetailsWorks, processBusinessServices } from "../../../utils";
@@ -18,8 +18,9 @@ const DigitDemoViewComponent = () => {
   const [current, setCurrent] = useState(Date.now());
   const [matchedBusinessServices, setMatchedBusinessServices] = useState([]);
   const queryStrings = Digit.Hooks.useQueryParams();
+  const [showOptions, setShowOptions] = useState(false);
   const request = {
-    url : `/public-service/v1/application/${queryStrings?.serviceCode|| "SVC-DEV-TRADELICENSE-NEWTL-04"}`,
+    url : `/public-service/v1/application/${queryStrings?.serviceCode}`,
     headers: {
       "X-Tenant-Id" : tenantId,
       "auth-token" : window?.localStorage?.getItem("Employee.token"),
@@ -91,16 +92,39 @@ useEffect(() => {
   if (isLoading || workflowLoading || ServiceConfigLoading) {
     return <Loader />;
   }
+  const generateDownloadOptions = () => {
+    return serviceConfig?.data?.pdf
+      .filter(obj => obj.states.includes(response?.workflowStatus))
+      .map(obj => ({
+        // icon: <WhatsappIcon />, // Uncomment and customize if needed
+        label: t(`STUDIO_${obj.type.toUpperCase()}`),
+        onClick: () => {
+          setShowOptions(!showOptions);
+          HandleDownloadPdf(obj.key);
+        }
+      }));
+  };
+
+  const HandleDownloadPdf = (key) => {
+      downloadStudioPDF('pdf/generatepdf',{applicationNumber:queryStrings?.applicationNumber,tenantId, serviceCode:queryStrings?.serviceCode, pdfKey:key},`Muster-roll-${"aaaaaaa"}.pdf`)
+  }
 
   return (
     <React.Fragment>
       {
-        <div className={"employee-application-details"} style={{ marginBottom: "24px" }}>
-          {
+        <div className={"employee-application-details"} style={{ marginBottom: "24px",alignItems:"center" }}>
             <Header className="works-header-view" styles={{ marginLeft: "0px", paddingTop: "10px" }}>
               {t(`${response?.module.toUpperCase()}_${response?.businessService?.toUpperCase()}_APPLICATION_DETAILS`)}
             </Header>
-          }
+            <MultiLink onHeadClick={() => setShowOptions(!showOptions)} className="multilink-block-wrapper divToBeHidden" label={t("CS_COMMON_DOWNLOAD")}  displayOptions={showOptions} options={generateDownloadOptions()}/>
+            {/* <Button
+            label={t("CS_COMMON_DOWNLOAD")}
+            onClick={() => HandleDownloadPdf()}
+            className={"employee-download-btn-className"}
+            variation={"teritiary"}
+            type="button"
+            icon={"FileDownload"}
+          /> */}
         </div>
       }
       <ViewComposer data={config} isLoading={false} />
@@ -112,7 +136,7 @@ useEffect(() => {
           tenantId={tenantId}
           applicationDetails={response}
           serviceConfig={serviceConfig}
-          url={`/public-service/v1/application/SVC-DEV-TRADELICENSE-NEWTL-04`}
+          url={`/public-service/v1/application/${queryStrings?.serviceCode}`}
           //setStateChanged={setStateChanged}
           isDisabled={!selectedBusinessService}
           moduleCode={response?.module}

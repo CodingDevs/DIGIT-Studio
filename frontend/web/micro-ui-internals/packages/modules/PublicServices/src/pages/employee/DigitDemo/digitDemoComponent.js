@@ -69,7 +69,7 @@ const DigitDemoComponent = () => {
   console.log(rawConfig,"rawconfig");
   const steps = rawConfig.map((config) => config.head || config.label || "Untitled Section");
   const currentFormConfig = rawConfig[currentStep - 1];
-  const schemaCode = queryStrings?.serviceCode || "SVC-DEV-TRADELICENSE-NEWTL-04";
+  const schemaCode = queryStrings?.serviceCode;
 
   const reqCreate = {
     url: `/public-service/v1/application/${schemaCode}`,
