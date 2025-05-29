@@ -380,6 +380,10 @@ export const FormComposer = (props) => {
     </React.Fragment>
   );
 
+  function onDraftLabelClick() {
+    props.onDraftLabelClick(getValues());
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} onKeyDown={(e) => checkKeyDown(e)} id={props.formId} className={props.className}>
       {props?.showMultipleCardsWithoutNavs ? (
@@ -431,7 +435,7 @@ export const FormComposer = (props) => {
       )}
       {!props.submitInForm && props.label && (
         <Footer>
-          {props?.draftLabel && (  <SubmitBar className="digit-formcomposer-submitbar" submit="button" label={t(props?.draftLabel)} onClick={props?.onSecondayActionClick} />)}
+          {props?.draftLabel && (  <SubmitBar className="digit-formcomposer-submitbar" submit={false} label={t(props?.draftLabel)} onClick={onDraftLabelClick} />)}
           <SubmitBar label={t(props.label)} className="digit-formcomposer-submitbar" submit="submit" disabled={isDisabled} />
           {props.onSkip && props.showSkip && <ActionLinks style={props?.skipStyle} label={t(`CS_SKIP_CONTINUE`)} onClick={props.onSkip} />}
         </Footer>

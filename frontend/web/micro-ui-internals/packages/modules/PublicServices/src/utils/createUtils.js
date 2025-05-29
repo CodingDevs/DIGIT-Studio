@@ -203,7 +203,7 @@ export const transformCreateCheckList = (id, accid, data, action = "SUBMIT") => 
     const buildAttributes = () => {
         const att = [];
         const processField = (key, value, parentKey = null) => {
-            if (typeof value === "object" && value.code) {
+            if (typeof value === "object" && value?.code) {
                 if (value.code != "") {
                     att.push({
                         dataType: "SingleValueList",
