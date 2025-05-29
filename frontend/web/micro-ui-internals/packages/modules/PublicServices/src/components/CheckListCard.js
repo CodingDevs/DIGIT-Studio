@@ -42,7 +42,7 @@ const CheckListCard = (props) => {
             {
                 onSuccess: (res) => {
                     let field = res.Services.filter(items => items.serviceDefId == id);
-                    const allValid = field[0].attributes.every(attr => attr.value !== "NOT_SELECTED");
+                    const allValid = field[0].additionalFields[0].action=="SUBMIT";
                     if (field && field.length > 0) {
                         setFilled(allValid);
                     }
