@@ -27,7 +27,7 @@ const CreateCheckList = () => {
       setShowToast(null)
     }, 5000);
   }
-
+ 
   setTimeout(() => {
     setShowToast(null);
   }, 20000);
@@ -69,7 +69,7 @@ const CreateCheckList = () => {
   }
   const mutation = Digit.Hooks.useCustomAPIMutationHook(search_request);
 
-  const update_request = {
+   const update_request = {
     url: "/health-service-request/service/v1/_update",
     params: {},
     body: {},
