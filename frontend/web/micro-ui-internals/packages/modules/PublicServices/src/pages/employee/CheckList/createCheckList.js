@@ -18,6 +18,7 @@ const CreateCheckList = () => {
   const [update,setUpdate]=useState(false);
   const [ loading, setLoading]=useState(false);
   const [showToast, setShowToast] = useState(null);
+  const tenantId = Digit.ULBService.getCurrentTenantId();
 
   const [config, setConfig] = useState(null);
 
@@ -26,7 +27,7 @@ const CreateCheckList = () => {
       setShowToast(null)
     }, 5000);
   }
- 
+
   setTimeout(() => {
     setShowToast(null);
   }, 20000);
@@ -68,7 +69,7 @@ const CreateCheckList = () => {
   }
   const mutation = Digit.Hooks.useCustomAPIMutationHook(search_request);
 
-   const update_request = {
+  const update_request = {
     url: "/health-service-request/service/v1/_update",
     params: {},
     body: {},
@@ -85,7 +86,7 @@ const CreateCheckList = () => {
       {
         url: '/health-service-request/service/v1/_search',
         method: "POST",
-        body: transformViewApplication(id, accid),
+        body: transformViewApplication(id, accid, tenantId),
         config: {
           enable: false,
         },
@@ -101,9 +102,17 @@ const CreateCheckList = () => {
               acc[attr.attributeCode] = "";
             }
             else{
-              acc[attr.attributeCode] = {code: attr.value, name: `${code}.${attr.attributeCode}.${attr.value}`};
+              const matchingItem = cardItems[0]?.attributes?.find(
+                (a) => a.code === attr.attributeCode && a.dataType === "SINGLEVALUEDLIST"
+              );
+              if (matchingItem) {
+                acc[attr.attributeCode] = {code: attr.value, name: `${code}.${attr.attributeCode}.${attr.value}`,
+                };
+              } 
+              else {
+                acc[attr.attributeCode] = attr.value;
+              }
             }
-            console.log(acc,"default");
             return acc;
           }, {});
           setDefValues(defaultValue);
@@ -141,12 +150,12 @@ const CreateCheckList = () => {
   }
 
   useEffect(() => {
-    getapp(id, accid);
     getcarditems([code]);
   }, [code]);
 
   useEffect(() => {
     if (cardItems && cardItems.length > 0) {
+      getapp(id, accid);
       setConfig(CreateCheckListConfig(cardItems));
     }
   }, [cardItems]);
