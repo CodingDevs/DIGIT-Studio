@@ -15,7 +15,7 @@ const CreateCheckList = () => {
   const [cardItems, setCardItems] = useState([]);
   const [formData, setFormData] = useState({});
   const [defValues,setDefValues]=useState({});
-  const [shouldUpdate,setShouldUpdate]=useState(false);
+  const [update,setUpdate]=useState(false);
   const [ loading, setLoading]=useState(false);
   const [showToast, setShowToast] = useState(null);
   const tenantId = Digit.ULBService.getCurrentTenantId();
@@ -95,7 +95,7 @@ const CreateCheckList = () => {
         onSuccess: (res) => {
           let field = res.Services.filter(items => items.serviceDefId == id);
           if(field.length>0){
-            setShouldUpdate(true);
+            setUpdate(true);
           }
           const defaultValue = field[0].attributes.reduce((acc, attr) => {
             if(attr.value=="NOT_SELECTED"){
@@ -103,16 +103,17 @@ const CreateCheckList = () => {
             }
             else{
               const matchingItem = cardItems[0]?.attributes?.find(
-                (a) => a.code === attr.attributeCode && a.dataType === "SingleValueList"
+                (a) => a.code === attr.attributeCode && a.dataType === "SINGLEVALUEDLIST"
               );
               if (matchingItem) {
-                acc[attr.attributeCode] = {code: attr.value, name: `${code}.${attr.value}`,
+                acc[attr.attributeCode] = {code: attr.value, name: `${code}.${attr.attributeCode}.${attr.value}`,
                 };
               } 
               else {
                 acc[attr.attributeCode] = attr.value;
               }
             }
+            console.log(acc,"default");
             return acc;
           }, {});
           setDefValues(defaultValue);
@@ -160,14 +161,14 @@ const CreateCheckList = () => {
     }
   }, [cardItems]);
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data,action) => {
     console.log(data, "data");
     const fetchdata = async (data) => {
-      await umutation.mutate(
+      await cmutation.mutate(
         {
-          url: "/health-service-request/service/v1/_update",
+          url: "/health-service-request/service/v1/_create",
           method: "POST",
-          body: transformCreateCheckList(id, accid, data),
+          body: transformCreateCheckList(id, accid, data, action),
           config: {
             enable: false,
           },
@@ -176,22 +177,19 @@ const CreateCheckList = () => {
           onSuccess: (res) => {
             console.log(res, "application_response");
             setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".","_").toUpperCase()}_CREATE_SUCCESS_CHECKLIST`) })
+            setCardItems(res?.ServiceDefinitions || []);
             setTimeout(() => {
               window.history.back();
             }, 3000);
           },
           onError: () => {
             console.log("Error occurred");
+            setCardItems([]);
           },
         }
       )
     }
-    if (shouldUpdate) {
-      fetchdata(data);
-    }
-    else {
-      create(data, "SUBMIT");
-    }
+    fetchdata(data);
   };
 
   const handleFormValueChange = (updatedFormData) => {
@@ -201,36 +199,9 @@ const CreateCheckList = () => {
     }
   };
 
-  const create = async (data, action) => {
-    await cmutation.mutate(
-      {
-        url: "/health-service-request/service/v1/_create",
-        method: "POST",
-        body: transformCreateCheckList(id, accid, data, action),
-        config: {
-          enable: false,
-        },
-      },
-      {
-        onSuccess: (res) => {
-          console.log(res, "application_response");
-          if(action=="SAVE_AS_DRAFT"){
-            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".", "_").toUpperCase()}_CREATE_SUCCESS_CHECKLIST`) })
-            setTimeout(() => {
-              window.history.back();
-            }, 3000);
-          }  
-        },
-        onError: () => {
-          console.log("Error occurred");
-        },
-      }
-    )
-  }
-
   const onSaveAsDraft = async (data)  =>{
     let action = "SAVE_AS_DRAFT";
-    const updatefetchdata = async (data, action) => {
+    const updatefetchdata = async (data) => {
       await umutation.mutate(
         {
           url: "/health-service-request/service/v1/_update",
@@ -243,10 +214,6 @@ const CreateCheckList = () => {
         {
           onSuccess: (res) => {
             console.log(res, "application_response");
-            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".", "_").toUpperCase()}_UPDATE_SUCCESS_CHECKLIST`) })
-            setTimeout(() => {
-              window.history.back();
-            }, 3000);
           },
           onError: () => {
             console.log("Error occurred");
@@ -254,11 +221,11 @@ const CreateCheckList = () => {
         }
       )
     }
-    if(shouldUpdate){
-      updatefetchdata(data,action);
+    if(update){
+    updatefetchdata(data);
     }
     else{
-      create(data,action);
+      onSubmit(data,action);
     }
   }
 
@@ -270,15 +237,15 @@ const CreateCheckList = () => {
           label={t("Submit")}
           config={config}
           onFormValueChange={(setValue, formData) => { handleFormValueChange(formData) }}
-          onSubmit={onSubmit}
+          onSubmit={onSaveAsDraft}
           fieldStyle={{ marginRight: 2 }}
           draftLabel={t("Save as Draft")}
-          onDraftLabelClick={onSaveAsDraft}
+          onSecondayActionClick={onSaveAsDraft}
         />
       ) : (
         <Loader />
       )}
-      {showToast && (
+       {showToast && (
         <Toast
           type={showToast?.type}
           label={t(showToast?.label)}
