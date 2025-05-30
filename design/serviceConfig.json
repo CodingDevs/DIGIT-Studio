@@ -298,6 +298,14 @@
         "ACTIVE": [
           "APPROVED"
         ],
+        "generateDemandAt": [
+          "VERIFY_AND_FORWARD"
+        ],
+        "nextActionAfterPayment": "PAY",
+         "autoTransitionEnabledStates": [
+                    "PENDING_FOR_VERIFICAION",
+                    "FIELD_VERIFICATION"
+                ],
         "states": [
           {
             "sla": null,
@@ -580,52 +588,52 @@
         ]
       },
       "notification": {
-        "sms": [
-          {
-            "states": [
-              "applied"
-            ],
-            "code": "DIGIT_STUDIO_NEW_APPLICATION",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is received"
-          },
-          {
-            "states": [
-              "approved"
-            ],
-            "code": "DIGIT_STUDIO_APPLY_APPROVED",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is approved"
-          },
-          {
-            "states": [
-              "pending_payment"
-            ],
-            "code": "DIGIT_STUDIO_DEMAND_CREATED",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
-          }
-        ],
-        "email": [
-          {
-            "states": [
-              "applied"
-            ],
-            "code": "DIGIT_STUDIO_NEW_APPLICATION",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is received"
-          },
-          {
-            "states": [
-              "approved"
-            ],
-            "code": "DIGIT_STUDIO_APPLY_APPROVED",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is approved"
-          },
-          {
-            "states": [
-              "pending_payment"
-            ],
-            "code": "DIGIT_STUDIO_DEMAND_CREATED",
-            "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
-          }
-        ]
+         "sms": [
+                    {
+                        "code": "DIGIT_STUDIO_NEW_APPLICATION",
+                        "states": [
+                            "SIGNED"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new OC Application with application no {PublicService.applicationNo} is received"
+                    },
+                    {
+                        "code": "DIGIT_STUDIO_APPLY_APPROVED",
+                        "states": [
+                            "approved"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new OC Application with application no {PublicService.applicationNo} is approved"
+                    },
+                    {
+                        "code": "DIGIT_STUDIO_DEMAND_CREATED",
+                        "states": [
+                            "pending_payment"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new OC Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
+                    }
+                ],
+                "email": [
+                    {
+                        "code": "DIGIT_STUDIO_NEW_APPLICATION",
+                        "states": [
+                            "SIGNED"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is received"
+                    },
+                    {
+                        "code": "DIGIT_STUDIO_APPLY_APPROVED",
+                        "states": [
+                            "approved"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} is approved"
+                    },
+                    {
+                        "code": "DIGIT_STUDIO_DEMAND_CREATED",
+                        "states": [
+                            "pending_payment"
+                        ],
+                        "template": "Dear {PublicService.applicants[0].name} a new Application with application no {PublicService.applicationNo} has pending dues of amount Rs {Bill.totalAmount} "
+                    }
+                ]
       },
       "inbox": {
         "module": "public-service",
