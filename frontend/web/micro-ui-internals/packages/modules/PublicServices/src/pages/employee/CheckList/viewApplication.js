@@ -8,7 +8,10 @@ import { ViewComposer } from "@egovernments/digit-ui-react-components";
 import { useTranslation } from "react-i18next";
 
 const ViewApplication = () => {
-    const { accid, id, code } = useParams();
+    const queryStrings = Digit.Hooks.useQueryParams();
+    const accid=queryStrings?.accid;
+    const id=queryStrings?.id;
+    const code=queryStrings?.code;
     const [config, setConfig] = useState([]);
     const [loading, setLoading] = useState(false);
     const tenantId = Digit.ULBService.getCurrentTenantId();

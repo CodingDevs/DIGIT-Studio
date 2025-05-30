@@ -10,7 +10,10 @@ import { transformCreateCheckList } from "../../../utils/createUtils.js";
 import { transformViewApplication } from "../../../utils/createUtils.js";
 
 const CreateCheckList = () => {
-  const { accid, id, code } = useParams();
+  const queryStrings = Digit.Hooks.useQueryParams();
+  const accid=queryStrings?.accid;
+  const id=queryStrings?.id;
+  const code=queryStrings?.code;
   const { t } = useTranslation();
   const [cardItems, setCardItems] = useState([]);
   const [formData, setFormData] = useState({});

@@ -66,9 +66,9 @@ const CheckListCard = (props) => {
                 <Card type="primary" style={style}>
                     <TextBlock body={props.t(props.item.code)} />
                     {filled ? (
-                        <Button label="View Response" onClick={() => history.push({ pathname: `/${window.contextPath}/employee/publicservices/viewresponse/${props.accid}/${props.item.id}/${props.item.code}` })} />
+                        <Button label="View Response" onClick={() => history.push(`/${window.contextPath}/employee/publicservices/viewresponse?accid=${props.accid}&id=${props.item.id}&code=${props.item.code}` )} />
                     ) : (
-                        <Button label="Fill Checklist" onClick={() => history.push({ pathname: `/${window.contextPath}/employee/publicservices/checklist/${props.accid}/${props.item.id}/${props.item.code}?redirectionUrl=${window.location.href}` })} />
+                        <Button label="Fill Checklist" onClick={() => history.push(`/${window.contextPath}/employee/publicservices/checklist?accid=${props.accid}&id=${props.item.id}&code=${props.item.code}`, { redirectionUrl : `${window.location.href}`,})} />
                     )}
                 </Card>
             ) : (
