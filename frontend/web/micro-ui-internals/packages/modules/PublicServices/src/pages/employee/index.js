@@ -47,8 +47,8 @@ const App = ({ path, stateCode, userType, tenants }) => {
         <PrivateRoute path={`${path}/modules`} component={() => <ModulePageComponent />} />
         <PrivateRoute path={`${path}/:module/inbox`} component={() => <InboxService />} />
         <PrivateRoute path={`${path}/viewapp`} component={() => <ViewCheckListCards />} />
-        <PrivateRoute path={`${path}/checklist/:accid/:id/:code`} component={() => <CreateCheckList />} />
-        <PrivateRoute path={`${path}/viewresponse/:accid/:id/:code`} component={() => <ViewApplication />} />
+        <PrivateRoute path={`${path}/checklist`} component={() => <CreateCheckList />} />
+        <PrivateRoute path={`${path}/viewresponse`} component={() => <ViewApplication />} />
       </AppContainer>
     </Switch>
   );
