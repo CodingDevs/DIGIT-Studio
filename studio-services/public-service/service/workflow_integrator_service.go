@@ -128,12 +128,11 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 	if len(wfResponse.ProcessInstances) == 0 {
 		return errors.New("no process instance returned from workflow")
 	}
-	app.ProcessInstance = &wfResponse.ProcessInstances
 	req.Application.ProcessInstance = &wfResponse.ProcessInstances
 	return nil
 }
 
-func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo) error {
+func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo, ) error {
 	app := applicationResponse
 	log.Println("Search CallWorkflow")
 	log.Println("🔥🔥🔥 Inside SearchWorkflow - LOG TRIGGERED 🔥🔥🔥")
@@ -154,7 +153,7 @@ func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Applicat
 		return errors.New("workflow host or search path is not set in environment variables")
 	}
 
-	url := fmt.Sprintf("%s%s?tenantId=%s&businessIds=%s", wfHost, wfPath, app.TenantId, app.ApplicationNumber)
+	url := fmt.Sprintf("%s%s?tenantId=%s&businessIds=%s&businessService=%s", wfHost, wfPath, app.TenantId, app.ApplicationNumber,app.Workflow.BusinessService)
 	log.Println("URL:", url)
 
 	resp, err := wi.HttpClient.Post(url, "application/json", bytes.NewReader(payloadBytes))
@@ -177,6 +176,8 @@ func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Applicat
 	if len(wfResponse.ProcessInstances) == 0 {
 		return errors.New("no process instance returned from workflow")
 	}
-	applicationResponse.ProcessInstance = &wfResponse.ProcessInstances
+	// Assign only the 0th element as a slice to the pointer
+	firstInstance := []model.ProcessInstance{wfResponse.ProcessInstances[0]}
+	applicationResponse.ProcessInstance = &firstInstance
 	return nil
 }

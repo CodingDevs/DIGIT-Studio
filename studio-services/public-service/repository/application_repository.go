@@ -841,6 +841,11 @@ func (r *ApplicationRepository) CreateUsingKafka(ctx context.Context, req model.
 			log.Printf("failed to push kafka message: %v", err)
 			return model.ApplicationResponse{}, err
 		}
+		err = r.kafkaProducer.Push(ctx, config.GetEnv("UPDATE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"), messageBytes)
+		if err != nil {
+			log.Printf("failed to push kafka to indexer message: %v", err)
+			return model.ApplicationResponse{}, err
+		}
 	} else {
 		return model.ApplicationResponse{}, errors.New("Kafka producer is not initialized")
 	}
@@ -906,7 +911,12 @@ func (r *ApplicationRepository) UpdateUsingKafka(ctx context.Context, req model.
 		log.Println("request", string(kafkaPayload))
 		err = r.kafkaProducer.Push(ctx, config.GetEnv("UPDATE_PUBLIC_SERVICE_APPLICATION_TOPIC"), kafkaPayload)
 		if err != nil {
-			log.Printf("failed to push kafka message: %v", err)
+			log.Printf("failed to push to kafka to save application message: %v", err)
+			return model.ApplicationResponse{}, err
+		}
+		err = r.kafkaProducer.Push(ctx, config.GetEnv("UPDATE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"), kafkaPayload)
+		if err != nil {
+			log.Printf("failed to push kafka to indexer message: %v", err)
 			return model.ApplicationResponse{}, err
 		}
 	} else {

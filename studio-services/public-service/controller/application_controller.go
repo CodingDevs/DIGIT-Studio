@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"os"
 	//"crypto/internal/fips140/edwards25519/field"
 	"encoding/json"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"public-service/utils"
 	"strconv"
 	"strings"
+
 	"github.com/gorilla/mux"
 )
 
@@ -20,10 +22,11 @@ type ApplicationController struct {
 	individualService  *service.IndividualService
 	enrichmentService  *service.EnrichmentService
 	smsService         *service.SMSService
+	indexerService     *service.IndexerService
 }
 
-func NewApplicationController(service *service.ApplicationService, workflowIntegrator *service.WorkflowIntegrator, individualService *service.IndividualService, enrichmentService *service.EnrichmentService, smsService *service.SMSService) *ApplicationController {
-	return &ApplicationController{service: service, workflowIntegrator: workflowIntegrator, individualService: individualService, enrichmentService: enrichmentService, smsService: smsService}
+func NewApplicationController(service *service.ApplicationService, workflowIntegrator *service.WorkflowIntegrator, individualService *service.IndividualService, enrichmentService *service.EnrichmentService, smsService *service.SMSService,indexerService *service.IndexerService) *ApplicationController {
+	return &ApplicationController{service: service, workflowIntegrator: workflowIntegrator, individualService: individualService, enrichmentService: enrichmentService, smsService: smsService, indexerService: indexerService}
 }
 
 func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, r *http.Request) {
@@ -137,6 +140,11 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		log.Printf("error sending sms  %v",err2)
 	}
 	log.Printf("ProcessInstance enriched: %+v", res.Application.ProcessInstance)
+
+    err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
+	if err != nil {
+		log.Printf("error sending to indexer topic   %v",err2)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
@@ -279,6 +287,10 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 	_, err2 := c.smsService.SendSMS(req, req.Application.TenantId, req.Application.Applicants)
 	if err2 != nil {
 		log.Printf("error sending sms  %v",err2)
+	}
+	err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("UPDATE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
+	if err != nil {
+		log.Printf("error sending to indexer topic   %v",err2)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)

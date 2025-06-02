@@ -69,13 +69,6 @@ func ConsumePayments(workflowIntegrator *service.WorkflowIntegrator, application
 		}
 
 		application := searchRes.Application[0]
-		workflowIntegrator.SearchWorkflow(&application, paymentReq.RequestInfo)
-
-		if application.ProcessInstance != nil && len(*application.ProcessInstance) > 0 {
-			currentState := (*application.ProcessInstance)[0].State.State
-			log.Println("CURRENT STATE:", currentState)
-		}
-
 		schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 		mdmsData, _ := workflowIntegrator.MDMSV2Service.SearchMDMS(
 			application.TenantId,

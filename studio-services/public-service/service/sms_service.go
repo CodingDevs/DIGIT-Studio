@@ -251,3 +251,146 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 		"message": "Messages sent",
 	}, nil
 }
+
+
+func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId string, owners []model.Applicant) (map[string]interface{}, error) {
+	err := s.workflowIntegrator.SearchWorkflow(&application.Application, application.RequestInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error while calling search ProcessInstance: %v", err)
+	}
+
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	mdmsData, _ := s.mdmsV2Service.SearchMDMS(
+		application.Application.TenantId,
+		schemaCode,
+		application.Application.BusinessService,
+		application.Application.Module,
+		application.RequestInfo,
+	)
+
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return nil, errors.New("MDMS data missing or invalid")
+	}
+
+	firstEntry, _ := mdmsList[0].(map[string]interface{})
+	data, _ := firstEntry["data"].(map[string]interface{})
+	notification, ok := data["notification"].(map[string]interface{})
+	if !ok {
+		log.Println("No 'notification' section in MDMS data")
+		return nil, errors.New("No 'notification' section in MDMS data")
+	}
+
+	emailList, ok := notification["email"].([]interface{})
+	if !ok {
+		log.Println("No 'email' section in MDMS notification data")
+		return nil, errors.New("No 'email' section in MDMS data")
+	}
+
+	var matchedCode string
+	currentState := ""
+	if application.Application.ProcessInstance != nil && len(*application.Application.ProcessInstance) > 0 {
+		currentState = (*application.Application.ProcessInstance)[0].State.State
+	}
+
+	for _, emailItem := range emailList {
+		itemMap, ok := emailItem.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		states, ok := itemMap["states"].([]interface{})
+		if !ok {
+			continue
+		}
+
+		for _, state := range states {
+			stateStr, _ := state.(string)
+			if strings.EqualFold(stateStr, currentState) {
+				matchedCode, _ = itemMap["code"].(string)
+				break
+			}
+		}
+
+		if matchedCode != "" {
+			break
+		}
+	}
+
+	if matchedCode == "" {
+		log.Printf("No matching email template code found for state: %s", currentState)
+		return nil, fmt.Errorf("no matching template code found")
+	}
+	localizationMessage := s.localizationService.GetLocalizationMessage(
+		application.RequestInfo,
+		matchedCode,
+		tenantId,
+	)
+
+	templateMsg := localizationMessage["message"]
+	if templateMsg == "" {
+		log.Println("Localization message not found for template:", matchedCode)
+		return nil, fmt.Errorf("template message not found")
+	}
+	log.Println(localizationMessage)
+
+	// Fetch bill and calculate total amount
+	bills, err := s.demandService.fetchBill(application)
+	if err != nil {
+		log.Printf("Error fetching bill for application %s: %v", application.Application.ApplicationNumber, err)
+		return nil, err
+	}
+	var totalAmount float64
+	for _, bill := range bills {
+		totalAmount += bill.TotalAmount
+	}
+	amountStr := strconv.FormatFloat(totalAmount, 'f', 2, 64)
+
+	// Send Email to all owners
+	for _, owner := range owners {
+		msg := templateMsg
+		msg = strings.ReplaceAll(msg, "{PublicService.applicants[0].name}", owner.Name)
+		msg = strings.ReplaceAll(msg, "{PublicService.applicationNo}", application.Application.ApplicationNumber)
+		msg = strings.ReplaceAll(msg, "{Bill.totalAmount}", amountStr)
+
+		emailToList := []string{}
+		if owner.EmailId != "" {
+			emailToList = append(emailToList, owner.EmailId)
+		} else {
+			log.Printf("Skipping owner with empty EmailId: %+v", owner)
+			continue
+		}
+
+		email := sms.Email{
+			TenantId:    tenantId,
+			EmailTo:     emailToList,
+			Body:        msg,
+			FileStoreId: nil,
+			IsHTML:      true,
+		}
+
+		emailRequest := sms.EmailRequest{
+			RequestInfo: application.RequestInfo,
+			Email:       email,
+		}
+
+		emailBytes, err := json.Marshal(emailRequest)
+		if err != nil {
+			log.Printf("Failed to marshal EmailRequest for owner %v: %v", owner.EmailId, err)
+			continue
+		}
+
+		ctx := context.Background()
+		err = s.kafkaProducer.Push(ctx, config.GetEnv("SEND_EMAIL_TOPIC"), emailBytes)
+		if err != nil {
+			log.Printf("Failed to push Kafka message for owner %v: %v", owner.EmailId, err)
+			continue
+		}
+	}
+
+	return map[string]interface{}{
+		"status":  "success",
+		"message": "Email sent",
+	}, nil
+}
