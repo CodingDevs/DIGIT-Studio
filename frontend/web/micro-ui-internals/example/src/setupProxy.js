@@ -96,7 +96,6 @@ module.exports = function (app) {
     "/hcm-bff/hcm/_processmicroplan",
     "/health-hrms",
     "/mdms-v2/v1/_search",
-    "/public-service",
     "/studio-pdf"
   ].forEach((location) => app.use(location, createProxy));
   ["/pb-egov-assets"].forEach((location) => app.use(location, assetsProxy));

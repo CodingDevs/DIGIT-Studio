@@ -41,6 +41,7 @@ const updatePayload = (applicationDetails, data, action, businessService) => {
         }) : [],
         assignees: data?.assignees?.uuid ? [data?.assignees?.uuid] : null,
         action: action.action,
+        businessService: businessService,
       };
       //filtering out the data
       Object.keys(workflow).forEach((key, index) => {

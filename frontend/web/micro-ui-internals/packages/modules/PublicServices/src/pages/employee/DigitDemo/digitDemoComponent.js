@@ -137,7 +137,7 @@ const DigitDemoComponent = () => {
           },
           onError: () => {
             history.push({
-              pathname: `/${window.contextPath}/employee/publicservices/${module}/response`,
+              pathname: `/${window.contextPath}/employee/publicservices/${module}/${service}/response`,
               search: "?isSuccess=false",
               state: {
                 message: "Application Creation Failed",

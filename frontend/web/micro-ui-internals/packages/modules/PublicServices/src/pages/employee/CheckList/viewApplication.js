@@ -41,8 +41,8 @@ const ViewApplication = () => {
             },
             {
                 onSuccess: (res) => {
-                    let field = res.Services.filter(items => items.serviceDefId == id);
-                    setConfig(ViewApplicationConfig(field[0],code,t));
+                    let field = res?.Services?.filter(items => items.serviceDefId == id);
+                    setConfig(ViewApplicationConfig(field?.[0],code,t));
                     setLoading(true);
                 },
                 onError: () => {

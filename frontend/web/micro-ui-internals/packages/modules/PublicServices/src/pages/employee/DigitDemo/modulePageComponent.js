@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useHistory } from "react-router-dom";
 import { transformResponseforModulePage } from "../../../utils";
 
-const modulePageComponent = ({}) => {
+const ModulePageComponent = () => {
   const { t } = useTranslation();
   const history = useHistory();
 
@@ -23,10 +23,19 @@ const modulePageComponent = ({}) => {
   const {isLoading, data} = Digit.Hooks.useCustomAPIHook(request);
 
   let detailsConfig = data ? transformResponseforModulePage(data?.Services) : [];
+  const hasNoData = detailsConfig.length === 0 && !isLoading;
 
   if (isLoading) {
     return <Loader />;
   }
+
+  if (hasNoData) { 
+    return ( 
+    <div className="products-container"> 
+    <HeaderComponent className="products-title">{t("DIGIT_STUDIO_HEADER")}</HeaderComponent> 
+    <CardText>{t("NO_SERVICES_AVAILABLE")}</CardText> 
+    </div> ); 
+    }
 
   return (
     <div className="products-container">
@@ -45,8 +54,8 @@ const modulePageComponent = ({}) => {
             </div>
             <CardText className="product-description">{t(product?.cardDescription)}</CardText>
             {queryStrings?.selectedPath === "Apply" && product?.businessServices.map((bs) => (
-             <Link className="link" to={`/${window.contextPath}/employee/publicservices/${product.module}/${bs.businessService}/Apply?serviceCode=${bs?.serviceCode}`}>
-              {bs.businessService}
+             <Link key={bs?.businessService} className="link" to={`/${window.contextPath}/employee/publicservices/${product.module}/${bs.businessService}/Apply?serviceCode=${bs?.serviceCode}`}>
+              {bs?.businessService}
         </Link>
             ))
             }
@@ -68,4 +77,4 @@ const modulePageComponent = ({}) => {
   );
 };
 
-export default modulePageComponent;
+export default ModulePageComponent;

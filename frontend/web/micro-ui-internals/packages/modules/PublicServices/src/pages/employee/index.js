@@ -33,6 +33,7 @@ const SampleBreadCrumbs = ({ location }) => {
 
 const App = ({ path, stateCode, userType, tenants }) => {
   const tenantId = Digit.ULBService.getCurrentTenantId();
+  const location = window.location;
 
   return (
     <Switch>

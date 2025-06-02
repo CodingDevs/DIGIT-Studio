@@ -10,6 +10,7 @@ import { useWorkflowDetailsWorks, processBusinessServices } from "../../../utils
 const DigitDemoViewComponent = () => {
   const { t } = useTranslation();
   const history = useHistory();
+  const queryStrings = Digit.Hooks.useQueryParams();
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const [selectedBusinessService, setSelectedBusinessService] = useState(null);
   const userInfo = Digit.UserService.getUser();
@@ -17,7 +18,6 @@ const DigitDemoViewComponent = () => {
   const userRoles = userInfo?.info?.roles?.map((roleData) => roleData?.code);
   const [current, setCurrent] = useState(Date.now());
   const [matchedBusinessServices, setMatchedBusinessServices] = useState([]);
-  const queryStrings = Digit.Hooks.useQueryParams();
   const [showOptions, setShowOptions] = useState(false);
   const request = {
     url : `/public-service/v1/application/${queryStrings?.serviceCode}`,
@@ -62,8 +62,8 @@ const DigitDemoViewComponent = () => {
       }
     }
   );
+  let config = generateViewConfigFromResponse(response,t, queryStrings?.businessService || selectedBusinessService?.code, serviceConfig);
 
-  let config = generateViewConfigFromResponse(response,t, queryStrings?.businessService, serviceConfig);
 
 useEffect(() => {
   // Guard clause to avoid calling with missing inputs
@@ -128,10 +128,10 @@ useEffect(() => {
         </div>
       }
       <ViewComposer data={config} isLoading={false} />
-      <ViewCheckListCards applicationId={data?.Application?.[0]?.id} checkListCodes={checkListCodes} />
+      <ViewCheckListCards applicationId={data?.Application?.[0]?.id} checkListCodes={checkListCodes}/>
         { <WorkflowActions
           forcedActionPrefix={`WF_${response?.businessService}_ACTION`}
-          businessService={selectedBusinessService?.code || matchedBusinessServices[0]?.code}
+          businessService={queryStrings?.businessService || selectedBusinessService?.code || matchedBusinessServices[0]?.code}
           applicationNo={response?.applicationNumber}
           tenantId={tenantId}
           applicationDetails={response}

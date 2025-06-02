@@ -215,7 +215,7 @@ const WorkflowActions = ({ businessService, tenantId, applicationNo, forcedActio
   }
 
   //if workflowDetails are loading then a loader is displayed in workflowTimeline comp anyway
-  if(isEnableLoader){
+  if(isEnableLoader || workflowDetails?.isLoading) {
     return <Loader />
   }
 
