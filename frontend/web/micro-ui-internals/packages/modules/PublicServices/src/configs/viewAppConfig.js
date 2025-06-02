@@ -1,10 +1,14 @@
 import React from "react";
 
-export const ViewApplicationConfig = (response,code,t) => {
-    const values = response.attributes.map(attr => ({
-        key: `${code}.${attr.attributeCode}`,
-        value: t(`${code}.${attr.value}`)
-    }));
+export const ViewApplicationConfig = (response,code,t,cardItems) => {
+    const values = response.attributes.map(attr => {
+        const matchingItem = cardItems[0]?.attributes?.find(a => a.code == attr.attributeCode);
+        const isSingleValueList = matchingItem?.dataType === "SingleValueList";
+        return {
+            key: `${code}.${attr.attributeCode}`,
+            value: isSingleValueList ? t(`${code}.${attr.value}`) : attr.value
+        };
+    });
 
     const config = {
         cards: [
