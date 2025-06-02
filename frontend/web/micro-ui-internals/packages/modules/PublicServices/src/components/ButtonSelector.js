@@ -38,12 +38,23 @@ ButtonSelector.propTypes = {
    * click handler
    */
   onSubmit: PropTypes.func,
+  /** + * is button disabled + */
+  isDisabled: PropTypes.bool,
+  /** + * button type + */
+  type: PropTypes.string,
+  /** + * form id + */
+  formId: PropTypes.string,
+  /** + * custom styles + */
+  style: PropTypes.object,
+  /** + * text styles + */
+  textStyles: PropTypes.object,
 };
 
 ButtonSelector.defaultProps = {
-  label: "",
   theme: "",
   onSubmit: undefined,
+  isDisabled: false,
+  type: "submit"
 };
 
 export default ButtonSelector;

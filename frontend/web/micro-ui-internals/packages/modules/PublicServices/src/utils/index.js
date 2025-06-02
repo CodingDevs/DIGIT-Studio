@@ -418,7 +418,7 @@ import cloneDeep from "lodash/cloneDeep";
   };
 
   export const  getDetailsByIdWorks = async ({ tenantId, id, moduleCode }) => {
-    
+
     //process instance search
     const workflow = await Digit.WorkflowService.getByBusinessId(tenantId, id , { businessService : moduleCode });
     const applicationProcessInstance = cloneDeep(workflow?.ProcessInstances);
@@ -478,14 +478,14 @@ import cloneDeep from "lodash/cloneDeep";
         //if any documents are there this fn will add thumbnails to show
         
         await makeCommentsSubsidariesOfPreviousActionsWorks(processInstances)
-
-        let timeline = processInstances.map((instance, ind) => {
+        let timeline = processInstances?.map((instance, ind) => {
           let checkPoint = {
             performedAction: instance.action,
             status: instance.state.applicationStatus,
             state: instance.state.state,
             assigner: instance?.assigner,
             rating: instance?.rating,
+            businessService: instance?.businessService,
             // wfComment: instance?.wfComments?.map(e => e?.comment),
             comment:instance?.comment,
             wfDocuments: instance?.documents,

@@ -52,13 +52,15 @@ export const generateFormConfig = (config, module, service) => {
     };
   };
 
+  let dynamicStep = 1;
+
   const createChildForm = (objectField) => {
     return {
       head: `${module}_${service}_${objectField.name.toUpperCase()}`,
       name: objectField.name,
       body: sortByOrderNumber(objectField.properties).map((subField) => createField(subField)),
       type: "childform",
-      step: 1,
+      step: dynamicStep++,
     };
   };
 
@@ -69,7 +71,7 @@ export const generateFormConfig = (config, module, service) => {
       type: "multiChildForm",
       prefix: `${module}_${service}`,
       body: sortByOrderNumber(arrayField.items.properties).map((subField) => createField(subField)),
-      step: 2,
+      step: dynamicStep++,
     };
   };
 

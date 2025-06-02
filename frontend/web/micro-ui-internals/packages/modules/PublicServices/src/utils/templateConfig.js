@@ -74,8 +74,8 @@ export const AddressFields = [
             "maxLength": 256,
             "minLength": 0,
             "validation": {
-              "regex": "^[1-9][0-9]{5}$",
-              "message": "Only 6 numbers allowed"
+              "regex": "^[a-zA-Z0-9\\s\\.,\\-\\/]*$",
+              "message": "Invalid street name format"
             },
             "required": false,
             "orderNumber": 1
@@ -100,8 +100,8 @@ export const ApplicantFields =  [{
           "maxLength": 256,
           "minLength": 0,
           "validation": {
-            "regex": "^[1-9][0-9]{5}$",
-            "message": "Only 6 numbers allowed"
+            "regex": "^[a-zA-Z\\s]*$",
+            "message": "Only alphabetic characters allowed"
           },
           "required": false,
           "orderNumber": 1

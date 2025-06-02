@@ -192,7 +192,7 @@ const FieldComposer = ({
         return (
           <Controller
             name={`${populators.name}`}
-            control={control}
+            control={controllerProps?.control}
             rules={{ required: false }}
             render={({ onChange, ref, value = [] }) => {
               function getFileStoreData(filesData) {
@@ -292,6 +292,7 @@ const FieldComposer = ({
         );
         case "documentUploadAndDownload":
         return (
+          <>
           <UploadAndDownloadDocumentHandler
             module={config?.module}
             config={config}
@@ -306,7 +307,18 @@ const FieldComposer = ({
             variant={variant ? variant : errors?.[populators.name] ? "digit-field-error" : ""}
             flow={populators?.flow}
             action={populators?.action}
+            onError={(error) => { 
+              console.error("Document upload/download error:", error); 
+              // Handle error state 
+            }}
           />
+          {errors?.[populators?.name] && (
+            <ErrorMessage 
+            style={{fontStyle: "normal", color: "#D4351C"}} 
+            message={t(config?.customErrorMsg || "ERROR_DOCUMENT_UPLOAD")} 
+            /> 
+          )}
+          </>
         );
       case "form":
         return (
