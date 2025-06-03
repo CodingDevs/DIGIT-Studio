@@ -178,7 +178,7 @@ const CreateCheckList = () => {
         {
           onSuccess: (res) => {
             console.log(res, "application_response");
-            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".","_").toUpperCase()}_CREATE_SUCCESS_CHECKLIST`) })
+            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".","_").toUpperCase()}_SUBMIT_SUCCESS_CHECKLIST`) })
             setTimeout(() => {
               window.history.back();
             }, 3000);
@@ -219,6 +219,12 @@ const CreateCheckList = () => {
           console.log(res, "application_response");
           if(action=="SAVE_AS_DRAFT"){
             setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".", "_").toUpperCase()}_CREATE_SUCCESS_CHECKLIST`) })
+            setTimeout(() => {
+              window.history.back();
+            }, 3000);
+          } 
+          if(action=="SUBMIT"){
+            setShowToast({ label: Digit.Utils.locale.getTransformedLocale(`${code?.replaceAll(".","_").toUpperCase()}_SUBMIT_SUCCESS_CHECKLIST`) })
             setTimeout(() => {
               window.history.back();
             }, 3000);

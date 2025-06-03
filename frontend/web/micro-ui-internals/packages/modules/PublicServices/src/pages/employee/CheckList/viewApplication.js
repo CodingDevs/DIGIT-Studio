@@ -6,6 +6,7 @@ import { transformViewApplication } from "../../../utils/createUtils";
 import ViewApplicationConfig from "../../../configs/viewAppConfig";
 import { ViewComposer } from "@egovernments/digit-ui-react-components";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "react-router-dom/cjs/react-router-dom";
 
 const ViewApplication = () => {
     const queryStrings = Digit.Hooks.useQueryParams();
@@ -15,6 +16,7 @@ const ViewApplication = () => {
     const [config, setConfig] = useState([]);
     const [loading, setLoading] = useState(false);
     const tenantId = Digit.ULBService.getCurrentTenantId();
+    const { state } = useLocation();
     const {t} = useTranslation();
 
     const request = {
@@ -42,7 +44,7 @@ const ViewApplication = () => {
             {
                 onSuccess: (res) => {
                     let field = res?.Services?.filter(items => items.serviceDefId == id);
-                    setConfig(ViewApplicationConfig(field?.[0],code,t));
+                    setConfig(ViewApplicationConfig(field?.[0],code,t,state?.cardItems));
                     setLoading(true);
                 },
                 onError: () => {
