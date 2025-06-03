@@ -22,7 +22,7 @@ const CreateCheckList = () => {
   const [ loading, setLoading]=useState(false);
   const [showToast, setShowToast] = useState(null);
   const tenantId = Digit.ULBService.getCurrentTenantId();
-  
+
   const [config, setConfig] = useState(null);
 
   const closeToast = () => {
