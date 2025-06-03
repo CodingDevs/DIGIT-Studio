@@ -118,6 +118,9 @@ export const UICustomizations = {
           data.body.inbox.moduleSearchCriteria.businessService=`${data?.state?.searchForm?.businessService?.code}`;
           data.body.inbox.moduleSearchCriteria.module=`${module}`;
           data.body.inbox.processSearchCriteria.businessService=[`${module}.${data?.state?.searchForm?.businessService?.code}`];
+          if(data?.state?.searchForm?.businessService?.parallelWorkflow?.length > 0){
+            data.body.inbox.processSearchCriteria.businessService = [...data.body.inbox.processSearchCriteria.businessService,...data?.state?.searchForm?.businessService?.parallelWorkflow]
+          }
           data.body.inbox.processSearchCriteria.tenantId = tenantId;
           data.body.inbox.tenantId = tenantId;
           delete data.body.inbox.moduleSearchCriteria.assignee;
@@ -130,7 +133,7 @@ export const UICustomizations = {
             return (
               <span className="link">
                 <Link
-                  to={`/${window.contextPath}/employee/publicservices/${row?.businessObject?.module}/${row?.businessObject?.businessService}/ViewScreen?applicationNumber=${row?.businessObject?.applicationNumber}&serviceCode=${row?.serviceCode}`}
+                  to={`/${window.contextPath}/employee/publicservices/${row?.businessObject?.module}/${row?.businessObject?.businessService}/ViewScreen?applicationNumber=${row?.businessObject?.applicationNumber}&serviceCode=${row?.businessObject?.serviceCode}&businessService=${row?.ProcessInstance?.businessService}`}
                 >
                   {String(value ? value : t("ES_COMMON_NA"))}
                 </Link>

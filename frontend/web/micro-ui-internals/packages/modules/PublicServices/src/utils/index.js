@@ -638,9 +638,23 @@ import cloneDeep from "lodash/cloneDeep";
       // in case the Blob uses a lot of memory
       setTimeout(() => URL.revokeObjectURL(link.href), 7000);
     }
+
+   
   };
 
-  
+  export const getParallelWorkflow = (module, businessService, serviceData) => {
+    let workflowObject = serviceData?.filter((ob) => ob?.uniqueIdentifier === `${module}.${businessService}`)?.[0]?.data?.workflow;
+    if (!workflowObject?.states) return [];
+
+      // Collect all triggerParallelWorkflows from the states
+      const parallelWorkflows = workflowObject.states
+        .filter((state) => Array.isArray(state.triggerParallelWorkflows))
+        .flatMap((state) => state.triggerParallelWorkflows);
+
+      return parallelWorkflows;
+  }
+
+
   
   
   
