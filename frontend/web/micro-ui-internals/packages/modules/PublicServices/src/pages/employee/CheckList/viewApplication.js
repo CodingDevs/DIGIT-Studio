@@ -15,10 +15,9 @@ const ViewApplication = () => {
     const code=queryStrings?.code;
     const [config, setConfig] = useState([]);
     const [loading, setLoading] = useState(false);
+    const tenantId = Digit.ULBService.getCurrentTenantId();
     const { state } = useLocation();
     const {t} = useTranslation();
-
-    const tenantId = Digit.ULBService.getCurrentTenantId();
 
     const request = {
         url: "/health-service-request/service/v1/_search",
