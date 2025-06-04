@@ -1,19 +1,24 @@
+// Importing field groups for different sections of the form
 import { AddressFields } from "./templateConfig";
 import { ApplicantFields } from "./templateConfig";
 import { documentFields } from "./templateConfig";
 
+// Main function to generate form config from service config, module, and service names
 export const generateFormConfig = (config, module, service) => {
+  // Extract fields from the first ServiceConfiguration object
   const serviceFields = config?.ServiceConfiguration?.[0]?.fields || [];
 
+  // Utility to sort fields by their orderNumber property
   const sortByOrderNumber = (fields = []) =>
     [...fields].sort((a, b) => (a.orderNumber || 999) - (b.orderNumber || 999));
 
+  // Generates a single field configuration object
   const createField = (field) => {
     return {
-      type: field.format || field.type,
-      label: `${module}_${service}_${field.name.toUpperCase()}`,
+      type: field.format || field.type, // Use `format` if available, else fallback to `type`
+      label: `${module}_${service}_${field.name.toUpperCase()}`, // Internationalized label
       populators: {
-        ...field?.populators,
+        ...field?.populators, // Spread additional populators if provided
         name: field.name,
         optionsKey: "name",
         error: field?.validation?.message || "field is required",
@@ -24,20 +29,29 @@ export const generateFormConfig = (config, module, service) => {
         prefix: field.prefix,
         reference: field.reference,
         dependencies: field.dependencies,
+
+        // Handle MDMS-based schema loading
         ...(field?.schema
           ? {
               mdmsConfig: {
                 masterName: field.schema.split(".")[1] || "Master",
                 moduleName: field.schema.split(".")[0] || "common-masters",
-                localePrefix: `${field?.schema.replaceAll(".","_").toUpperCase()}_${field.name.toUpperCase()}`,
+                localePrefix: `${field?.schema.replaceAll(".", "_").toUpperCase()}_${field.name.toUpperCase()}`,
               },
             }
           : {}),
-          ...(field?.type === "enum"
-            ? {
-                options: field?.values?.map((ob) => ({"code" : ob.toUpperCase(), name: `${module}_${service}_${field.name.toUpperCase()}_${ob.toUpperCase()}`})),
-              }
-            : {}),
+
+        // Handle enum values if type is `enum`
+        ...(field?.type === "enum"
+          ? {
+              options: field?.values?.map((ob) => ({
+                code: ob.toUpperCase(),
+                name: `${module}_${service}_${field.name.toUpperCase()}_${ob.toUpperCase()}`
+              })),
+            }
+          : {}),
+
+        // Add default option if defaultValue is present
         ...(field?.defaultValue
           ? {
               options: [
@@ -52,8 +66,9 @@ export const generateFormConfig = (config, module, service) => {
     };
   };
 
-  let dynamicStep = 1;
+  let dynamicStep = 1; // Counter to track and increment step numbers for each form section
 
+  // Create configuration for an object type field (child form)
   const createChildForm = (objectField) => {
     return {
       head: `${module}_${service}_${objectField.name.toUpperCase()}`,
@@ -64,6 +79,7 @@ export const generateFormConfig = (config, module, service) => {
     };
   };
 
+  // Create configuration for an array type field (multi-entry child form)
   const createMultiChildForm = (arrayField) => {
     return {
       head: `${module}_${service}_${arrayField.name.toUpperCase()}`,
@@ -75,18 +91,22 @@ export const generateFormConfig = (config, module, service) => {
     };
   };
 
+  // Create document upload form section
   const getDocumentFields = (documentField) => {
     return {
       head: `${module}_${service}_${documentField.head.toUpperCase()}`,
-      "type": "documents",
-      body: [{...documentField?.body?.[0], localePrefix: `${module.toUpperCase()}_${service.toUpperCase()}_${documentField.head.toUpperCase()}`}],
-     
+      type: "documents",
+      body: [{
+        ...documentField?.body?.[0],
+        localePrefix: `${module.toUpperCase()}_${service.toUpperCase()}_${documentField.head.toUpperCase()}`
+      }],
     };
   };
 
-  const basicFields = [];
-  const stepForms = [];
+  const basicFields = []; // Flat fields not nested in object/array
+  const stepForms = [];   // Sections with child forms
 
+  // Organize service fields into either flat fields or nested sections
   sortByOrderNumber(serviceFields).forEach((field) => {
     if (field.type === "object") {
       stepForms.push(createChildForm(field));
@@ -97,6 +117,7 @@ export const generateFormConfig = (config, module, service) => {
     }
   });
 
+  // Conditionally add address section if config and AddressFields exist
   const addressFieldsStep =
     config?.ServiceConfiguration?.[0]?.boundary && AddressFields?.[0]
       ? AddressFields[0].type === "object"
@@ -104,6 +125,7 @@ export const generateFormConfig = (config, module, service) => {
         : createMultiChildForm(AddressFields[0])
       : {};
 
+  // Conditionally add applicant section
   const applicantFieldsStep =
     config?.ServiceConfiguration?.[0]?.applicant && ApplicantFields?.[0]
       ? ApplicantFields[0].type === "array"
@@ -113,18 +135,21 @@ export const generateFormConfig = (config, module, service) => {
 
   const steps = [];
 
+  // Push flat field group as a top-level section if any exist
   if (basicFields.length > 0) {
     steps.push({
-      head: "Service Details",
+      head: `${module}_${service}_DETAILS`,
       body: basicFields,
       type: "form",
     });
   }
 
+  // Conditionally add document section
   const documentform =
     config?.ServiceConfiguration?.[0]?.documents && documentFields?.[0]
       ? getDocumentFields(documentFields[0])
       : {};
 
+  // Final return — combine all dynamic sections
   return [...steps, ...stepForms, applicantFieldsStep, addressFieldsStep, documentform];
 };

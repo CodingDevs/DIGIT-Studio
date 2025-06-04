@@ -16,6 +16,7 @@ const CheckListCard = (props) => {
         gap: "1rem"
     };
 
+    //To fetch the checklist data
     const request = {
         url: "/health-service-request/service/v1/_search",
         params: {},
@@ -28,6 +29,7 @@ const CheckListCard = (props) => {
     }
     const mutation = Digit.Hooks.useCustomAPIMutationHook(request);
 
+    //To check if the checklist is in filled or pending to fill state
     const isFilled = async (id, accid) => {
 
         await mutation.mutate(
@@ -42,7 +44,7 @@ const CheckListCard = (props) => {
             {
                 onSuccess: (res) => {
                     let field = res.Services.filter(items => items.serviceDefId == id);
-                    const allValid = field?.[0]?.additionalFields[0].action=="SUBMIT";
+                    const allValid = field?.[0]?.additionalFields?.[0].action=="SUBMIT";
                     if (field && field.length > 0) {
                         setFilled(allValid);
                     }

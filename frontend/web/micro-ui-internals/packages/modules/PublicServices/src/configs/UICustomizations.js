@@ -48,22 +48,6 @@ export const UICustomizations = {
           if(data?.state?.searchForm?.businessService) data.url = `${data.url}/${data?.state?.searchForm?.businessService?.serviceCode}`
           if(data?.state?.searchForm?.businessService) data.config = { enabled : true}
           delete data.body.SearchCriteria.custom;
-        //   const { field, value, isActive } = custom || {};
-        //   filters[field?.code] = value;
-        //   if (isActive) {
-        //     if (isActive.value === "all") delete data.body.MdmsCriteria.isActive;
-        //     else data.body.MdmsCriteria.isActive = isActive?.value;
-        //   } else {
-        //     delete data.body.MdmsCriteria.isActive;
-        //   }
-        //   data.body.MdmsCriteria.filters = filters;
-        //   // data.body.MdmsCriteria.limit = 100
-        //   data.body.MdmsCriteria.limit = data.state.tableForm.limit;
-        //   data.body.MdmsCriteria.offset = data.state.tableForm.offset;
-        //   data.body.MdmsCriteria.schemaCode =
-        //     // additionalDetails?.currentSchemaCode
-        //     "ACCESSCONTROL-ACTIONS-TEST.actions-test";
-        //   delete data.body.MdmsCriteria.custom;
           return data;
         },
         additionalCustomizations: (row, key, column, value, t, searchResult) => {
@@ -128,7 +112,6 @@ export const UICustomizations = {
           return data;
         },
         additionalCustomizations: (row, key, column, value, t, searchResult) => {
-          console.log(row, key, column, value, t, searchResult)
           if (key === "Application Number") {
             return (
               <span className="link">

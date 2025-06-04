@@ -6,6 +6,7 @@ const PublicServicesCard = () => {
  
   const { t } = useTranslation();
 
+  //To show the card at main page
   const propsForModuleCard = {
     Icon: "BeenHere",
     moduleName: t("DIGIT_STUDIO"),
@@ -17,17 +18,10 @@ const PublicServicesCard = () => {
         label: t("DIGIT_STUDIO_APPLY"),
         link: `/${window?.contextPath}/employee/publicservices/modules?selectedPath=Apply`,
       },
-      // {
-      //   label: t("Services Search"),
-      //   link: `/${window?.contextPath}/employee/publicservices/modules?selectedpath=Search`,
-      // },
-      // {
-      //   label: t("Services Apply (PGR)"),
-      //   link: `/${window?.contextPath}/employee/publicservices/pgr/Newpgr/Apply`,
-      // },
     ],
   };
-  //employeemodulecard categorization
+
+  //employee module card categorization
   return <EmployeeModuleCard {...propsForModuleCard} />;
 };
 

@@ -1,24 +1,24 @@
-import { Header, SubmitBar, Menu, Card, Loader, ViewComposer, MultiLink } from "@egovernments/digit-ui-react-components";
+import { Header, Loader, ViewComposer, MultiLink } from "@egovernments/digit-ui-react-components";
 import { Button } from "@egovernments/digit-ui-components";
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useHistory, useParams } from "react-router-dom";
 import { downloadStudioPDF, generateViewConfigFromResponse } from "../../../utils";
 import WorkflowActions from "../../../components/WorkflowActions";
 import ViewCheckListCards from "../CheckList/viewCheckListCards";
-import { useWorkflowDetailsWorks, processBusinessServices } from "../../../utils";
+import { useWorkflowDetails, processBusinessServices } from "../../../utils";
+import { useParams } from "react-router-dom";
 const DigitDemoViewComponent = () => {
   const { t } = useTranslation();
-  const history = useHistory();
   const queryStrings = Digit.Hooks.useQueryParams();
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const [selectedBusinessService, setSelectedBusinessService] = useState(null);
   const userInfo = Digit.UserService.getUser();
   const { module, service } = useParams();
   const userRoles = userInfo?.info?.roles?.map((roleData) => roleData?.code);
-  const [current, setCurrent] = useState(Date.now());
   const [matchedBusinessServices, setMatchedBusinessServices] = useState([]);
   const [showOptions, setShowOptions] = useState(false);
+
+  //to get the fetched application details
   const request = {
     url : `/public-service/v1/application/${queryStrings?.serviceCode}`,
     headers: {
@@ -34,6 +34,7 @@ const DigitDemoViewComponent = () => {
   const {isLoading, data} = Digit.Hooks.useCustomAPIHook(request);
   let response =  data ? data?.Application?.[0] : {};
 
+  //To fetch the service config for the module and service
   const requestCriteria = {
     url: "/egov-mdms-service/v2/_search",
     body: {
@@ -50,7 +51,8 @@ const DigitDemoViewComponent = () => {
     item?.uniqueIdentifier.toLowerCase() === `${module}.${service}`.toLowerCase()
   );
 
-  let {data :workflowDetails, isLoading: workflowLoading} = useWorkflowDetailsWorks(
+  //To fetch the workflow details for the application to handle parallel workflow
+  let {data :workflowDetails, isLoading: workflowLoading} = useWorkflowDetails(
     {
       tenantId: tenantId,
       id: queryStrings?.applicationNumber,
@@ -62,6 +64,8 @@ const DigitDemoViewComponent = () => {
       }
     }
   );
+
+  // Util method to generate view config for view composer
   let config = generateViewConfigFromResponse(response,t, queryStrings?.businessService || selectedBusinessService?.code, serviceConfig);
 
 
@@ -69,6 +73,7 @@ useEffect(() => {
   // Guard clause to avoid calling with missing inputs
   if (!serviceConfig || !tenantId || !queryStrings?.applicationNumber || !workflowDetails) return;
 
+  //To get the eligible business service for the current state of the application
   processBusinessServices(
     serviceConfig,
     tenantId,
@@ -83,15 +88,21 @@ useEffect(() => {
   workflowDetails,
 ]);
 
+// Auto select business service if there's only one match
 useEffect(() => {
   if (matchedBusinessServices.length === 1 && !selectedBusinessService) {
     setSelectedBusinessService(matchedBusinessServices[0]);
   }
 }, [matchedBusinessServices, selectedBusinessService]);
+
+  // To get the checklist codes for the application
   let checkListCodes = workflowDetails ? [`${response?.businessService}.${workflowDetails?.processInstances[0].state?.state}`] : [];
+  
   if (isLoading || workflowLoading || ServiceConfigLoading) {
     return <Loader />;
   }
+
+  // Generate PDF download options from config
   const generateDownloadOptions = () => {
     return serviceConfig?.data?.pdf
       .filter(obj => obj.states.includes(response?.workflowStatus))
@@ -106,7 +117,7 @@ useEffect(() => {
   };
 
   const HandleDownloadPdf = (key) => {
-      downloadStudioPDF('pdf/generatepdf',{applicationNumber:queryStrings?.applicationNumber,tenantId, serviceCode:queryStrings?.serviceCode, pdfKey:key},`Muster-roll-${"aaaaaaa"}.pdf`)
+      downloadStudioPDF('pdf/generatepdf',{applicationNumber:queryStrings?.applicationNumber,tenantId, serviceCode:queryStrings?.serviceCode, pdfKey:key},`Application-${queryStrings?.applicationNumber}.pdf`)
   }
 
   return (
@@ -117,14 +128,6 @@ useEffect(() => {
               {t(`${response?.module.toUpperCase()}_${response?.businessService?.toUpperCase()}_APPLICATION_DETAILS`)}
             </Header>
             <MultiLink onHeadClick={() => setShowOptions(!showOptions)} className="multilink-block-wrapper divToBeHidden" label={t("CS_COMMON_DOWNLOAD")}  displayOptions={showOptions} options={generateDownloadOptions()}/>
-            {/* <Button
-            label={t("CS_COMMON_DOWNLOAD")}
-            onClick={() => HandleDownloadPdf()}
-            className={"employee-download-btn-className"}
-            variation={"teritiary"}
-            type="button"
-            icon={"FileDownload"}
-          /> */}
         </div>
       }
       <ViewComposer data={config} isLoading={false} />
@@ -137,7 +140,6 @@ useEffect(() => {
           applicationDetails={response}
           serviceConfig={serviceConfig}
           url={`/public-service/v1/application/${queryStrings?.serviceCode}`}
-          //setStateChanged={setStateChanged}
           isDisabled={!selectedBusinessService}
           moduleCode={response?.module}
           {...(matchedBusinessServices.length > 1 && {
@@ -155,10 +157,6 @@ useEffect(() => {
             ],
           })}
         />}
-      {/* <ActionBar>
-        {displayMenu ? <Menu localeKeyPrefix={"WORKS"} options={actionULB} optionKey={"name"} t={t} onSelect={onActionSelect} /> : null}
-        <SubmitBar label={t("ACTIONS")} onSubmit={() => setDisplayMenu(!displayMenu)} />
-      </ActionBar> */}
     </React.Fragment>
   );
 };

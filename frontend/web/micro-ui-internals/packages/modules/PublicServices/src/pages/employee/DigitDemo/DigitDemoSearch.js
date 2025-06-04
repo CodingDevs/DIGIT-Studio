@@ -1,22 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
-import { useLocation, useParams } from "react-router-dom";
 import { useSearchGenericConfig } from "../../../configs/searchGenericConfig";
 import { InboxSearchComposer, Loader } from "@egovernments/digit-ui-components";
-import { DateRangeNew } from "@egovernments/digit-ui-react-components";
 
 const DigitDemoSearch = () => {
   const { t } = useTranslation();
-  const { module } = useParams();
   const tenantId = Digit.ULBService.getCurrentTenantId();
-  const location = useLocation();
 
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const configs = useSearchGenericConfig(setIsLoading); // This may still set loading during config fetch
+  //To fetch the dynamic search config
+  const configs = useSearchGenericConfig(setIsLoading); 
 
+  // Fetch service data from API when component mounts or tenantId changes
   useEffect(() => {
     const fetchServiceData = async () => {
       try {
@@ -39,9 +37,9 @@ const DigitDemoSearch = () => {
     fetchServiceData();
   }, [tenantId]);
 
+  // Preprocess and inject dynamic values into config
   const updatedConfig = useMemo(() => {
     if (!configs || !data) return null;
-   // if (!configs) return null;
     const services = data?.Services || [];
 
     return Digit.Utils.preProcessMDMSConfigInboxSearch(
@@ -57,21 +55,16 @@ const DigitDemoSearch = () => {
               name: s.businessService,
               serviceCode: s.serviceCode,
             })),
-           // value : [{code:"NewTL", name:"NewTL", serviceCode:"SVC-DEV-TRADELICENSE-NEWTL-04"},{code:"OldTL", name:"OldTL", serviceCode:"SVC-DEV-TRADELICENSE-OLDTL-07"}]
           },
         ],
       }
     );
-  }, [t, configs, data] //[t, configs, data]
+  }, [t, configs, data]
   );
 
   if (!updatedConfig || isLoading) {
     return <Loader />;
   }
-
-  //  if (!updatedConfig) {
-  //   return <Loader />;
-  // }
 
   return (
     <div className="digit-inbox-search-wrapper">

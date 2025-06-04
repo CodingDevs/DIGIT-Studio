@@ -1,5 +1,5 @@
 import { FormComposerV2, Stepper, Toast } from "@egovernments/digit-ui-components";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory, useParams } from "react-router-dom";
 import { serviceConfigPGR } from "../../../configs/serviceConfigurationPGR";
@@ -11,20 +11,22 @@ import { Loader } from "@egovernments/digit-ui-react-components";
 const DigitDemoComponent = () => {
   const { t } = useTranslation();
   const history = useHistory();
-  const [showToast, setShowToast] = useState(null);
   const { module, service } = useParams();
-  const serviceCode = `${module.toUpperCase()}_${service.toUpperCase()}`;
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const queryStrings = Digit.Hooks.useQueryParams();
 
-  // Load from localStorage
+  const serviceCode = `${module.toUpperCase()}_${service.toUpperCase()}`;
+
+  // Get persisted state from localStorage
   const savedStep = parseInt(localStorage.getItem("currentStep"), 10) || 1;
-   let savedFormData = JSON.parse(localStorage.getItem("formData") || "{}");
+  const savedFormData = JSON.parse(localStorage.getItem("formData") || "{}");
 
   const [currentStep, setCurrentStep] = useState(savedStep);
   const [formData, setFormData] = useState(savedFormData);
   const [sessionData, setSessionData] = useState(savedFormData);
+  const [showToast, setShowToast] = useState(null);
 
+  // Fetch service configuration from MDMS
   const requestCriteria = {
     url: "/egov-mdms-service/v2/_search",
     body: {
@@ -34,24 +36,24 @@ const DigitDemoComponent = () => {
       },
     },
   };
-
   const { isLoading: moduleListLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
 
   const config = data?.mdms?.find((item) =>
     item?.uniqueIdentifier.toLowerCase() === `${module}.${service}`.toLowerCase()
   );
+
+  // Fetch workflow details if available
   const workflowrequestCriteria = {
     url: "/egov-workflow-v2/egov-wf/businessservice/_search",
     params: {
       tenantId: tenantId,
-      businessServices : config?.data?.workflow?.businessService,
+      businessServices: config?.data?.workflow?.businessService,
     },
-    config:{
-      enabled : config?.data?.workflow?.businessService ? true : false
-    }
+    config: {
+      enabled: Boolean(config?.data?.workflow?.businessService),
+    },
   };
-
-  const { isLoading: workflowDetailsLoading, data : workflowDetails } = Digit.Hooks.useCustomAPIHook(workflowrequestCriteria);
+  const { isLoading: workflowDetailsLoading, data: workflowDetails } = Digit.Hooks.useCustomAPIHook(workflowrequestCriteria);
 
   const Updatedconfig = {
     ServiceConfiguration: [config?.data],
@@ -59,31 +61,20 @@ const DigitDemoComponent = () => {
     module,
   };
 
-  // const configMap = {
-  //   pgr: serviceConfigPGR,
-  //   TradeLicense: serviceConfig
-  // };
-  // console.log(configMap[module],"configMap")
-
+  //logic to handle steps in apply screen flow
   const rawConfig = generateFormConfig(Updatedconfig, module.toUpperCase(), service?.toUpperCase());
-  console.log(rawConfig,"rawconfig");
   const steps = rawConfig.map((config) => config.head || config.label || "Untitled Section");
   const currentFormConfig = rawConfig[currentStep - 1];
   const schemaCode = queryStrings?.serviceCode;
 
-  const reqCreate = {
+  const mutation = Digit.Hooks.useCustomAPIMutationHook({
     url: `/public-service/v1/application/${schemaCode}`,
-    params: {},
-    body: {},
     method: "POST",
     headers: {},
-    config: {
-      enable: false,
-    },
-  };
+    config: { enable: false },
+  });
 
-  const mutation = Digit.Hooks.useCustomAPIMutationHook(reqCreate);
-
+  //this to maintain the current state of the application entered by user
   const persistData = (updatedFormData, updatedStep) => {
     localStorage.setItem("formData", JSON.stringify(updatedFormData));
     localStorage.setItem("currentStep", updatedStep.toString());
@@ -93,31 +84,28 @@ const DigitDemoComponent = () => {
 
   const onSubmit = async (data) => {
     const sectionName = currentFormConfig.name || `section_${currentStep}`;
-    const updatedFormData =
-      currentFormConfig?.type === "multiChildForm" || currentFormConfig?.type === "documents"
-        ? { ...formData, ...data }
-        : { ...formData, [sectionName]: data };
+
+    const updatedFormData = ["multiChildForm", "documents"].includes(currentFormConfig?.type)
+      ? { ...formData, ...data }
+      : { ...formData, [sectionName]: data };
 
     const isLastStep = currentStep === rawConfig.length;
 
     setFormData(updatedFormData);
     persistData(updatedFormData, currentStep);
+
     if (!isLastStep) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       persistData(updatedFormData, nextStep);
     } else {
-      // Final Submit
       await mutation.mutate(
         {
           url: `/public-service/v1/application/${schemaCode}`,
-          params: {},
           headers: { "x-tenant-id": tenantId },
           method: "POST",
           body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails),
-          config: {
-            enable: true,
-          },
+          config: { enable: true },
         },
         {
           onSuccess: (data) => {
@@ -162,26 +150,19 @@ const DigitDemoComponent = () => {
   const onFormValueChange = (_, updatedData) => {
     const sectionName = currentFormConfig.name || `section_${currentStep}`;
     const updatedSectionData = updatedData[sectionName] || updatedData;
-
-    const updatedFormData = { ...formData, [sectionName]: updatedSectionData };
-
-    // Compare current with session data
     const sessionSectionData = sessionData?.[sectionName];
     const hasChanged = JSON.stringify(sessionSectionData) !== JSON.stringify(updatedSectionData);
 
     if (hasChanged) {
+      const updatedFormData = { ...formData, [sectionName]: updatedSectionData };
       setFormData(updatedFormData);
       persistData(updatedFormData, currentStep);
     }
   };
 
-  const closeToast = () => {
-    setShowToast(false);
-  };
+  const closeToast = () => setShowToast(false);
 
-  if (moduleListLoading || workflowDetailsLoading) {
-    return <Loader />;
-  }
+  if (moduleListLoading || workflowDetailsLoading) return <Loader />;
 
   return (
     <React.Fragment>
@@ -192,7 +173,7 @@ const DigitDemoComponent = () => {
         activeSteps={currentStep}
       />
       <FormComposerV2
-        key={currentFormConfig?.name}
+        key={`${currentStep}-${currentFormConfig?.name}`}
         heading={t(`${serviceCode}_HEADING`)}
         label={currentStep === steps.length ? t(`${serviceCode}_SUBMIT`) : t(`${serviceCode}_NEXT`)}
         config={[
@@ -201,7 +182,11 @@ const DigitDemoComponent = () => {
             body: currentFormConfig?.body?.filter((a) => !a.hideInEmployee),
           },
         ]}
-        defaultValues={currentFormConfig?.type === "multiChildForm"? {...formData} : { ...formData[currentFormConfig?.name || `section_${currentStep}`] || {} }}
+        defaultValues={
+          currentFormConfig?.type === "multiChildForm"
+            ? { ...formData }
+            : { ...formData[currentFormConfig?.name || `section_${currentStep}`] || {} }
+        }
         onSubmit={onSubmit}
         fieldStyle={{ marginRight: 0 }}
         onFormValueChange={onFormValueChange}

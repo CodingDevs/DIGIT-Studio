@@ -242,11 +242,6 @@ export const serviceConfig = {
                   "schema": "TradeLicense.AccessoriesCategory",
                   "orderNumber": 1
                 }
-                // {
-                //   "name": "count",
-                //   "label": "accessories count ",
-                //   "type": "number"
-                // }
               ]
             }
           }

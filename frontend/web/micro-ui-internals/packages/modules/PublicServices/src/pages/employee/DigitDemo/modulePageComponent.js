@@ -1,16 +1,16 @@
 import React from "react";
 import { Card, Button, HeaderComponent, CardText, Loader, SubmitBar } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
-import { Link, useHistory } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { transformResponseforModulePage } from "../../../utils";
 
 const ModulePageComponent = () => {
   const { t } = useTranslation();
-  const history = useHistory();
 
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const queryStrings = Digit.Hooks.useQueryParams();
 
+  //To fetch the service details configured for the tenant
   const request = {
     url : "/public-service/v1/service",
     params: { tenantId : tenantId},
@@ -22,6 +22,7 @@ const ModulePageComponent = () => {
   }
   const {isLoading, data} = Digit.Hooks.useCustomAPIHook(request);
 
+  //  util to transform raw data into UI-friendly structure
   let detailsConfig = data ? transformResponseforModulePage(data?.Services) : [];
   const hasNoData = detailsConfig.length === 0 && !isLoading;
 
@@ -29,6 +30,7 @@ const ModulePageComponent = () => {
     return <Loader />;
   }
 
+  // Show fallback UI when no data is available
   if (hasNoData) { 
     return ( 
     <div className="products-container"> 
@@ -65,10 +67,10 @@ const ModulePageComponent = () => {
                 moduleData:data // example
               }
             }}>
-              Search
+              {t(`${product?.module?.toUpperCase()}_SEARCH`)}
             </Link>
             <Link className="link" to={`/${window.contextPath}/employee/publicservices/${product.module}/Inbox`}>
-              Inbox
+              {t(`${product?.module?.toUpperCase()}_INBOX`)}
             </Link>
           </Card>
         ))}

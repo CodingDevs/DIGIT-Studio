@@ -64,12 +64,4 @@ const ActionBar = (props) => {
     );
 };
 
-// ActionBar.PropTypes = {
-//     /** custom class of the svg icon */
-//     className: PropTypes.string,
-//     /** custom style of the svg icon */
-//     style: PropTypes.object,
-//   };
-  
-
 export default ActionBar;

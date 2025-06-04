@@ -30,7 +30,8 @@ const configModal = (
       }
       return !!docConfig?.[field]?.show;
     };
-  
+
+    // Create document field configurations
     const documentFields = (docConfig?.documents || []).map((doc, index) => ({
       type: "documentUploadAndDownload",
       label: t(`${doc.code}`),
@@ -50,6 +51,7 @@ const configModal = (
       }
     }));
   
+    // Final modal configuration return
     return {
       label: {
         heading: Digit.Utils.locale.getTransformedLocale(`WF_MODAL_HEADER_${businessService}_${action.action}`),

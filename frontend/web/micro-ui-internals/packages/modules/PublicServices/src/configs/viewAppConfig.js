@@ -1,4 +1,3 @@
-import React from "react";
 
 export const ViewApplicationConfig = (response,code,t,cardItems) => {
     const values = response?.attributes?.map(attr => {

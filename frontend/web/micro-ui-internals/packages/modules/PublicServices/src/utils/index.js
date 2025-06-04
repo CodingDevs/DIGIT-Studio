@@ -67,7 +67,6 @@ import cloneDeep from "lodash/cloneDeep";
         serviceDetails[sectionKey] = sectionVal;
       }
     }
-    console.log(serviceDetails,"service-details");
     return serviceDetails;
   };
   
@@ -400,7 +399,7 @@ import cloneDeep from "lodash/cloneDeep";
     return options;
   }
 
-  export const useWorkflowDetailsWorks = ({ tenantId, id, moduleCode, role = "CITIZEN", serviceData = {}, getStaleData, getTripData = false, config }) => {
+  export const useWorkflowDetails = ({ tenantId, id, moduleCode, role = "CITIZEN", serviceData = {}, getStaleData, getTripData = false, config }) => {
     const queryClient = useQueryClient();
   
     const staleDataConfig = { staleTime: Infinity };

@@ -116,32 +116,6 @@ export const InboxConfig = () => {
                                 optionsKey: "name",
                             },
                         },
-                        // {
-                        //     key: "boundaryComponent",
-                        //     type: "boundary",
-                        //     inline: true,
-                        //     label: "BoundaryFIlter",
-                        //     disable: false,
-                        //     populators: {
-                        //         name: "boundaryComponent",
-                        //         levelConfig: { lowestLevel: "LOCALITY", highestLevel: "PROVINCE", isSingleSelect: [] },
-                        //         hierarchyType: "NEWTEST00222",
-                        //         noCardStyle: true,
-                        //         preSelected: ["NEWTEST00222_MO", "NEWTEST00222_MO_11_MARYLAND", "NEWTEST00222_MO_11_06_PLEEBO"],                    // "frozenData":
-                        //         // [{
-                        //         //     code: "NEWTEST00222_MO",
-                        //         //     name: "NEWTEST00222_MO"
-                        //         //   },
-                        //         //   {
-                        //         //     code: "NEWTEST00222_MO.NEWTEST00222_MO_11_MARYLAND",
-                        //         //     name: "NEWTEST00222_MO_11_MARYLAND"
-                        //         //   },
-                        //         //   {
-                        //         //     code: "NEWTEST00222_MO.NEWTEST00222_MO_11_MARYLAND.NEWTEST00222_MO_11_06_PLEEBO",
-                        //         //     name: "NEWTEST00222_MO_11_06_PLEEBO"
-                        //         //   }]
-                        //     },
-                        // },
                         {
                             label: `${prefix}_COMMON_WARD`,
                             type: "locationdropdown",
@@ -164,7 +138,7 @@ export const InboxConfig = () => {
                             disable: false,
                             populators: {
                                 name: "state",
-                                labelPrefix: "WF_MUSTOR_",
+                                labelPrefix: `${prefix}_`,
                                 businessService: "NEWTL",
                             },
                         },
