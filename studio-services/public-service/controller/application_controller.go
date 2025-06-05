@@ -181,6 +181,7 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 	businessService := r.URL.Query().Get("businessService")
 	status := r.URL.Query().Get("status")
 	applicationNumber := r.URL.Query().Get("applicationNumber")
+	userId:=r.URL.Query().Get("userId")
 	sortBy := r.URL.Query().Get("sortBy")
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if limit, err := strconv.Atoi(limitStr); err == nil {
@@ -206,6 +207,9 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 	}
 	if applicationNumber != "" {
 		criteria.SearchCriteria.ApplicationNumber = applicationNumber
+	}
+	if userId != "" {
+		criteria.SearchCriteria.UserId=userId
 	}
 	if idsParam := r.URL.Query().Get("ids"); idsParam != "" {
 		criteria.SearchCriteria.Ids = strings.Split(idsParam, ",")
@@ -296,6 +300,81 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 	json.NewEncoder(w).Encode(res)
 }
 
+func(c *ApplicationController) SearchMyApplicationHandler(w http.ResponseWriter,r *http.Request){
+	var criteria model.SearchRequest
+
+	tenantID := r.Header.Get("X-Tenant-Id")
+	if tenantID == "" {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "Missing header 'X-Tenant-Id'")
+		return
+	}
+
+	AuthToken := r.Header.Get("auth-token")
+	if AuthToken == "" {
+		http.Error(w, "auth-token header is required", http.StatusBadRequest)
+		return
+	}
+
+	if criteria.SearchCriteria.TenantId == "" {
+		criteria.SearchCriteria.TenantId = tenantID
+	}
+
+	module := r.URL.Query().Get("module")
+	businessService := r.URL.Query().Get("businessService")
+	status := r.URL.Query().Get("status")
+	applicationNumber := r.URL.Query().Get("applicationNumber")
+	userId:=r.URL.Query().Get("userId")
+	sortBy := r.URL.Query().Get("sortBy")
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil {
+			criteria.SearchCriteria.Limit = limit
+		}
+	}
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if offset, err := strconv.Atoi(offsetStr); err == nil {
+			criteria.SearchCriteria.Offset = offset
+		}
+	}
+	if sortBy != "" {
+		criteria.SearchCriteria.SortBy = sortBy
+	}
+	if businessService != "" {
+		criteria.SearchCriteria.BusinessService = businessService
+	}
+	if status != "" {
+		criteria.SearchCriteria.Status = status
+	}
+	if module != "" {
+		criteria.SearchCriteria.Module = module
+	}
+	if applicationNumber != "" {
+		criteria.SearchCriteria.ApplicationNumber = applicationNumber
+	}
+	if userId != "" {
+		criteria.SearchCriteria.UserId=userId
+	}
+	if idsParam := r.URL.Query().Get("ids"); idsParam != "" {
+		criteria.SearchCriteria.Ids = strings.Split(idsParam, ",")
+	}
+	log.Println("inside search", criteria.SearchCriteria)
+	ctx := context.Background()
+	res, err := c.service.SearchApplication(ctx, criteria.SearchCriteria,AuthToken)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	//TODO: enrich ProcessInstance as request nfo not there its throwing error
+	/*for i := range res.Application {
+		err = c.workflowIntegrator.SearchWorkflow(&res.Application[i], criteria.RequestInfo)
+		if err != nil {
+			log.Printf("Workflow integration failed for application %s: %v", res.Application[i].Id, err)
+			// Optional: handle error per item or break early
+		}
+	}*/
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+
+}
 
 func (c *ApplicationController) CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	var req model.ApplicationRequest

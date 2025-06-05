@@ -620,6 +620,11 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		args = append(args, criteria.Status)
 		argPos++
 	}
+	if criteria.UserId != "" {
+		conditions = append(conditions, fmt.Sprintf("ap.user_id = $%d", argPos))
+		args = append(args, criteria.UserId)
+		argPos++
+	}
 	if len(conditions) > 0 {
 		queryBuilder.WriteString(" WHERE ")
 		queryBuilder.WriteString(strings.Join(conditions, " AND "))

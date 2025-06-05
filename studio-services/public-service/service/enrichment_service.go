@@ -446,14 +446,21 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 		return demandDetails, nil
 	
 	} else if calcType == "api" {
-		apiConf, ok := calcConf["api"].(map[string]interface{})
-		if !ok {
+		// apiConf, ok := calcConf[calcType].(map[string]interface{})Add commentMore actions
+		// if !ok {
+		// 	return nil, errors.New("invalid or missing API config")
+		// }
+
+		hostStr, okHost := calcConf["host"].(string)
+		endpoint, okEndpoint := calcConf["endpoint"].(string)
+		methodStr, okMethod := calcConf["method"].(string)
+
+		if !okHost || !okEndpoint || !okMethod {
 			return nil, errors.New("invalid or missing API config")
 		}
-	
-		hosts := strings.Split(apiConf["host"].(string), "||")
-		endpoint := apiConf["endpoint"].(string)
-		method := strings.ToUpper(apiConf["method"].(string))
+
+		hosts := strings.Split(hostStr, "||")
+		method := strings.ToUpper(methodStr)
 	
 		var responseBody []byte
 		var apiErr error
