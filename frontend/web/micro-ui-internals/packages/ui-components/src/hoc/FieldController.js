@@ -2,6 +2,7 @@ import React from "react";
 // import FieldComposer from "./FieldComposer";
 import FieldV1 from "./FieldV1";
 import { Controller } from "react-hook-form";
+import get from "lodash/get";
 
 function FieldController(args) {
   const {
@@ -34,7 +35,8 @@ function FieldController(args) {
       )
     : null;
   const customRules = customValidation ? { validate: customValidation } : customValidations ? { validate: customValidation } : {};
-  const error = (populators?.name && errors && errors[populators?.name] && Object.keys(errors[populators?.name]).length) ? (populators?.error) : null
+  const errorObject = get(errors, populators?.name);
+  const error = errorObject ? populators?.error ?? "field is required" : null;
   const customProps = config?.customProps;
 
   return (

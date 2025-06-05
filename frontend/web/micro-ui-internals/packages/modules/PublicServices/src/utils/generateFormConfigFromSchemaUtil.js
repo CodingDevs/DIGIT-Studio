@@ -17,13 +17,19 @@ export const generateFormConfig = (config, module, service) => {
     return {
       type: field.format || field.type, // Use `format` if available, else fallback to `type`
       label: `${module}_${service}_${field.name.toUpperCase()}`, // Internationalized label
+      isMandatory: !!field.required,
       populators: {
         ...field?.populators, // Spread additional populators if provided
         name: field.name,
         optionsKey: "name",
         error: field?.validation?.message || "field is required",
         required: !!field.required,
-        validation: field.validation,
+        validation:{
+          minlength:field?.minLength,
+          maxlength:field?.maxLength,
+          pattern: new RegExp(field?.validation?.regex),
+          message: field?.validation?.message
+        },
         disable: field.disable,
         defaultValue: field.defaultValue,
         prefix: field.prefix,
