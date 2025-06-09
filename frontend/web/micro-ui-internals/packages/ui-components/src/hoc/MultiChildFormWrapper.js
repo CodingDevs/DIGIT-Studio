@@ -3,7 +3,16 @@ import FieldController from "./FieldController";
 import { Button } from "@egovernments/digit-ui-react-components";
 
 const MultiChildFormWrapper = ({ config, control, formData, setValue, getValues, errors, props, defaultValues }) => {
-  const [instances, setInstances] = useState([{ id: Date.now() }]);
+  const [instances, setInstances] = useState(() => {
+    const defaultData = defaultValues?.[config.name];
+    if (Array.isArray(defaultData) && defaultData.length > 0) {
+      return defaultData.map((item, index) => ({
+        id: Date.now()+index
+      }));
+    } else {
+      return [{ id: Date.now() }];
+    }
+  });
 
   const addInstance = () => {
     setInstances((prev) => [...prev, { id: Date.now() }]);
