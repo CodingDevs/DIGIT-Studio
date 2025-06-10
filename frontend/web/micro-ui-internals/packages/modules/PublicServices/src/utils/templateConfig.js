@@ -115,7 +115,7 @@ export const ApplicantFields =  [{
           "maxLength": 256,
           "minLength": 0,
           "validation": {
-            "regex": "^[6-9]\d{9}$",
+            "regex": "^[6-9]\\d{9}$",
             "message": "Only 9 numbers allowed"
           },
           "required": false,
