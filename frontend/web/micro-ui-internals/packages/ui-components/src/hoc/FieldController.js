@@ -35,8 +35,8 @@ function FieldController(args) {
       )
     : null;
   const customRules = customValidation ? { validate: customValidation } : customValidations ? { validate: customValidation } : {};
+  let error = (populators?.name && errors && errors[populators?.name] && Object.keys(errors[populators?.name]).length) ? (populators?.error) : null;
   const errorObject = get(errors, populators?.name);
-  let error = (populators?.name && errors && errors[populators?.name] && Object.keys(errors[populators?.name]).length) ? (populators?.error) : null
   error = errorObject ? populators?.error : null;
   const customProps = config?.customProps;
 
