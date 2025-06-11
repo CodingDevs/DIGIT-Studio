@@ -80,3 +80,12 @@
 .digit-header-wrap{
   justify-content: space-between;
 }
+
+.digit-landing-page-card {
+  &.module-page-card {
+    .metric-container .metric-item .metric-label {
+      white-space: normal;
+      text-align: justify;
+    }
+  }
+}

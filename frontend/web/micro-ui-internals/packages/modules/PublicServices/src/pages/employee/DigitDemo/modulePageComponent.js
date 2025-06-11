@@ -1,11 +1,12 @@
 import React from "react";
-import { Card, Button, HeaderComponent, CardText, Loader, SubmitBar } from "@egovernments/digit-ui-components";
+import { Card, LandingPageCard, Button, HeaderComponent, CardText, Loader, SubmitBar } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import { transformResponseforModulePage } from "../../../utils";
 
 const ModulePageComponent = () => {
   const { t } = useTranslation();
+  const history = useHistory();
 
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const queryStrings = Digit.Hooks.useQueryParams();
@@ -49,31 +50,67 @@ const ModulePageComponent = () => {
 
       {/* Product Cards Section */}
       <div className="products-list">
-        {detailsConfig?.map((product, index) => (
-          <Card key={index} className="product-card">
-            <div className="product-header">
-              <HeaderComponent className="product-title">{t(product.heading)}</HeaderComponent>
-            </div>
-            <CardText className="product-description">{t(product?.cardDescription)}</CardText>
-            {queryStrings?.selectedPath === "Apply" && product?.businessServices.map((bs) => (
-             <Link key={bs?.businessService} className="link" to={`/${window.contextPath}/employee/publicservices/${product.module}/${bs.businessService}/Apply?serviceCode=${bs?.serviceCode}`}>
-              {bs?.businessService}
-        </Link>
-            ))
-            }
-            <Link className="link" to={{
-              pathname: `/${window.contextPath}/employee/publicservices/${product.module}/search`,
-              state: {
-                moduleData:data // example
-              }
-            }}>
-              {t(`${product?.module?.toUpperCase()}_SEARCH`)}
-            </Link>
-            <Link className="link" to={`/${window.contextPath}/employee/publicservices/${product.module}/Inbox`}>
-              {t(`${product?.module?.toUpperCase()}_INBOX`)}
-            </Link>
-          </Card>
-        ))}
+        {detailsConfig?.map((product, index) => {
+          const links = queryStrings?.selectedPath === "Apply" && product?.businessServices.map((bs) => ({
+                  label: bs.businessService,
+                  link: `/${window.contextPath}/employee/publicservices/${product.module}/${bs.businessService}/Apply?serviceCode=${bs?.serviceCode}`,
+          }));
+          return (
+            <LandingPageCard
+              key={index}
+              className={"module-page-card"}
+              moduleName={t(product.heading)}
+              metrics={[
+                {
+                  label: t(product?.cardDescription),
+                },
+              ]}
+              links={links}
+              centreChildren={[
+                <Button
+                  variation="teritiary"
+                  label={t(`${product?.module?.toUpperCase()}_HOW_IT_WORKS`)}
+                  type="button"
+                  size={"medium"}
+                  onClick={() => {
+                    history.push({
+                      pathname: `/${window.contextPath}/employee`
+                    });
+                  }}
+                />
+              ]}
+              endChildren={[
+                <Button
+                  variation="teritiary"
+                  type="button"
+                  size={"medium"}
+                  onClick={() => {
+                    history.push({
+                      pathname: `/${window.contextPath}/employee/publicservices/${product.module}/search`,
+                      state: {
+                        moduleData:data // example
+                      }
+                    });
+                  }}
+                  label={t(`${product?.module?.toUpperCase()}_SEARCH`)}
+                />,
+                <Button
+                  variation="teritiary"
+                  type="button"
+                  size={"medium"}
+                  onClick={() => {
+                    history.push({
+                      pathname: `/${window.contextPath}/employee/publicservices/${product.module}/Inbox`
+                    });
+                  }}
+                  label={t(`${product?.module?.toUpperCase()}_INBOX`)}
+                />
+              ]}
+              hideHeaderDivider={true}
+              style={{}}
+            />
+          );
+        })}
       </div>
     </div>
   );
