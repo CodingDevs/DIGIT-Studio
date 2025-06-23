@@ -14,12 +14,14 @@ import (
 type PublicController struct {
 	service *service.PublicService
 	enrichmentService  *service.EnrichmentService
+	validationService *service.ValidateService
 }
 
-func NewServiceController(service *service.PublicService,enrichmentService *service.EnrichmentService) *PublicController {
+func NewServiceController(service *service.PublicService,enrichmentService *service.EnrichmentService, validationService *service.ValidateService) *PublicController {
 	return &PublicController{
 		service: service,
 		enrichmentService: enrichmentService,
+        validationService: validationService,
 	}
 }
 
@@ -47,6 +49,11 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 	    return
 	}
 	ctx := context.Background()
+	/*_, err = c.validationService.Validate(ctx, req)
+    if err != nil {
+		http.Error(w,"Failed to validate: " +err.Error(), http.StatusInternalServerError)
+
+    }*/
 	res, err := c.service.CreateService(ctx, req, tenantID)
 	if err != nil {
 		log.Printf("CreateService error: %v", err)
@@ -63,7 +70,7 @@ func (c *PublicController) UpdateServiceHandler(w http.ResponseWriter, r *http.R
 	var serviceRequest model.ServiceRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&serviceRequest); err != nil {
-		log.Printf("❌ JSON decode error: %v", err)
+		log.Printf("JSON decode error: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}

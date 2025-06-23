@@ -29,8 +29,11 @@ func NewIndexerService(repo repository.RestCallRepository, kafkaProducer *produc
 func (i *IndexerService) SendRequestToIndexerForParallelWorkflow(req model.ApplicationResponse, reqInfo model.RequestInfo, topic string) error {
 	app := req.Application
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": app.BusinessService,
+        "module":  app.Module,}
 
-	mdmsData, err := i.mdmsV2Service.SearchMDMS(app.TenantId, schemaCode, app.BusinessService, app.Module, reqInfo)
+	mdmsData, err := i.mdmsV2Service.SearchMDMS(app.TenantId, schemaCode, filters, reqInfo)
 	if err != nil {
 		log.Println("error calling search mdms", err)
 		return errors.New("error calling search mdms " + err.Error())

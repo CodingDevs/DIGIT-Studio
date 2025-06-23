@@ -63,13 +63,15 @@ func main() {
 	mdmsv2sSvc := service.NewMDMSV2Service(restRepo,dbConn)
 	idgenSvc := service.NewIdGenService(restRepo)
 	demandSvc := service.NewDemandService(restRepo,mdmsv2sSvc)
-	localizationService := service.NewLocalizationService(restRepo)
+	localizationService := service.NewLocalizationService(restRepo,*mdmsv2sSvc)
 	serviceSvc := service.NewPublicService(publicRepo)
 	workflowIntegrator := service.NewWorkflowIntegrator(mdmsv2sSvc)
 	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc,workflowIntegrator,mdmsv2sSvc)
 	enrichSvc := service.NewEnrichmentService(individualSvc, demandSvc, mdmsSvc, mdmsv2sSvc, idgenSvc, smsService)
 	appSvc := service.NewApplicationService(appRepo, enrichSvc,workflowIntegrator)
 	indexSvc := service.NewIndexerService(restRepo,kafkaProducer,workflowIntegrator,mdmsv2sSvc)
+	workflowSvc := service.NewWorkflowService(mdmsv2sSvc, restRepo)
+	validSvc := service.NewValidateService(mdmsv2sSvc, dbConn, kafkaProducer, workflowSvc, localizationService)
 
 	
 
@@ -82,7 +84,7 @@ func main() {
 
 	// Initialize controllers
 	appCtrl := controller.NewApplicationController(appSvc, workflowIntegrator, individualSvc, enrichSvc, smsService,indexSvc)
-	serviceCtrl := controller.NewServiceController(serviceSvc,enrichSvc)
+	serviceCtrl := controller.NewServiceController(serviceSvc,enrichSvc,validSvc)
 
 	// Setup router
 	router := mux.NewRouter()

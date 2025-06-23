@@ -33,7 +33,7 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 
 	existingService, _ := r.SearchService(ctx, searchCriteria)
 	if len(existingService.Services) > 0 {
-		return model.ServiceResponse{}, errors.New("application already exists with same module,business service and tenantId")
+		return model.ServiceResponse{}, errors.New("Service already exists with same module,business service and tenantId")
 	}
 
 	now := time.Now()
@@ -49,15 +49,6 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 
 	ServiceID := uuid.New()
 
-	// Set missing IDs
-
-	// Always generate new Application Number
-
-	//req.Service.ServiceCode, _ = r.generateServiceCode(ctx, req.Service.TenantId, req.Service.Module, req.Service.BusinessService)
-
-	// Marshal complex fields
-	//additionalDetailsJSON, _ := json.Marshal(req.Service.AdditionalDetails)
-
 	req.Service.ID = ServiceID
 	req.Service.AuditDetails = model.AuditDetails{
 		CreatedBy:        createdBy,
@@ -69,12 +60,11 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 	// Marshal request into JSON
 	kafkaPayload, err := json.Marshal(req)
 	if err != nil {
-		return model.ServiceResponse{}, fmt.Errorf("failed to marshal application request for Kafka: %w", err)
+		return model.ServiceResponse{}, fmt.Errorf("failed to marshal Service request for Kafka: %w", err)
 	}
 
 	// Publish to Kafka topic
 	if r.kafkaProducer != nil {
-		log.Println("request", string(kafkaPayload))
 		err = r.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE"), kafkaPayload)
 		if err != nil {
 			log.Printf("failed to push kafka message: %v", err)
@@ -233,21 +223,6 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 	}, nil
 }
 
-func (r PublicRepository) generateServiceCode(ctx context.Context, tenantId string, module string, businessService string) (string, interface{}) {
-	var nextVal int64
-
-	// Get next value from the sequence
-	query := "SELECT nextval('service_code_sequence')"
-	err := r.db.QueryRowContext(ctx, query).Scan(&nextVal)
-	if err != nil {
-		return "", fmt.Errorf("failed to get next sequence value: %w", err)
-	}
-
-	// Format service code
-	serviceCode := fmt.Sprintf("SVC-%s-%s-%s-%02d", strings.ToUpper(tenantId), strings.ToUpper(module), strings.ToUpper(businessService), nextVal)
-
-	return serviceCode, nil
-}
 
 func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceRequest, serviceCode string) (model.ServiceResponse, error) {
 	searchCriteria := model.SearchCriteria{

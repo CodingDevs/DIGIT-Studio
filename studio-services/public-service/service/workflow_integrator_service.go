@@ -44,18 +44,19 @@ func NewWorkflowIntegrator(MdmsV2sService *MDMSV2Service) *WorkflowIntegrator {
 // CallWorkflow integrates with the workflow and updates the application with the workflow response.
 func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error {
 	app := req.Application
-	log.Println("inside CallWorkflow")
-	log.Println("🔥🔥🔥 Inside CallWorkflow - LOG TRIGGERED 🔥🔥🔥")
 	requestPayload := make(map[string]interface{})
 	processInstance := make(map[string]interface{})
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
-	mdmsData, err 	:= wi.MDMSV2Service.SearchMDMS(app.TenantId, schemaCode, app.BusinessService, app.Module, req.RequestInfo)
+	filters := map[string]string{
+		"service": app.BusinessService,
+		"module": app.Module,
+	}
+	mdmsData, err 	:= wi.MDMSV2Service.SearchMDMS(app.TenantId, schemaCode, filters, req.RequestInfo)
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
 	if !ok || len(mdmsList) == 0 {
 		log.Println("MDMS data missing or invalid")
 		return nil
 	}
-	log.Println("mdmsData:", mdmsData)
 	firstEntry, _ := mdmsList[0].(map[string]interface{})
 	data, _ := firstEntry["data"].(map[string]interface{})
 	workflowData, ok := data["workflow"].(map[string]interface{})
@@ -132,10 +133,8 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 	return nil
 }
 
-func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo, ) error {
+func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo ) error {
 	app := applicationResponse
-	log.Println("Search CallWorkflow")
-	log.Println("🔥🔥🔥 Inside SearchWorkflow - LOG TRIGGERED 🔥🔥🔥")
 	requestPayload := make(map[string]interface{})
 	requestPayload[REQUEST_INFO_KEY] = req
 
@@ -181,3 +180,4 @@ func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Applicat
 	applicationResponse.ProcessInstance = &firstInstance
 	return nil
 }
+

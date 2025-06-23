@@ -70,11 +70,14 @@ func ConsumePayments(workflowIntegrator *service.WorkflowIntegrator, application
 
 		application := searchRes.Application[0]
 		schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+		filters := map[string]string{
+			"service": application.BusinessService,
+			"module":  application.Module,
+    	}
 		mdmsData, _ := workflowIntegrator.MDMSV2Service.SearchMDMS(
 			application.TenantId,
 			schemaCode,
-			application.BusinessService,
-			application.Module,
+			filters,
 			paymentReq.RequestInfo,
 		)
 

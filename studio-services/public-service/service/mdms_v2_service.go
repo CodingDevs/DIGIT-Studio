@@ -30,22 +30,20 @@ func NewMDMSV2Service(repo repository.RestCallRepository, db *sql.DB) *MDMSV2Ser
 	}
 }
 
-func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode, serviceName, module string, requestInfo model.RequestInfo) (map[string]interface{}, error) {
+func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[string]string,requestInfo model.RequestInfo) (map[string]interface{}, error) {
 
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_SEARCH_ENDPOINT")
 
 	payload := model.MDMSV2Request{
 		MdmsCriteria: model.MdmsV2Criteria{
 			TenantID:   tenantId,
-			Filters:    map[string]string{"service": serviceName, "module": module},
+			Filters: filters,
 			SchemaCode: schemaCode,
 			Limit:      10,
 			Offset:     0,
 		},
 		RequestInfo: requestInfo,
 	}
-	log.Println("url", url)
-	log.Println("payload", payload)
 
 	var resp map[string]interface{}
 	err := s.restCallRepo.Post(url, payload, &resp)
@@ -53,8 +51,6 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode, serviceName, module str
 		log.Printf("Error calling MDMS service: %v", err)
 		return nil, err
 	}
-	respJSON, _ := json.MarshalIndent(resp, "", "  ")
-	log.Println("MDMS Response:\n", string(respJSON))
 	return resp, nil
 }
 
@@ -169,5 +165,33 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 		return resp, roleMappingErr
 	}
 
+	return resp, nil
+}
+
+func (s *MDMSV2Service) CreateMDMS(tenantId, schemaCode string, data interface{}, requestInfo model.RequestInfo) (map[string]interface{}, error) {
+
+	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + schemaCode
+
+	payload := model.MDMSCreateV2Request{
+		RequestInfo: requestInfo,
+		MDMS: model.Mdms{
+			TenantID:   tenantId,
+			SchemaCode: schemaCode,
+			Data:       data,
+			IsActive:   true,
+		},
+	}
+
+	log.Printf("Calling MDMS Create\nURL: %s\nPayload: %+v\n", url, payload)
+
+	var resp map[string]interface{}
+	err := s.restCallRepo.Post(url, payload, &resp)
+	if err != nil {
+		log.Printf("Error calling MDMS create: %v", err)
+		return nil, err
+	}
+
+	respJSON, _ := json.MarshalIndent(resp, "", "  ")
+	log.Println("MDMS Create Response:\n", string(respJSON))
 	return resp, nil
 }

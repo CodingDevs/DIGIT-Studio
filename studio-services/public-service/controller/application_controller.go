@@ -60,9 +60,6 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 	//MDMS Search
 	fields := mdmsSearch.MdmsSearchWithFilter(req)
 
-	// Print only the fields part
-	// fmt.Printf("Fields: %+v\n", fields)
-
 	// Validate the service details against the fields schema
 	if err := mdmsSearch.ValidateServiceDetailsWithSchema(req, fields); err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Service details validation failed: "+err.Error())
@@ -74,16 +71,9 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Enrichment failed: "+err.Error())
 	    return
 	}
-	log.Println(req)
 	for i := range req.Application.Applicants {
 		applicant := req.Application.Applicants[i]
 		mobile := strconv.FormatInt(applicant.MobileNumber, 10)
-
-		// Log input applicant in JSON
-		if data, _ := json.MarshalIndent(applicant, "", "  "); true {
-			log.Println("Processing applicant:", string(data))
-		}
-
 		criteria := map[string]interface{}{
 			"mobileNumber": mobile,
 			"tenantId":     req.Application.TenantId,
@@ -91,16 +81,10 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 
 		// Check if individual exists
 		resp := c.individualService.GetIndividual(req.RequestInfo, criteria)
-		if data, _ := json.MarshalIndent(resp, "", "  "); true {
-			log.Println("GetIndividual response:", string(data))
-		}
 
 		if len(resp.Individual) == 0 {
 			// If not found, create individual
 			createdResp := c.individualService.CreateUser(applicant, req.RequestInfo)
-			if data, _ := json.MarshalIndent(createdResp, "", "  "); true {
-				log.Println("Created individual response:", string(data))
-			}
 
 			if createdResp.Individual.IndividualId != "" {
 				req.Application.Applicants[i].UserId = createdResp.Individual.IndividualId
@@ -112,13 +96,8 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		} else {
 			// Individual exists, update applicant UserId
 			req.Application.Applicants[i].UserId = resp.Individual[0].IndividualId
-			result := map[string]string{
-				"applicant": applicant.Name,
-				"userId":    resp.Individual[0].IndividualId,
-			}
-			if data, _ := json.MarshalIndent(result, "", "  "); true {
-				log.Println("Existing individual found:", string(data))
-			}
+		     log.Println("Existing individual found")
+			
 		}
 	}
 
@@ -129,7 +108,6 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		// Optional: return HTTP error or log only
 	}
 	ctx := context.Background()
-	log.Println("inside CreateApplicationHandler")
 	res, err := c.service.CreateApplication(ctx, req, serviceCode)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())

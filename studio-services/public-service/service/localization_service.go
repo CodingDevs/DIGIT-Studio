@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -15,11 +16,13 @@ import (
 
 type LocalizationService struct {
 	restCallRepo repository.RestCallRepository
+	mdms_service MDMSV2Service
 }
 
-func NewLocalizationService(repo repository.RestCallRepository) *LocalizationService {
+func NewLocalizationService(repo repository.RestCallRepository, mdms_service MDMSV2Service) *LocalizationService {
 	return &LocalizationService{
 		restCallRepo: repo,
+		mdms_service: mdms_service,
 	}
 }
 
@@ -100,7 +103,7 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 			locale = parts[1]
 		}
 	}
-
+//TODO: use module specified in the config 
 	url := fmt.Sprintf("%s%s%s?locale=%s&tenantId=%s&module=digit-studio&codes=%s",
 		os.Getenv("LOCALIZATION_SERVICE_HOST"),
 		os.Getenv("LOCALIZATION_CONTEXT_PATH"),
@@ -172,3 +175,80 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 	msgDetail["templateId"] = ""
 	return msgDetail
 }
+
+func (l *LocalizationService) SendLocalizationMessage(req model.ServiceRequest) (map[string]interface{}, error) {
+	tenantId := req.Service.TenantId
+	business_service := req.Service.BusinessService
+	module := req.Service.Module
+
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+		"service": business_service, 
+		"module": module, 
+	}
+	resp, _ := l.mdms_service.SearchMDMS(tenantId, schemaCode, filters, req.RequestInfo)
+
+	mdmsList, ok := resp["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return nil, errors.New("MDMS data missing or invalid")
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	if !ok {
+		log.Println("Invalid MDMS format: first entry is not a map")
+		return nil, errors.New("invalid MDMS format: first entry is not a map")
+	}
+
+	data, ok := firstEntry["data"].(map[string]interface{})
+	if !ok {
+		log.Println("Invalid MDMS format: missing or invalid 'data'")
+		return nil, errors.New("invalid MDMS format: missing or invalid 'data'")
+	}
+
+	localization := data["localization"].(map[string]interface{})
+	modules := localization["modules"].([]interface{})
+	module = modules[0].(string)
+	log.Println(modules)
+
+	notification := data["notification"].(map[string]interface{})
+	sms := notification["sms"].([]interface{})
+	email := notification["email"].([]interface{})
+
+	var arr []interface{}
+	arr = append(arr, sms...)
+	arr = append(arr, email...)
+	var messages []model.Message
+	for _, val := range arr {
+		data := val.(map[string]interface{})
+		code := data["code"].(string)
+		message := data["template"].(string)
+		locale := os.Getenv("NOTIFICATION_LOCALE")
+
+		messag :=  model.Message{
+			Code: code,
+			Message: message,
+			Module: module,
+			Locale: locale,
+		}
+
+		messages = append(messages, messag)	
+	}
+
+	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
+	payload := model.Localization{
+		RequestInfo: req.RequestInfo,
+		TenantID: tenantId,
+		Messages: messages,
+	}
+
+	var result map[string]interface{}
+	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
+	if err != nil {
+		return result, err;
+	}
+
+	log.Println(result)
+
+	return result, nil
+} 

@@ -39,7 +39,6 @@ func (ser *IdGenService) GetId(requestInfo model.RequestInfo, tenantId, name, fo
 		}*/
 
 	url := config.GetEnv("IDGEN_SERVICE_HOST") + config.GetEnv("IDGEN_SERVICE_GENERATE_URL")
-	log.Println("Iggen service url: " + url)
 	var idGenResp idgen.IdGenerationResponse
 	err := ser.restCallRepo.Post(url, reqBody, &idGenResp)
 	var ids []string
@@ -47,8 +46,6 @@ func (ser *IdGenService) GetId(requestInfo model.RequestInfo, tenantId, name, fo
 		log.Printf("Error calling create Idgen API: %v", err)
 		return ids, nil
 	}
-	log.Println(idGenResp)
-
 	for _, idResp := range idGenResp.IdResponses {
 		ids = append(ids, idResp.Id)
 	}

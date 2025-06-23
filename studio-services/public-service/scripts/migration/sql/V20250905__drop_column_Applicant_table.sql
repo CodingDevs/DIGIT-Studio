@@ -6,4 +6,16 @@ ALTER TABLE applicant
     DROP COLUMN IF EXISTS email_id;
 
 
-ALTER TABLE application ADD CONSTRAINT uq_application_application_number UNIQUE (application_number);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'uq_application_application_number'
+        AND conrelid = 'application'::regclass
+    ) THEN
+ALTER TABLE application
+    ADD CONSTRAINT uq_application_application_number UNIQUE (application_number);
+END IF;
+END
+$$;

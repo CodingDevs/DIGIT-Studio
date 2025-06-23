@@ -125,11 +125,14 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 	}
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": application.Application.BusinessService,
+        "module":  application.Application.Module,
+    }
 	mdmsData, _ := s.mdmsV2Service.SearchMDMS(
 		application.Application.TenantId,
 		schemaCode,
-		application.Application.BusinessService,
-		application.Application.Module,
+		filters,
 		application.RequestInfo,
 	)
 
@@ -260,11 +263,14 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 	}
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": application.Application.BusinessService,
+        "module":  application.Application.Module,
+    }
 	mdmsData, _ := s.mdmsV2Service.SearchMDMS(
 		application.Application.TenantId,
 		schemaCode,
-		application.Application.BusinessService,
-		application.Application.Module,
+		filters,
 		application.RequestInfo,
 	)
 

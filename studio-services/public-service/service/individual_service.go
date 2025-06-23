@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"log"
 	"public-service/config"
 	"public-service/model"
@@ -25,27 +24,18 @@ func (s *IndividualService) CreateUser(req model.Applicant, info model.RequestIn
 	individualReq := mapToIndividualRequest(req, info)
 	log.Println("individualReq", individualReq)
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_CREATE_ENDPOINT")
-	log.Println("Individual service url: " + url)
 	var resp individual.IndividualResponse
-	if jsonBytes, err := json.MarshalIndent(individualReq, "", "  "); err == nil {
-		log.Printf("Search request payload:\n%s\n", string(jsonBytes))
-	} else {
-		log.Printf("Search request (raw): %+v\n", individualReq)
-	}
 	err := s.restCallRepo.Post(url, individualReq, &resp)
 	if err != nil {
 		log.Printf("Error calling create individual API: %v", err)
 		return individual.IndividualResponse{}
 	}
-	log.Println(resp)
 	return resp
 }
 
 func (s *IndividualService) UpdateUser(req model.Applicant, info model.RequestInfo) individual.IndividualResponse {
 	individualReq := mapToIndividualRequest(req, info)
-	log.Println("individualReq", individualReq)
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_UPDATE_ENDPOINT")
-	log.Println("Individual service url: " + url)
 	var resp individual.IndividualResponse
 	err := s.restCallRepo.Post(url, individualReq, &resp)
 	if err != nil {
@@ -84,16 +74,6 @@ func (s *IndividualService) GetIndividual(requestInfo model.RequestInfo, criteri
 
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_SEARCH_ENDPOINT") +
 		"?limit=1000&offset=0&tenantId=" + tenantId
-
-	// Safe and readable logging
-	log.Printf("Individual service URL: %s\n", url)
-
-	// Marshal searchReq to JSON for cleaner logging
-	if jsonBytes, err := json.MarshalIndent(searchReq, "", "  "); err == nil {
-		log.Printf("Search request payload:\n%s\n", string(jsonBytes))
-	} else {
-		log.Printf("Search request (raw): %+v\n", searchReq)
-	}
 
 	var resp individual.IndividualBulkResponse
 	err := s.restCallRepo.Post(url, searchReq, &resp)

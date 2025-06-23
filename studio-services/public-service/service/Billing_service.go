@@ -90,11 +90,14 @@ func (r *DemandService) fetchBill(request model.ApplicationRequest) ([]demand.Bi
 	endpoint := config.GetEnv("BILL_FETCH_ENDPOINT") // e.g., /billing-service/bill/v2/_fetchbill
 	
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": request.Application.BusinessService,
+        "module":  request.Application.Module,
+    }
 		mdmsData, _ := r.MdmsV2Service.SearchMDMS(
 			request.Application.TenantId,
 			schemaCode,
-			request.Application.BusinessService,
-			request.Application.Module,
+			filters,
 			request.RequestInfo,
 		)
 		var resp demand.BillResponse

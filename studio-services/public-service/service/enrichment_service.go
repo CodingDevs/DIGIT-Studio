@@ -74,11 +74,14 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 
 	// Step 1: Extract generateDemandAt from MDMS and check if action is allowed
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": apps.Application.BusinessService,
+        "module":  apps.Application.Module,
+    }
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
-		apps.Application.BusinessService,
-		apps.Application.Module,
+		filters,
 		apps.RequestInfo,
 	)
 
@@ -226,11 +229,14 @@ func logJSON(message string, data interface{}) {
 
 func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRequest, typeOfApplication string) (model.ApplicationRequest, error) {
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": apps.Application.BusinessService,
+        "module":  apps.Application.Module,
+    }
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
-		apps.Application.BusinessService,
-		apps.Application.Module,
+		filters,
 		apps.RequestInfo,
 	)
 
@@ -295,11 +301,14 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 
 func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, typeOfApplication string) (model.ServiceRequest, error) {
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": apps.Service.BusinessService,
+        "module":  apps.Service.Module,
+    }
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Service.TenantId,
 		schemaCode,
-		apps.Service.BusinessService,
-		apps.Service.Module,
+		filters,
 		apps.RequestInfo,
 	)
 
@@ -369,11 +378,14 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 	var demandDetails []demand.DemandDetail
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": apps.Application.BusinessService,
+        "module":  apps.Application.Module,
+    }
 	mdmsData, err := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
-		apps.Application.BusinessService,
-		apps.Application.Module,
+		filters,
 		apps.RequestInfo,
 	)
 	if err != nil {
