@@ -134,12 +134,6 @@ func getString(val interface{}) string {
 	return ""
 }
 
-func getStringSlice(val interface{}) []string {
-	if list, ok := val.([]string); ok {
-		return list
-	}
-	return nil
-}
 
 func ptrToGender(g individual.Gender) *individual.Gender {
 	return &g

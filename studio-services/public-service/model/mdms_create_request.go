@@ -31,6 +31,12 @@ type MdmsActionData struct {
 	ServiceCode  string `json:"serviceCode"`
 	ParentModule string `json:"parentModule"`
 }
+type MdmsDocumentData struct{
+
+	Module 	string   				`json:"module"`
+	Actions []interface{} 			`json:"actions"`
+
+}
 
 // Schema Type: ACCESSCONTROL-ROLEACTIONS.roleactions
 type MdmsRoleActionData struct {
@@ -52,7 +58,11 @@ func DecodeMDMSData(mdms Mdms) (interface{}, error) {
 		var roleActionData MdmsRoleActionData
 		err := mapstructure.Decode(mdms.Data, &roleActionData)
 		return roleActionData, err
-
+		
+    case "DigitStudio.DocumentConfig2":
+		var documentData MdmsDocumentData
+		err := mapstructure.Decode(mdms.Data, &documentData)
+		return documentData, err
 	default:
 		return nil, fmt.Errorf("unsupported schema code: %s", mdms.SchemaCode)
 	}

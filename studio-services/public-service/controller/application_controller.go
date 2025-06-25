@@ -117,7 +117,6 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 	if err2 != nil {
 		log.Printf("error sending sms  %v",err2)
 	}
-	log.Printf("ProcessInstance enriched: %+v", res.Application.ProcessInstance)
 
     err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
 	if err != nil {
@@ -265,7 +264,6 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	log.Printf("ProcessInstance enriched: %+v", res.Application.ProcessInstance)
 	_, err2 := c.smsService.SendSMS(req, req.Application.TenantId, req.Application.Applicants)
 	if err2 != nil {
 		log.Printf("error sending sms  %v",err2)

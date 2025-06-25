@@ -35,21 +35,21 @@ func (s *ApplicationService) SearchApplication(ctx context.Context, criteria mod
 	}
 	resp.Application = s.enrichmentService.EnrichApplicationsWithIndividuals(resp.Application, criteria)
 	// Prepare RequestInfo with authToken
-	requestInfo := model.RequestInfo{
+	/*requestInfo := model.RequestInfo{
 		AuthToken: authToken,
 		UserInfo: &model.User{
 			
 		},
-	}
+	}*/
 
 	// Iterate through applications and enrich with workflow data
-	for i := range resp.Application {
+	/*for i := range resp.Application {
 		err := s.workflowIntegrator.SearchWorkflow(&resp.Application[i], requestInfo)
 		if err != nil {
 			log.Printf("Error enriching application with workflow: %v", err)
 			// Optionally return or continue depending on desired behavior
 		}
-	}
+	}*/
 	return resp, nil
 }
 

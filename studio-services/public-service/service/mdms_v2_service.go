@@ -16,6 +16,7 @@ import (
 const (
 	RoleActionCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLEACTIONS.roleactions"
 	ActionTestCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ACTIONS-TEST.actions-test"
+	DocumentCreatePath = "egov-mdms-service/v2/_create/DigitStudio.DocumentConfig2"
 )
 
 type MDMSV2Service struct {

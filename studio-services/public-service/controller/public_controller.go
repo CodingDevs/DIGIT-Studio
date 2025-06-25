@@ -49,11 +49,11 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 	    return
 	}
 	ctx := context.Background()
-	/*_, err = c.validationService.Validate(ctx, req)
+	_, err = c.validationService.Validate(ctx, req)
     if err != nil {
 		http.Error(w,"Failed to validate: " +err.Error(), http.StatusInternalServerError)
 
-    }*/
+    }
 	res, err := c.service.CreateService(ctx, req, tenantID)
 	if err != nil {
 		log.Printf("CreateService error: %v", err)
