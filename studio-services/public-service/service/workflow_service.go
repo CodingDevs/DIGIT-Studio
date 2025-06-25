@@ -8,60 +8,152 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	"public-service/model"
 	"public-service/repository"
 )
 
 type WorkflowService struct {
-	httpClient *http.Client
+	httpClient    *http.Client
 	MdmsV2Service *MDMSV2Service
 	restCallRepo  repository.RestCallRepository
-
 }
 
-// NewWorkflowIntegrator returns a new instance of WorkflowIntegrator.
+type WorkflowWrapper struct {
+	model.BusinessService
+	ACTIVE   []string `json:"ACTIVE,omitempty"`
+	INACTIVE []string `json:"INACTIVE,omitempty"`
+}
+
 func NewWorkflowService(MdmsV2sService *MDMSV2Service, repo repository.RestCallRepository,
-	) *WorkflowService {
-		return &WorkflowService{
-			httpClient: &http.Client{},
-			MdmsV2Service: MdmsV2sService,
-			restCallRepo:  repo,
+) *WorkflowService {
+	return &WorkflowService{
+		httpClient:    &http.Client{},
+		MdmsV2Service: MdmsV2sService,
+		restCallRepo:  repo,
+	}
+}
+
+func (ws *WorkflowService) GetBusinessService(serviceRequest model.ServiceRequest, requestInfo model.RequestInfo, applicationNumber string) (*model.BusinessService, error) {
+	url := ws.buildSearchURL(serviceRequest, true, applicationNumber)
+
+	workflowReq := model.RequestInfoWrapper{
+		RequestInfo: requestInfo,
+	}
+
+	payload, err := json.Marshal(workflowReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request info: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ws.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch business service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code from business service fetch: %d", resp.StatusCode)
+	}
+
+	var response model.BusinessServiceResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(response.BusinessServices) == 0 {
+		return nil, errors.New("no business services found")
+	}
+
+	return &response.BusinessServices[0], nil
+}
+
+func (ws *WorkflowService) IsStateUpdatable(status string, businessService *model.BusinessService) bool {
+	for _, state := range businessService.States {
+		if state.ApplicationStatus != nil && *state.ApplicationStatus == status {
+			return state.IsStateUpdatable
 		}
 	}
+	return false
+}
+
+func (ws *WorkflowService) GetCurrentState(status string, businessService *model.BusinessService) *string {
+	for _, state := range businessService.States {
+		if state.ApplicationStatus != nil && *state.ApplicationStatus == status {
+			return &state.State
+		}
+	}
+	return nil
+}
+
+func (ws *WorkflowService) GetCurrentStateObj(status string, businessService *model.BusinessService) *model.State {
+	for _, state := range businessService.States {
+		if state.ApplicationStatus != nil && *state.ApplicationStatus == status {
+			return &state
+		}
+	}
+	return nil
+}
+
+func (ws *WorkflowService) buildSearchURL(serviceRequest model.ServiceRequest, isBusinessService bool, applicationNumber string) string {
+	host := os.Getenv("WF_HOST")
+	businessPath := os.Getenv("WF_BUSINESS_SERVICE_SEARCH_PATH")
+	processPath := os.Getenv("WF_PROCESS_PATH")
+
+	var url string
+	if isBusinessService {
+		url = fmt.Sprintf("%s%s?tenantId=%s&businessServices=%s", host, businessPath, serviceRequest.Service.TenantId, serviceRequest.Service.BusinessService)
+	} else {
+		url = fmt.Sprintf("%s%s?tenantId=%s&businessIds=%s", host, processPath, serviceRequest.Service.TenantId, applicationNumber)
+	}
+	return url
+}
 
 func (ws *WorkflowService) CreateBusinessService(businessServiceRequest model.BusinessServiceRequest) (model.BusinessServiceResponse, error) {
-	payload, err := json.Marshal(businessServiceRequest)
 	var response model.BusinessServiceResponse
+	payload, err := json.Marshal(businessServiceRequest)
 	if err != nil {
-		return response,fmt.Errorf("failed to marshal workflow: %w", err)
+		return response, fmt.Errorf("failed to marshal workflow: %w", err)
 	}
 
-	url := os.Getenv("WF_BUSINESS_SERVICE_CREATE_URL")
+	url := os.Getenv("WORKFLOW_HOST") + os.Getenv("WF_BUSINESS_SERVICE_CREATE_URL")
+
 	if url == "" {
 		return response, errors.New("workflow business service create URL not set in environment variables")
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
 	if err != nil {
-		return response,fmt.Errorf("failed to create request: %w", err)
+		return response, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := ws.httpClient.Do(req)
 	if err != nil {
-		return response,fmt.Errorf("failed to call business service create API: %w", err)
+		return response, fmt.Errorf("failed to call business service create API: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return response,fmt.Errorf("business service create returned unexpected status: %d", resp.StatusCode)
+		return response, fmt.Errorf("business service create returned unexpected status: %d", resp.StatusCode)
 	}
 
-	return response,nil
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return response, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	log.Println("Business Service Created Successfully")
+
+	return response, nil
 }
 
-func (ws *WorkflowService) SearchBusinessService(request model.ServiceRequest, businessService string) (model.BusinessServiceResponse, error) {
+func (ws *WorkflowService) SearchBusinessService(request model.ServiceRequest) (model.BusinessServiceResponse, error) {
 	WorkFlowhost := os.Getenv("WORKFLOW_HOST")
 	businessPath := os.Getenv("WF_BUSINESS_SERVICE_SEARCH_PATH")
 	var finalResponse model.BusinessServiceResponse
@@ -74,7 +166,7 @@ func (ws *WorkflowService) SearchBusinessService(request model.ServiceRequest, b
 		"%s%s?businessServices=%s&tenantId=%s",
 		WorkFlowhost,
 		businessPath,
-		businessService,
+		request.Service.BusinessService,
 		request.Service.TenantId,
 	)
 
@@ -108,7 +200,7 @@ func (ws *WorkflowService) CreateAndValidateBusinessService(request model.Servic
 	mdmsData, err := ws.MdmsV2Service.SearchMDMS(
 		request.Service.TenantId,
 		schemaCode,
-		filters,		
+		filters,
 		request.RequestInfo,
 	)
 	if err != nil {
@@ -134,7 +226,9 @@ func (ws *WorkflowService) CreateAndValidateBusinessService(request model.Servic
 
 	// ===================== Workflow Search =====================
 
-	bsResponse, err := ws.SearchBusinessService(request,businessServiceName)
+	request.Service.BusinessService = businessServiceName
+
+	bsResponse, err := ws.SearchBusinessService(request)
 	if err != nil {
 		return finalResponse, fmt.Errorf("workflow search failed: %w", err)
 	}
@@ -157,8 +251,8 @@ func (ws *WorkflowService) CreateAndValidateBusinessService(request model.Servic
 	// ===================== Create BusinessService =====================
 	var businessServiceModel model.BusinessService
 
-	//delete(workflowData, "ACTIVE")
-	//delete(workflowData, "INACTIVE")
+	delete(workflowData, "ACTIVE")
+	delete(workflowData, "INACTIVE")
 
 	workflowData["tenantId"] = request.Service.TenantId
 
