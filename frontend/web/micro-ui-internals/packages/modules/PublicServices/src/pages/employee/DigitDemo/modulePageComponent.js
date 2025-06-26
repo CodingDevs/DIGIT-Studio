@@ -10,6 +10,9 @@ const ModulePageComponent = () => {
 
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const queryStrings = Digit.Hooks.useQueryParams();
+  localStorage.removeItem("formData");
+  localStorage.removeItem("currentStep");
+  sessionStorage.removeItem("formData");
 
   //To fetch the service details configured for the tenant
   const request = {

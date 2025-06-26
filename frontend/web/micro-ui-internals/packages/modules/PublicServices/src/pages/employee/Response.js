@@ -3,12 +3,14 @@ import { Link, useHistory, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Banner, Card, LinkLabel, AddFileFilled, ArrowLeftWhite, ActionBar, SubmitBar, ArrowRightInbox } from "@egovernments/digit-ui-react-components";
 import { useParams } from "react-router-dom/cjs/react-router-dom.min";
+import { downloadStudioPDF, getPdfKeyForState } from "../../utils";
 
 const Response = () => {
   const { t } = useTranslation();
   const history = useHistory();
   const queryStrings = Digit.Hooks.useQueryParams();
   const {module, service} = useParams();
+  const tenantId = Digit.ULBService.getCurrentTenantId();
   const [isResponseSuccess, setIsResponseSuccess] = useState(
     queryStrings?.isSuccess === "true" ? true : queryStrings?.isSuccess === "false" ? false : true
   );
@@ -25,6 +27,10 @@ const Response = () => {
     }
   };
 
+  const HandleDownloadPdf = () => {
+    downloadStudioPDF('pdf/generatepdf',{applicationNumber:state?.applicationNumber,tenantId, serviceCode:queryStrings?.serviceCode, pdfKey:getPdfKeyForState(state?.config?.data?.pdf,state?.workflowStatus)},`Application-${queryStrings?.applicationNumber}.pdf`)
+}
+
   return (
     <Card>
       <Banner
@@ -38,6 +44,10 @@ const Response = () => {
         <LinkLabel style={{ display: "flex", marginRight: "3rem" }} onClick={() => navigate("view")}>
           <ArrowRightInbox fill="#F47738" style={{ marginRight: "8px", marginTop: "3px" }} />
           {t(`${module.toUpperCase()}_${service.toUpperCase()}_VIEW_APPLICATION`)}
+        </LinkLabel>
+        <LinkLabel style={{ display: "flex", marginRight: "3rem" }} onClick={() => HandleDownloadPdf()}>
+          <ArrowRightInbox fill="#F47738" style={{ marginRight: "8px", marginTop: "3px" }} />
+          {t(`${module.toUpperCase()}_${service.toUpperCase()}_DOWNLOAD`)}
         </LinkLabel>
       </div>
       <ActionBar>

@@ -99,9 +99,9 @@ export const UICustomizations = {
         preProcess: (data, additionalDetails) => {
           const { module } = useParams();
           const tenantId = Digit.ULBService.getCurrentTenantId();
-          data.body.inbox.moduleSearchCriteria.businessService=`${data?.state?.searchForm?.businessService?.code}`;
+          data.body.inbox.moduleSearchCriteria.businessService=`${data?.state?.searchForm?.businessService?.code}` || "ApplyForm";
           data.body.inbox.moduleSearchCriteria.module=`${module}`;
-          data.body.inbox.processSearchCriteria.businessService=[`${module}.${data?.state?.searchForm?.businessService?.code}`];
+          data.body.inbox.processSearchCriteria.businessService=[data?.state?.searchForm?.businessService?.workflowBusinessService] || "school.Apply";
           if(data?.state?.searchForm?.businessService?.parallelWorkflow?.length > 0){
             data.body.inbox.processSearchCriteria.businessService = [...data.body.inbox.processSearchCriteria.businessService,...data?.state?.searchForm?.businessService?.parallelWorkflow]
           }
@@ -109,6 +109,7 @@ export const UICustomizations = {
           data.body.inbox.tenantId = tenantId;
           delete data.body.inbox.moduleSearchCriteria.assignee;
           data.method = "POST"
+          data.changeQueryName = `INBOX_${data?.state?.searchForm?.businessService?.workflowBusinessService}`
           return data;
         },
         additionalCustomizations: (row, key, column, value, t, searchResult) => {

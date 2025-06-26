@@ -96,7 +96,7 @@ useEffect(() => {
 }, [matchedBusinessServices, selectedBusinessService]);
 
   // To get the checklist codes for the application
-  let checkListCodes = workflowDetails ? [`${response?.businessService}.${workflowDetails?.processInstances[0].state?.state}`] : [];
+  let checkListCodes = workflowDetails ? [`${response?.businessService}.${workflowDetails?.processInstances?.[0].state?.state}`] : [];
   
   if (isLoading || workflowLoading || ServiceConfigLoading) {
     return <Loader />;

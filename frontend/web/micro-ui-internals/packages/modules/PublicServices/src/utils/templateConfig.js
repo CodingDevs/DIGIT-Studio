@@ -92,7 +92,7 @@ export const ApplicantFields =  [{
       "type": "object",
       "properties": [
         {
-          "name": "OwnerName",
+          "name": "name",
           "label": "Owner Name ",
           "disable" : false,
           "type": "string",
@@ -150,7 +150,7 @@ export const documentFields = [
                 "name": "uploaded",
                 "action": "APPLY"  
             },
-            "customClass": "input-emp",
+            //"customClass": "input-emp",
             "localePrefix": "TL_DOC"
         }
     ]

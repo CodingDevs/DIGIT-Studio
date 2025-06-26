@@ -1,5 +1,5 @@
 import { FormComposerV2, Stepper, Toast } from "@egovernments/digit-ui-components";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory, useParams } from "react-router-dom";
 import { serviceConfigPGR } from "../../../configs/serviceConfigurationPGR";
@@ -7,8 +7,9 @@ import { serviceConfig } from "../../../configs/serviceConfiguration";
 import { generateFormConfig } from "../../../utils/generateFormConfigFromSchemaUtil";
 import { transformToApplicationPayload } from "../../../utils";
 import { Loader } from "@egovernments/digit-ui-react-components";
+import useCustomAPIMutationHook from "../../../components/useCustomAPIMutationHook";
 
-const DigitDemoComponent = () => {
+const DigitDemoComponent = ({editdata}) => {
   const { t } = useTranslation();
   const history = useHistory();
   const { module, service } = useParams();
@@ -16,6 +17,7 @@ const DigitDemoComponent = () => {
   const queryStrings = Digit.Hooks.useQueryParams();
 
   const serviceCode = `${module.toUpperCase()}_${service.toUpperCase()}`;
+  const enableSaveAsDraftStep = 5; //Step number where I want to enable save as draft button
 
   // Get persisted state from localStorage
   const savedStep = parseInt(localStorage.getItem("currentStep"), 10) || 1;
@@ -26,6 +28,15 @@ const DigitDemoComponent = () => {
   const [sessionData, setSessionData] = useState(savedFormData);
   const [showToast, setShowToast] = useState(null);
 
+  useEffect(() => {
+    //useEffect to set the prevfilled data
+    if(window.location.href.includes("Edit")) 
+    {  
+      localStorage.setItem("formData", JSON.stringify(editdata));
+      setFormData(editdata);
+    }
+  },[editdata])
+
   // Fetch service configuration from MDMS
   const requestCriteria = {
     url: "/egov-mdms-service/v2/_search",
@@ -33,6 +44,9 @@ const DigitDemoComponent = () => {
       MdmsCriteria: {
         tenantId: tenantId,
         schemaCode: "Studio.ServiceConfiguration",
+        filters:{
+          module:module
+        }
       },
     },
   };
@@ -67,10 +81,13 @@ const DigitDemoComponent = () => {
   const currentFormConfig = rawConfig[currentStep - 1];
   const schemaCode = queryStrings?.serviceCode;
 
-  const mutation = Digit.Hooks.useCustomAPIMutationHook({
+  const mutation = useCustomAPIMutationHook({
     url: `/public-service/v1/application/${schemaCode}`,
-    method: "POST",
-    headers: {},
+    method: queryStrings?.applicationNumber ? "PUT" : "POST",
+    headers: queryStrings?.applicationNumber ? {
+      "X-Tenant-Id" : tenantId,
+      "auth-token" : window?.localStorage?.getItem("Employee.token"),
+    } : {"X-Tenant-Id" : tenantId},
     config: { enable: false },
   });
 
@@ -102,9 +119,12 @@ const DigitDemoComponent = () => {
       await mutation.mutate(
         {
           url: `/public-service/v1/application/${schemaCode}`,
-          headers: { "x-tenant-id": tenantId },
-          method: "POST",
-          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails),
+          headers: queryStrings?.applicationNumber ? {
+            "X-Tenant-Id" : tenantId,
+            "auth-token" : window?.localStorage?.getItem("Employee.token"),
+          } : { "X-Tenant-Id" : tenantId },
+          method: queryStrings?.applicationNumber ? "PUT" : "POST",
+          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode),
           config: { enable: true },
         },
         {
@@ -114,11 +134,13 @@ const DigitDemoComponent = () => {
             sessionStorage.removeItem("formData");
             history.push({
               pathname: `/${window.contextPath}/employee/publicservices/${module}/${service}/response`,
-              search: "?isSuccess=true",
+              search: `?isSuccess=true&applicationNumber=${data?.Application?.applicationNumber}&serviceCode=${schemaCode}`,
               state: {
                 message: "Application Created Successfully",
                 showID: true,
                 applicationNumber: data?.Application?.applicationNumber,
+                config : config,
+                workflowStatus: data?.Application?.workflowStatus,
                 redirectionUrl: `/${window.contextPath}/employee/publicservices/${module}/${service}/ViewScreen?applicationNumber=${data?.Application?.applicationNumber}&serviceCode=${schemaCode}`,
               },
             });
@@ -162,6 +184,41 @@ const DigitDemoComponent = () => {
 
   const closeToast = () => setShowToast(false);
 
+  //on click of draft button
+  const onDraftLabelClick = async (data) => {
+    const sectionName = currentFormConfig.name || `section_${currentStep}`;
+
+    const updatedFormData = ["multiChildForm", "documents"].includes(currentFormConfig?.type)
+      ? { ...formData, ...data }
+      : { ...formData, [sectionName]: data };
+
+    setFormData(updatedFormData);
+    persistData(updatedFormData, currentStep);
+
+    await mutation.mutate(
+      {
+        url: `/public-service/v1/application/${schemaCode}`,
+        headers: { "x-tenant-id": tenantId },
+        method: queryStrings?.applicationNumber ? "PUT" : "POST",
+        body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode),
+        config: { enable: true },
+      },
+      {
+        onSuccess: (data) => {
+          setShowToast({message:"Application Drafted successfully", error: false});
+          setFormData({...formData, response : data?.Application});
+          const url = new URL(window.location.href);
+          url.searchParams.set('applicationNumber', data?.Application?.applicationNumber);
+          window.history.replaceState({}, '', url);
+          setCurrentStep(currentStep + 1)
+        },
+        onError: () => {
+          setShowToast({message:"Application Drafted is failed", error: false});
+        },
+      }
+    );
+  }
+
   if (moduleListLoading || workflowDetailsLoading) return <Loader />;
 
   return (
@@ -175,6 +232,8 @@ const DigitDemoComponent = () => {
       <FormComposerV2
         key={`${currentStep}-${currentFormConfig?.name}`}
         heading={t(`${serviceCode}_HEADING`)}
+        draftLabel={enableSaveAsDraftStep === currentStep ? t(`${serviceCode}_SAVE`) : ""}
+        onDraftLabelClick={onDraftLabelClick}
         label={currentStep === steps.length ? t(`${serviceCode}_SUBMIT`) : t(`${serviceCode}_NEXT`)}
         config={[
           {

@@ -159,7 +159,11 @@ const WorkflowActions = ({
           redirectionUrl: `/${window.contextPath}/employee/publicservices/${module}/${service}/ViewScreen?applicationNumber=${applicationNo}&serviceCode=${queryStrings?.serviceCode}`,
         }
       );
-    } else {
+    }
+    else if(action.action === "EDIT") {
+      history.push(`/${window.contextPath}/employee/publicservices/${module}/${service}/Edit?serviceCode=${queryStrings?.serviceCode}&applicationNumber=${queryStrings?.applicationNumber}`);
+    }
+     else {
       setShowModal(true);
     }
   };
@@ -260,6 +264,8 @@ const WorkflowActions = ({
           closeModal={closeModal}
           submitAction={submitAction}
           applicationDetails={applicationDetails}
+          moduleCode={moduleCode}
+          businessService={businessService}
         />
       )}
 

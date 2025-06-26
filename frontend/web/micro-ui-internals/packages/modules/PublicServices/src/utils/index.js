@@ -18,7 +18,7 @@ import cloneDeep from "lodash/cloneDeep";
   };
 
   const getServiceDetails = (formData) => {
-    const excludedKeys = ["address", "applicantDetails", "uploadedDocs", "uploaded"];
+    const excludedKeys = ["address", "applicantDetails", "uploadedDocs", "uploaded", "response"];
     const validSections = Object.keys(formData).reduce((acc, key) => {
       if (!excludedKeys.includes(key) &&
       !key.startsWith("section_")) {
@@ -93,15 +93,51 @@ import cloneDeep from "lodash/cloneDeep";
     return documents;
   };  
 
-  export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails) => {
+  //function to manage workfloe action for payload incase of create, save or edit.
+  const getWorkflowState = (workflowDetails, lastWorkflowAction = null) => {
+    if(lastWorkflowAction === null)
+    return workflowDetails?.BusinessServices?.[0]?.states.filter((ob) => ob?.state === lastWorkflowAction)?.[0]?.actions?.[0]?.action || "CREATE"
+    else{
+      const businessServiceData = workflowDetails?.BusinessServices || [];
+      const lastAction = lastWorkflowAction;
+      if (!businessServiceData || !businessServiceData.length) return null;
+
+      const states = businessServiceData[0].states || [];
+    
+      //Find the state where lastAction exists
+      const currentState = states.find(state => 
+        state.actions?.some(action => action.action === lastAction)
+      );
+    
+      if (!currentState) return null;
+    
+      //Find that specific action object
+      const actionObj = currentState.actions.find(action => action.action === lastAction);
+    
+      if (!actionObj || !actionObj.nextState) return null;
+    
+      const nextStateId = actionObj.nextState;
+    
+      //Find the next state object using nextStateId
+      const nextState = states.find(state => state.uuid === nextStateId);
+    
+      if (!nextState || !nextState.actions?.length) return null;
+    
+      //Return the `action` of the first action in that next state
+      return nextState.actions[0].action;
+    }
+  }
+
+  export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails, applicationNumber, serviceCode) => {
     const currentConfig = configMap?.ServiceConfiguration?.find(ob => ob?.service === service);
   
     const serviceDetails = getServiceDetails(formData);
   
     const applicants = formData.applicantDetails?.filter(Boolean)?.map((applicant, index) => ({
       type: "CITIZEN",
-      name: applicant?.OwnerName,
+      name: applicant?.name,
       mobileNumber: Number(applicant?.mobileNumber),
+      gender : applicant?.gender?.code,
       emailId: applicant?.email || `user${index + 1}@example.com`,
       prefix: "91",
       active: true,
@@ -109,12 +145,14 @@ import cloneDeep from "lodash/cloneDeep";
   
     const documents = transformUploadedDocs(formData?.uploadedDocs);
   
-    const requestBody = {
+    let requestBody = {
       Application: {
         tenantId,
         module: currentConfig?.module,
         businessService: currentConfig?.service,
-        status: "INACTIVE",
+        applicationNumber,
+        serviceCode,
+        status: "ACTIVE",
         channel: "counter",
         reference: null,
         workflowStatus: "applied",
@@ -127,28 +165,41 @@ import cloneDeep from "lodash/cloneDeep";
           latitude: 0,
           longitude: 0,
           addressNumber: "1",
-          addressLine1: formData.tradeAddress?.streetName || "",
+          addressLine1: formData.address?.streetName || "",
           addressLine2: "",
           landmark: "",
-          city: formData.tradeAddress?.city?.name || "",
-          pincode: formData.tradeAddress?.pincode,
+          city: formData.address?.city?.[0] || "",
+          pincode: formData.address?.pincode,
           hierarchyType: currentConfig?.boundary?.hierarchyType,
           boundarylevel: currentConfig?.boundary?.lowestLevel,
-          boundarycode: `dev.${formData.tradeAddress?.city?.code?.toLowerCase() || "city"}`,
+          boundarycode: `dev.${formData.address?.city?.code?.toLowerCase() || "city"}`,
         },
         documents, // <-- documents as top-level key
         additionalDetails: {
           ref1: "val1" 
         },
         Workflow: {
-          action: workflowDetails?.BusinessServices?.[0]?.states.filter((ob) => ob?.state === null)?.[0]?.actions?.[0]?.action,
+          action: getWorkflowState(workflowDetails, formData?.response?.workflow?.action),
           comment: "",
           assignees: [],
           businessService: config?.data?.workflow?.businessService
         }
       }
     };
-  
+    if(applicationNumber)
+    {
+      requestBody = {
+        Application:{
+          ...requestBody?.Application,
+          id: formData?.response?.id,
+          address: {
+            ...requestBody?.Application?.address,
+            id: formData?.response?.address?.id
+          },
+          auditDetails : formData?.response?.auditDetails
+        }
+      }
+    }
     return requestBody;
   };
 
@@ -216,6 +267,18 @@ import cloneDeep from "lodash/cloneDeep";
   
     const cards = [];
   
+    cards.push({sections: [{
+      head: "Application Details",
+      type: "DATA",
+      sectionHeader: { value: "Application Details", inlineStyles: {} },
+      values: [
+        {
+          key: "Application Number",
+          value: application?.applicationNumber || "NA",
+        }
+      ],
+    }]});
+
     // Service Details card
     if (Object.keys(serviceDetails).length > 0) {
       const serviceSections = Object.keys(serviceDetails)
@@ -273,26 +336,24 @@ import cloneDeep from "lodash/cloneDeep";
       });
     }
     //documents enablement
-    const rawDocuments = application?.additionalDetails?.documents || {};
+    const rawDocuments = application?.documents || {};
     const flattenedDocuments = [];
-
-    Object.entries(rawDocuments).forEach(([docType, docEntries]) => {
-      docEntries.forEach((entry) => {
-        const [fileName, fileObj] = entry || [];
-        const fileStoreId = fileObj?.fileStoreId?.fileStoreId;
+    if(rawDocuments?.length > 0)
+    rawDocuments?.forEach((docEntries) => {
+        //const [fileName, fileObj] = entry || [];
+        const fileStoreId = docEntries?.fileStoreId;
 
         if (fileStoreId) {
           flattenedDocuments.push({
-            title: docType || "NA",
-            documentType: docType || "NA",
-            documentUid: fileName || "NA",
+            title: docEntries?.documentType || "NA",
+            documentType: docEntries?.documentType || "NA",
+            documentUid: docEntries?.documentUid || "NA",
             fileStoreId: fileStoreId,
           });
         }
-      });
     });
 
-    if (flattenedDocuments.length > 0) {
+    if (flattenedDocuments?.length > 0) {
       cards.push({
         navigationKey: "card-documents",
         sections: [
@@ -362,7 +423,7 @@ import cloneDeep from "lodash/cloneDeep";
     const moduleData = {}; // Object to store modules and their corresponding business services
   
     // Process each item
-    data.forEach((item) => {
+    data.filter((ob) => ob?.status === "ACTIVE").forEach((item) => {
       const module = item.module;
   
       // If module is already processed, add the businessService to its list
@@ -427,7 +488,7 @@ import cloneDeep from "lodash/cloneDeep";
     if (workflow && workflow.ProcessInstances) {
       const processInstances = workflow.ProcessInstances;
       const nextStates = processInstances[0]?.nextActions.map((action) => ({ action: action?.action, nextState: processInstances[0]?.state.uuid }));
-      const nextActions = nextStates.map((id) => ({
+      const nextActions = nextStates?.map((id) => ({
         action: id.action,
         state: businessServiceResponse?.find((state) => state.uuid === id.nextState),
       }));
@@ -652,6 +713,16 @@ import cloneDeep from "lodash/cloneDeep";
 
       return parallelWorkflows;
   }
+
+  export const getPdfKeyForState = (pdfArray, targetState) => {
+    if (!pdfArray || !pdfArray.length) return null;
+  
+    const matchingPdf = pdfArray.find(pdfObj => 
+      pdfObj.states.includes(targetState)
+    );
+  
+    return matchingPdf ? matchingPdf.key : null;
+  };
 
 
   
