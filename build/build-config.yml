@@ -17,6 +17,52 @@
 # -
 # -
 config:
+
+  - name: "builds/DIGIT-Studio/core-services/egov-workflow-v2"
+    build:
+      - work-dir: "core-services/egov-workflow-v2"
+        image-name: "egov-workflow-v2"
+        dockerfile: "build/maven/Dockerfile"
+      - work-dir: "core-services/egov-workflow-v2/src/main/resources/db"
+        image-name: "egov-workflow-v2-db"
+
+  - name: "builds/DIGIT-Studio/core-services/inbox"
+    build:
+      - work-dir: "core-services/inbox"
+        image-name: "inbox"
+        dockerfile: "build/maven/Dockerfile"
+
+  - name: "builds/DIGIT-Studio/core-services/pdf-service"
+    build:
+      - work-dir: "core-services/pdf-service"
+        image-name: "pdf-service"
+      - work-dir: "core-services/pdf-service/migration"
+        image-name: "pdf-service-db"
+
+  - name: "builds/DIGIT-Studio/core-services/individual"
+    build:
+      - work-dir: "core-services/individual"
+        image-name: "individual"
+        dockerfile: "build/maven/Dockerfile"
+      - work-dir: "core-services/individual/src/main/resources/db"
+        image-name: "individual-db"
+
+  - name: "builds/DIGIT-Studio/core-services/organisation"
+    build:
+      - work-dir: "core-services/organisation"
+        dockerfile: "build/maven-java17/Dockerfile"
+        image-name: "organisation"
+      - work-dir: "core-services/organisation/src/main/resources/db"
+        image-name: "organisation-db"
+
+  - name: "builds/DIGIT-Studio/core-services/service-request"
+    build:
+      - work-dir: "core-services/service-request"
+        image-name: "service-request"
+        dockerfile: "build/maven/Dockerfile"
+      - work-dir: "core-services/service-request/src/main/resources/db"
+        image-name: "service-request-db"
+
   # Business Services
   - name: "builds/DIGIT-Studio/studio-services/public-service"
     build:
