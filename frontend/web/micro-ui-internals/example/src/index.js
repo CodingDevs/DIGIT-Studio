@@ -12,6 +12,7 @@ import { UICustomizations } from "./UICustomizations";
 import { initUtilitiesComponents } from "@egovernments/digit-ui-module-utilities";
 //import {initSampleComponents} from "@egovernments/digit-ui-module-sample";
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
+import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
 
 var Digit = window.Digit || {};
 
@@ -25,6 +26,7 @@ const enabledModules = [
   "Microplanning",
   "Sample",
   "PublicServices",
+  "OpenPayment"
   //added to check fsm
   // "FSM"
 ];
@@ -70,6 +72,7 @@ const initDigitUI = () => {
   initUtilitiesComponents();
   //initSampleComponents();
   initPublicServiceComponents();
+  initOpenPaymentComponents();
 
   const moduleReducers = (initData) => initData;
 

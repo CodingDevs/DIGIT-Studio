@@ -1,114 +1,99 @@
 export const serviceConfig = {
-    "tenantId": "pg",
+    "tenantId": "dev",
     "moduleName": "CommonService",
     "ServiceConfiguration": [
       {
-        "service": "TL",
+        "module": "Tradelicense",
+        "service": "NewTL",
         "fields": [
           {
-            "name": "financialYear",
-            "label": "Financial Year ",
-            "disable" : false,
-            "type": "string",
-            //"defaultValue" : "2025_26",
-            //"prefix": "FINANCIALYEAR",
-            "reference": "mdms",
-            "required": false,
-            "schema": "egf-master.FinancialYear2" 
+            "name": "tradeDetails",
+            "label": "Trade Details ",
+            "type": "object",
+              "properties": [
+                {
+                  "name": "financialYear",
+                  "label": "Financial Year ",
+                  "type": "string",
+                  "format": "radioordropdown",
+                  //"defaultValue" : "2025_26",
+                  //"prefix": "FINANCIALYEAR",
+                  "reference": "mdms",
+                  "required": false,
+                  "schema": "egf-master.FinancialYear2", 
+                  "orderNumber": 1
+                },
+                {
+                  "name": "licenseType",
+                  "label": "License Type ",
+                  "defaultValue" : "PERMANENT",
+                  // "prefix": "LICENSETYPE",
+                  "type": "string",
+                  "format": "radioordropdown",
+                  "required": false,
+                  "orderNumber": 2
+                },
+                {
+                  "name": "Licensedemo",
+                  "label": "New License",
+                  //"defaultValue" : "PERMANENT",
+                  // "prefix": "LICENSETYPE",
+                  "type": "enum",
+                  "format": "radioordropdown",
+                  "required": false,
+                  "values": ["yes", "No"],
+                  "orderNumber": 2
+                },
+                {
+                  "name": "tradeName",
+                  "label": "Trade Name ",
+                  "type": "string",
+                  "format": "text",
+                  "maxLength": 128,
+                  "minLength": 2,
+                  "validation": {
+                    "regex": "^[A-Za-z0-9 ]+$",
+                    "message": "Only letters and numbers allowed"
+                  },
+                  "required": false,
+                  "orderNumber": 3
+                },
+                {
+                  "name": "tradeStructureType",
+                  "label": "Trade Structure Type ",
+                  "type": "string",
+                  "format": "radioordropdown",
+                  "reference": "mdms",
+                  "required": false,
+                  "schema": "Tradelicence.StructureType",
+                  "orderNumber": 4
+                },
+                {
+                  "name": "tradeStructureSubType",
+                  "label": "Trade Structure Sub Type ",
+                  //same master how to give custom output for options
+                  // 1st way is to separate out master
+                  // 2nd way to pass custom logck in mdms
+                  "type": "string",
+                  "format": "radioordropdown",
+                  "reference": "mdms",
+                  "dependencies": [
+                    "tradeStructureType"
+                  ],
+                  "required": false,
+                  "schema": "Tradelicence.StructureSubType",
+                  "orderNumber": 5
+                },
+                {
+                  "name": "tradeCommencementDate",
+                  "label": "Trade Commencement Date ",
+                  "type": "date",
+                  "format": "date",
+                  "required": false,
+                  "orderNumber": 6
+                }
+              ]
           },
-          {
-            "name": "licenseType",
-            "label": "License Type ",
-            "disable" : false,
-            "defaultValue" : "PERMANENT",
-            "prefix": "LICENSETYPE",
-            "type": "string",
-            "required": false,
-          },
-          {
-            "name": "tradeName",
-            "label": "Trade Name ",
-            "disable" : false,
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 2,
-            "validation": {
-              "regex": "^[A-Za-z0-9 ]+$",
-              "message": "Only letters and numbers allowed"
-            },
-            "required": false,
-            "orderNumber": 1
-          },
-          {
-            "name": "tradeStructureType",
-            "label": "Trade Structure Type ",
-            "disable" : false,
-            "type": "string",
-            "reference": "mdms",
-            "required": false,
-            "schema": "Tradelicence.StructureType" 
-          },
-          {
-            "name": "tradeStructureSubType",
-            "label": "Trade Structure Sub Type ",
-            //same master how to give custom output for options
-            // 1st way is to separate out master
-            // 2nd way to pass custom logck in mdms
-            "disable" : false,
-            "type": "string",
-            "reference": "mdms",
-            "dependencies": [
-              "tradeStructureType"
-            ],
-            "required": false,
-            "schema": "Tradelicence.StructureSubType"
-          },
-          {
-            "name": "tradeCommencementDate",
-            "label": "Trade Commencement Date ",
-            "disable" : false,
-            "type": "date",
-            "required": false,
-          },
-          // {
-          //   "name": "tradeLicenceType",
-          //   "label": "Trade Licence Type ",
-          //   "disable" : false,
-          //   "type": "string",
-          //   "reference": "mdms",
-          //   "required": true,
-          //   "schema": "Tradelicence.TradeLicenceType"
-          // },
-          // {
-          //   "name": "tradeCategory",
-          //   "label": "Trade Category ",
-          //   "disable" : false,
-          //   "type": "string",
-          //   "reference": "mdms",
-          //   "required": true,
-          //   "schema": "Tradelicence.TradeCategory"
-          // },
-          // {
-          //   "name": "tradeType",
-          //   "label": "Trade Type ",
-          //   "disable" : false,
-          //   "type": "string",
-          //   "reference": "mdms",
-          //   "required": true,
-          //   "schema": "Tradelicence.TradeType"
-          // },
-          // {
-          //   "name": "tradeSubType",
-          //   "label": "Trade Sub Type ",
-          //   "disable" : false,
-          //   "type": "string",
-          //   "reference": "mdms",
-          //   "dependencies": [
-          //     "tradeType"
-          //   ],
-          //   "required": true,
-          //   "schema": "Tradelicence.TradeSubType"
-          // },
           {
             "name": "tradeUnits",
             "label": "Trade Units ",
@@ -117,120 +102,129 @@ export const serviceConfig = {
                 {
                   "name": "tradeCategory",
                   "label": "Trade Category ",
-                  "disable" : false,
                   "type": "string",
+                  "format": "radioordropdown",
                   "reference": "mdms",
                   "required": false,
-                  "schema": "Tradelicence.TradeCategory"
+                  "schema": "Tradelicence.TradeCategory",
+                  "orderNumber": 1
                 },
                 {
                   "name": "tradeType",
                   "label": "Trade Type ",
-                  "disable" : false,
                   "type": "string",
+                  "format": "radioordropdown",
                   "reference": "mdms",
                   "required": false,
-                  "schema": "Tradelicence.TradeType"
+                  "schema": "Tradelicence.TradeType",
+                  "orderNumber": 2
                 },
                 {
                   "name": "tradeSubType",
                   "label": "Trade Sub Type ",
-                  "disable" : false,
                   "type": "string",
+                  "format": "radioordropdown",
                   "reference": "mdms",
                   "required": false,
-                  "schema": "Tradelicence.TradeSubType"
+                  "schema": "Tradelicence.TradeSubType",
+                  "orderNumber": 3
                 }
               ]
           },
-          {
-            "name": "tradeAddress",
-            "label": "Trade Address ",
-            "type": "object",
-              "properties": [
-                {
-                  "name": "pincode",
-                  "label": "Pincode ",
-                  "disable" : false,
-                  "type": "string",
-                  "maxLength": 6,
-                  "minLength": 0,
-                  "validation": {
-                    "regex": "^[1-9][0-9]{5}$",
-                    "message": "Only 6 numbers allowed"
-                  },
-                  "required": false,
-                  "orderNumber": 1
-                },
-                {
-                  "name": "city",
-                  "label": "City ",
-                  "disable" : false,
-                  "defaultValue" : "DEV",
-                  "prefix": "CITY",
-                  "type": "string",
-                  "required": false,
-                },
-                {
-                  "name": "streetName",
-                  "label": "Street Name ",
-                  "disable" : false,
-                  "type": "string",
-                  "maxLength": 256,
-                  "minLength": 0,
-                  "validation": {
-                    "regex": "^[1-9][0-9]{5}$",
-                    "message": "Only 6 numbers allowed"
-                  },
-                  "required": false,
-                  "orderNumber": 1
-                },
-              ]
-          },
-          {
-            "name": "ownershipDetails",
-            "label": "Ownership Details ",
-            "type": "object",
-              "properties": [
-                {
-                  "name": "OwnerName",
-                  "label": "Owner Name ",
-                  "disable" : false,
-                  "type": "string",
-                  "maxLength": 256,
-                  "minLength": 0,
-                  "validation": {
-                    "regex": "^[1-9][0-9]{5}$",
-                    "message": "Only 6 numbers allowed"
-                  },
-                  "required": false,
-                  "orderNumber": 1
-                },
-                {
-                  "name": "mobileNumber",
-                  "label": "Mobile Number ",
-                  "disable" : false,
-                  "type": "mobileNumber",
-                  "maxLength": 256,
-                  "minLength": 0,
-                  "validation": {
-                    "regex": "^[6-9]\d{9}$",
-                    "message": "Only 9 numbers allowed"
-                  },
-                  "required": false,
-                  "orderNumber": 1
-                },
-                {
-                  "name": "gender",
-                  "label": "Gender ",
-                  "disable" : false,
-                  "type": "string",
-                  "reference": "mdms",
-                  "required": false,
-                  "schema": "common-masters.GenderType" 
-                },
-              ]
-          },
+          // {
+          //   "name": "tradeAddress",
+          //   "label": "Trade Address ",
+          //   "type": "object",
+          //     "properties": [
+          //       {
+          //         "name": "pincode",
+          //         "label": "Pincode ",
+          //         "disable" : false,
+          //         "type": "string",
+          //         "format": "pincode",
+          //         "maxLength": 6,
+          //         "minLength": 0,
+          //         "validation": {
+          //           "regex": "^[1-9][0-9]{5}$",
+          //           "message": "Only 6 numbers allowed"
+          //         },
+          //         "required": false,
+          //         "orderNumber": 1
+          //       },
+          //       {
+          //         "name": "city",
+          //         "label": "City ",
+          //         "disable" : false,
+          //         "defaultValue" : "DEV",
+          //         "prefix": "CITY",
+          //         "type": "string",
+          //         "format": "radioordropdown",
+          //         "required": false,
+          //       },
+          //       {
+          //         "name": "streetName",
+          //         "label": "Street Name ",
+          //         "disable" : false,
+          //         "type": "string",
+          //         "format": "text",
+          //         "maxLength": 256,
+          //         "minLength": 0,
+          //         "validation": {
+          //           "regex": "^[1-9][0-9]{5}$",
+          //           "message": "Only 6 numbers allowed"
+          //         },
+          //         "required": false,
+          //         "orderNumber": 1
+          //       },
+          //     ]
+          // },
+          // {
+          //   "name": "ownershipDetails",
+          //   "label": "Ownership Details ",
+          //   "type": "object",
+          //     "properties": [
+          //       {
+          //         "name": "OwnerName",
+          //         "label": "Owner Name ",
+          //         "disable" : false,
+          //         "type": "string",
+          //         "format": "text",
+          //         "maxLength": 256,
+          //         "minLength": 0,
+          //         "validation": {
+          //           "regex": "^[1-9][0-9]{5}$",
+          //           "message": "Only 6 numbers allowed"
+          //         },
+          //         "required": false,
+          //         "orderNumber": 1
+          //       },
+          //       {
+          //         "name": "mobileNumber",
+          //         "label": "Mobile Number ",
+          //         "disable" : false,
+          //         "type": "mobileNumber",
+          //         "format": "mobuleNumber",
+          //         "maxLength": 256,
+          //         "minLength": 0,
+          //         "validation": {
+          //           "regex": "^[6-9]\d{9}$",
+          //           "message": "Only 9 numbers allowed"
+          //         },
+          //         "required": false,
+          //         "orderNumber": 1
+          //       },
+          //       {
+          //         "name": "gender",
+          //         "label": "Gender ",
+          //         "disable" : false,
+          //         "type": "string",
+          //         "format": "radioordropdown",
+          //         "reference": "mdms",
+          //         "required": false,
+          //         "schema": "common-masters.GenderType" 
+          //       },
+          //     ]
+          // },
           {
             "name": "accessories",
             "label": "Trade accessories ",
@@ -241,17 +235,13 @@ export const serviceConfig = {
                 {
                   "name": "accessoryType",
                   "label": "Accessory type ",
-                  "disable" : false,
                   "type": "string",
+                  "format": "radioordropdown",
                   "reference": "mdms",
-                  "required": true,
-                  "schema": "TradeLicense.AccessoriesCategory"
+                  "required": false,
+                  "schema": "TradeLicense.AccessoriesCategory",
+                  "orderNumber": 1
                 }
-                // {
-                //   "name": "count",
-                //   "label": "accessories count ",
-                //   "type": "number"
-                // }
               ]
             }
           }
@@ -435,77 +425,5 @@ export const serviceConfig = {
           "employee"
         ]
       },
-      {
-        "service": "Tradelicence",
-        "fields": null,
-        "workflow": {
-          "businessService": "ApprovedTL"
-        },
-        "idgen": {
-          "format": "tl.licence.number"
-        },
-        "rules": [
-          {
-            "referenceType": "NewTL"
-          }
-        ],
-        "documents": null,
-        "pdf": [
-          {
-            "key": "tl-certificate",
-            "type": "certificate"
-          }
-        ],
-        "bill": null
-      },
-      {
-        "service": "Tradelicence",
-        "fields": null,
-        "workflow": {
-          "businessService": "RenewTL"
-        },
-        "idgen": {
-          "format": "tl.renewalapplication.number"
-        },
-        "rules": [
-          {
-            "referenceType": "ApprovedTL"
-          }
-        ],
-        "documents": [
-          {
-            "category": "owner-photo",
-            "documentTypes": [
-              "photo"
-            ],
-            "active": true,
-            "isMandatory": false,
-            "allowedFileTypes": [
-              "jpeg",
-              "jpg",
-              "png"
-            ],
-            "maxSizeInMB": 5,
-            "maxFilesAllowed": 1
-          }
-        ],
-        "pdf": [
-          {
-            "key": "tl-renew-application",
-            "type": "application"
-          }
-        ],
-        "calculator": {
-          "billingSlabs": [
-            {
-              "key": "applicationFee",
-              "value": 2000
-            }
-          ]
-        },
-        "bill": {
-          "service": "RenewalFee"
-        }
-      }
     ]
   }

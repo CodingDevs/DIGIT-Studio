@@ -6,24 +6,22 @@ const PublicServicesCard = () => {
  
   const { t } = useTranslation();
 
+  //To show the card at main page
   const propsForModuleCard = {
     Icon: "BeenHere",
-    moduleName: t("Digit Studio"),
+    moduleName: t("DIGIT_STUDIO"),
     kpis: [
 
     ],
     links: [
       {
-        label: t("Services Apply (TL)"),
-        link: `/${window?.contextPath}/employee/publicservices/tl/Apply`,
-      },
-      {
-        label: t("Services Apply (PGR)"),
-        link: `/${window?.contextPath}/employee/publicservices/pgr/Apply`,
+        label: t("DIGIT_STUDIO_APPLY"),
+        link: `/${window?.contextPath}/employee/publicservices/modules?selectedPath=Apply`,
       },
     ],
   };
 
+  //employee module card categorization
   return <EmployeeModuleCard {...propsForModuleCard} />;
 };
 

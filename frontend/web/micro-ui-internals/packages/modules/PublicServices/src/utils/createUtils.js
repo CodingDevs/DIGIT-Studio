@@ -170,3 +170,101 @@ export const transformHRMSCreateData = (data)=>{
     }
 
 }
+
+export const transformViewApplication = (id, accid, tenantId) => {
+    let requestBody = {
+        "ServiceCriteria": {
+            "clientId": "",
+            "serviceDefId": id,
+            "accountId": accid,
+            "tenantId": tenantId,
+            "rowVersion": 1,
+            "isDeleted": false
+        },
+        "apiOperation": "CREATE",
+    }
+    return requestBody;
+}
+
+const transformViewCheckList = (code) => {
+    const tenantId = Digit.ULBService.getCurrentTenantId();
+    let requestBody = {
+        "ServiceDefinitionCriteria": {
+            "code": code,
+            "tenantId": tenantId,
+        },
+        "includeDeleted": true
+    }
+    return requestBody;
+}
+
+export const transformCreateCheckList = (id, accid, data, action = "SUBMIT") => {
+    const tenantId = Digit.ULBService.getCurrentTenantId();
+    const buildAttributes = () => {
+        const att = [];
+        const processField = (key, value, parentKey = null) => {
+            if (typeof value === "object" && value?.code) {
+                if (value.code != "") {
+                    att.push({
+                        dataType: "SingleValueList",
+                        value: value.code,
+                        attributeCode: parentKey ? `${parentKey}.${key}` : key,
+                        tenantId: tenantId,
+                    });
+                }
+                else {
+                    att.push({
+                        dataType: "SingleValueList",
+                        value: "NOT_SELECTED",
+                        attributeCode: parentKey ? `${parentKey}.${key}` : key,
+                        tenantId: tenantId,
+                    });
+                }
+                if (value[value.code]) {
+                    for(const k in value[value.code]){
+                    processField(k,value[value.code][k], parentKey ? `${parentKey}.${key}.${value.code}`: `${key}.${value.code}`);
+                    }
+                }
+            }
+            else {
+                if (value != "") {
+                    att.push({
+                        dataType: "text",
+                        value: value,
+                        attributeCode: parentKey ? `${parentKey}.${key}` : key,
+                        tenantId: tenantId,
+                    });
+                }
+                else {
+                    att.push({
+                        dataType: "text",
+                        value: "NOT_SELECTED",
+                        attributeCode: parentKey ? `${parentKey}.${key}` : key,
+                        tenantId: tenantId,
+                    });
+                }
+            }
+        };
+
+        for (const key in data) {
+            processField(key, data[key]);
+        }
+
+        return att;
+    };
+
+    let requestBody = {
+        "Service": {
+            "clientId": Digit.UserService.getUser().info.uuid,
+            "serviceDefId": id,
+            "accountId": accid,
+            "tenantId": tenantId,
+            "attributes": buildAttributes(),
+            "additionalFields": [{"action":  action}]
+        },
+        "apiOperation": "CREATE"
+    }
+    return requestBody;
+}
+
+export default transformViewCheckList;

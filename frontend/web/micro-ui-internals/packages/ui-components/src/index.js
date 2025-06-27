@@ -132,6 +132,7 @@ import {
   SummaryCard,
   ResultsDataTable
 } from "./molecules";
+import BoundaryFilter from "./hoc/BoundaryFilter";
 
 // import { initCoreLibraries } from "@egovernments/digit-ui-libraries-core";
 import { initLibraries } from "@egovernments/digit-ui-libraries";
@@ -266,6 +267,7 @@ export {
   SearchComponent,
   InboxSearchComposer,
   ResultsTable,
+  BoundaryFilter,
   ResultsDataTableWrapper,
   LinkLabel,
   RoundedLabel,

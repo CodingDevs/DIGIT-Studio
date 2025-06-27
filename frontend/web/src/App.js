@@ -3,6 +3,7 @@ import { initLibraries } from "@egovernments/digit-ui-libraries";
 import { DigitUI } from "@egovernments/digit-ui-module-core";
 import { UICustomizations } from "./Customisations/UICustomizations";
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
+import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
 window.contextPath = window?.globalConfigs?.getConfig("CONTEXT_PATH");
 
 const enabledModules = [
@@ -14,6 +15,7 @@ const enabledModules = [
   "Workbench",
   "HCMWORKBENCH",
   "PublicServices",
+  "OpenPayment"
 
 ];
 
@@ -28,6 +30,7 @@ const initDigitUI = () => {
     commonUiConfig: UICustomizations,
   };
   initPublicServiceComponents();
+  initOpenPaymentComponents();
 
 };
 

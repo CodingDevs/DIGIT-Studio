@@ -3,11 +3,13 @@ export const serviceConfigPGR = {
     "moduleName": "CommonService",
     "ServiceConfiguration": [
       {
-        "service": "PGR",
+        "module": "PGR",
+        "service": "Newpgr",
         "fields": [
           {
             "name": "mobileNumber",
             "label": "Mobile Number ",
+            "format": "mobileNumber",
             "disable" : false,
             "type": "mobileNumber",
             "required": true,
@@ -15,6 +17,7 @@ export const serviceConfigPGR = {
           {
             "name": "citizenName",
             "label": "Citizen Name ",
+            "format": "text",
             "disable" : false,
             "type": "string",
             "maxLength": 128,
@@ -29,6 +32,7 @@ export const serviceConfigPGR = {
           {
             "name": "complaintType",
             "label": "Complaint Type ",
+            "format": "radioordropdown",
             "disable" : false,
             "type": "string",
             "reference": "mdms",
@@ -38,6 +42,7 @@ export const serviceConfigPGR = {
           {
             "name": "complaintSubType",
             "label": "Complaint Sub Type ",
+            "format": "radioordropdown",
             //same master how to give custom output for options
             // 1st way is to separate out master
             // 2nd way to pass custom logck in mdms
@@ -50,55 +55,60 @@ export const serviceConfigPGR = {
             "required": true,
             "schema": "RAINMAKER-PGR.ServiceDefs"
           },
-          {
-            "name": "complaintLocation",
-            "label": "Complaint Location ",
-            "type": "object",
-              "properties": [
-                {
-                    "name": "pincode",
-                    "label": "Pincode ",
-                    "disable" : false,
-                    "type": "string",
-                    "maxLength": 6,
-                    "minLength": 2,
-                    "validation": {
-                      "regex": "^[1-9][0-9]{5}$",
-                      "message": "Only numbers allowed"
-                    },
-                    "required": true,
-                    "orderNumber": 1
-                  },
-                  {
-                    "name": "city",
-                    "label": "City ",
-                    "disable" : false,
-                    "type": "string",
-                    "maxLength": 6,
-                    "minLength": 2,
-                    "validation": {
-                      "regex": "^[A-Za-z0-9 ]+$",
-                      "message": "Only char and numbers allowed"
-                    },
-                    "required": true,
-                    "orderNumber": 1
-                  },
-                  {
-                    "name": "locality",
-                    "label": "Locality ",
-                    "disable" : false,
-                    "type": "string",
-                    "maxLength": 6,
-                    "minLength": 2,
-                    "validation": {
-                      "regex": "^[A-Za-z0-9 ]+$",
-                      "message": "Only char and numbers allowed"
-                    },
-                    "required": true,
-                    "orderNumber": 1
-                  },
-              ]
-          }
+          // {
+          //   "name": "complaintLocation",
+          //   "label": "Complaint Location ",
+          //   "type": "object",
+          //     "properties": [
+          //       {
+          //           "name": "pincode",
+          //           "label": "Pincode ",
+          //           "disable" : false,
+          //           "type": "string",
+          //           "format": "number",
+          //           "maxLength": 6,
+          //           "minLength": 2,
+          //           "validation": {
+          //             "regex": "^[1-9][0-9]{5}$",
+          //             "message": "Only numbers allowed",
+          //             "maxLength": 6,
+          //             "minLength": 2,
+          //           },
+          //           "required": true,
+          //           "orderNumber": 1
+          //         },
+          //         {
+          //           "name": "city",
+          //           "label": "City ",
+          //           "disable" : false,
+          //           "type": "string",
+          //           "format": "radioordropdown",
+          //           "maxLength": 6,
+          //           "minLength": 2,
+          //           "validation": {
+          //             "regex": "^[A-Za-z0-9 ]+$",
+          //             "message": "Only char and numbers allowed"
+          //           },
+          //           "required": true,
+          //           "orderNumber": 1
+          //         },
+          //         {
+          //           "name": "locality",
+          //           "label": "Locality ",
+          //           "disable" : false,
+          //           "type": "string",
+          //           "format": "text",
+          //           "maxLength": 6,
+          //           "minLength": 2,
+          //           "validation": {
+          //             "regex": "^[A-Za-z0-9 ]+$",
+          //             "message": "Only char and numbers allowed"
+          //           },
+          //           "required": true,
+          //           "orderNumber": 1
+          //         },
+          //     ]
+          // }
         ],
         "workflow": {
           "businessService": "NewTL",

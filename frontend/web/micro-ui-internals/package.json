@@ -15,7 +15,7 @@
     "node": ">=14"
   },
   "scripts": {
-    "start": "SKIP_PREFLIGHT_CHECK=true run-s build start:dev",
+    "start": "cross-env SKIP_PREFLIGHT_CHECK=true run-s build start:dev",
     "sprint": "SKIP_PREFLIGHT_CHECK=true run-s start:script",
     "start:dev": "run-p dev:**",
     "start:script": "./scripts/create.sh",
@@ -23,9 +23,11 @@
     "publish:css": "cd packages/css && yarn && npm publish --tag workbench-1.0",
     "dev:example": "cd example && yarn start",
     "dev:publicServices": "cd packages/modules/PublicServices && yarn start",
+    "dev:openPayment": "cd packages/modules/open-payment && yarn start",
     "dev:components": "cd packages/ui-components && yarn start",
     "build": "run-p build:**",
     "build:publicServices": "cd packages/modules/PublicServices && yarn build",
+    "build:openPayment": "cd packages/modules/open-payment && yarn build",
     "build:components": "cd packages/ui-components && yarn build",
     "deploy:jenkins": "./scripts/jenkins.sh",
     "clean": "rm -rf node_modules"
@@ -38,9 +40,10 @@
     "**/@jridgewell/gen-mapping": "0.3.5"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "husky": "7.0.4",
     "lint-staged": "12.3.7",
-    "npm-run-all": "4.1.5",
+    "npm-run-all": "^4.1.5",
     "prettier": "2.1.2"
   },
   "husky": {},
@@ -48,11 +51,12 @@
     "*.{js,css,md}": "prettier --write"
   },
   "dependencies": {
-    "lodash": "4.17.21",
-    "microbundle-crl": "0.13.11",
-    "@egovernments/digit-ui-react-components": "1.8.19",
     "@egovernments/digit-ui-components": "0.2.0-studio.1",
+    "@egovernments/digit-ui-module-open-payment": "0.0.5",
+    "@egovernments/digit-ui-react-components": "1.8.19",
     "ajv": "8.12.0",
+    "lodash": "4.17.21",
+    "microbundle-crl": "^0.13.11",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-hook-form": "6.15.8",

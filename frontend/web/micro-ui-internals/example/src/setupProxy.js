@@ -25,6 +25,7 @@ module.exports = function (app) {
     "/mdms-v2",
     "/egov-idgen",
     "/egov-location",
+    "/boundary-service",
     "/localization",
     "/egov-workflow-v2",
     "/pgr-services",
@@ -54,8 +55,10 @@ module.exports = function (app) {
     "/tl-services/v1/_create",
     "/tl-services/v1/_search",
     "/egov-url-shortening/shortener",
+    "/health-service-request",
     "/inbox/v1/_search",
     "/inbox/v2/_search",
+    "/public-service",
     "/tl-services",
     "/tl-calculator",
     "/org-services",
@@ -93,6 +96,7 @@ module.exports = function (app) {
     "/hcm-bff/hcm/_processmicroplan",
     "/health-hrms",
     "/mdms-v2/v1/_search",
+    "/studio-pdf"
   ].forEach((location) => app.use(location, createProxy));
   ["/pb-egov-assets"].forEach((location) => app.use(location, assetsProxy));
   ["/mdms-v2/v2/_create"].forEach((location) => app.use(location, mdmsProxy));

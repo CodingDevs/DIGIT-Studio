@@ -25,6 +25,8 @@ import { WorkflowStatusFilter } from "../molecules";
 import { DateRangeNew } from "../molecules";
 import { FormComposer } from "./FormComposerV2";
 import isEqual from 'lodash/isEqual';
+import UploadAndDownloadDocumentHandler from "./UploadAndDownloadDocumentHandler";
+import BoundaryFilter from "./BoundaryFilter";
 
 const FieldV1 = ({
   type = "",
@@ -54,6 +56,7 @@ const FieldV1 = ({
   controllerProps,
   control,
   variant,
+  defaultValues
 }) => {
   const { t } = useTranslation();
   let disableFormValidation = false;
@@ -334,6 +337,44 @@ const FieldV1 = ({
             }
           />
         );
+        case "documentUploadAndDownload":
+        return (
+          <UploadAndDownloadDocumentHandler
+            mdmsModuleName={config?.mdmsModuleName}
+            module={config?.module}
+            config={config}
+            Controller={Controller} // TODO: NEED TO DISCUSS ON THIS
+            register={controllerProps?.register}
+            formData={formData}
+            errors={errors}
+            id={fieldId}
+            control={controllerProps?.control}
+            customClass={config?.customClass}
+            customErrorMsg={config?.error}
+            localePrefix={config?.localePrefix}
+            action={populators?.action}
+            flow={populators?.flow}
+            variant={
+              variant
+                ? variant
+                : errors?.[populators?.name]
+                ? "digit-field-error"
+                : ""
+            }
+          />
+        );
+        case "boundary":
+          return (
+            <BoundaryFilter
+              levelConfig={populators.levelConfig}
+              hierarchyType={populators.hierarchyType}
+              module={populators.module}
+              layoutConfig={{ isDropdownLayoutHorizontal: false, isLabelFieldLayoutHorizontal: false }}
+              preSelected={populators.preSelected}
+              frozenData={populators.frozenData}
+              onChange={onChange}
+            />
+          );
       case "custom":
         return populators.component;
       case "amount":
@@ -440,34 +481,34 @@ const FieldV1 = ({
               control={controllerProps?.control}
             />
           );
-          case "childForm":
-            const childConfig = populators?.childform || [];
-            return (
-              <div className="border rounded-xl p-4 mb-4 shadow-sm bg-gray-50">
-                <Controller
-                  render={(props) => {
-                    return <FormComposer
-                    config={childConfig}
-                    //fieldPath={`tradeUnits`}
-                    //defaultValues={controllerProps?.getValues(populators?.name)}
-                    onFormValueChange={(setValue, childformData, formState) => {
-                     if(childformData && !isEqual(formData?.[populators?.name],childformData)){
-                     controllerProps.setValue(populators?.name, {...childformData});
-                     }
-                    }}
-                    //onChange={props.onChange}
-                    parentName={populators?.name}
-                    inline={true}
-                    hideHeader={true}
-                  />
-                  }}
-                  rules={{ required: required, ...populators.validation }}
-                  defaultValue={formData?.[populators?.name]}
-                  name={populators?.name}
-                  control={controllerProps?.control}
-              />
-              </div>
-            );
+          // case "childForm":
+          //   const childConfig = populators?.childform || [];
+          //   return (
+          //     <div className="border rounded-xl p-4 mb-4 shadow-sm bg-gray-50">
+          //       <Controller
+          //         render={(props) => {
+          //           return <FormComposer
+          //           config={childConfig}
+          //           //fieldPath={`tradeUnits`}
+          //           //defaultValues={controllerProps?.getValues(populators?.name)}
+          //           onFormValueChange={(setValue, childformData, formState) => {
+          //            if(childformData && !isEqual(formData?.[populators?.name],childformData)){
+          //            controllerProps.setValue(populators?.name, {...childformData});
+          //            }
+          //           }}
+          //           //onChange={props.onChange}
+          //           parentName={populators?.name}
+          //           inline={true}
+          //           hideHeader={true}
+          //         />
+          //         }}
+          //         rules={{ required: required, ...populators.validation }}
+          //         defaultValue={formData?.[populators?.name]}
+          //         name={populators?.name}
+          //         control={controllerProps?.control}
+          //     />
+          //     </div>
+          //   );
 
             case "multiChildForm":
             const multichildConfig = populators?.childform || [];
@@ -507,6 +548,7 @@ const FieldV1 = ({
                               controllerProps.setValue(`${populators?.name}[${index}]`, {...updated[index]});
                             }
                           }}
+                          defaultValues={defaultValues}
                           parentName={`${populators?.name}[${index}]`}
                           inline={true}
                           hideHeader={true}
