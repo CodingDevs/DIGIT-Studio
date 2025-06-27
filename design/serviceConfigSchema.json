@@ -1,18 +1,394 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Generated schema for Root",
   "type": "object",
+  "title": "Generated schema for Root",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "required": [
+    "pdf",
+    "bill",
+    "idgen",  
+    "fields",
+    "module",
+    "service",
+    "payment",
+    "boundary",
+    "workflow",
+    "applicant",
+    "documents",
+    "calculator",
+    "localization",
+    "notification"
+  ],
+  "x-unique": [
+    "module",
+    "service"
+  ],
   "properties": {
-    "module": {
+    "id": {
       "type": "string"
     },
-    "service": {
-      "type": "string"
+    "pdf": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "type",
+          "states"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "bill": {
+      "type": "object",
+      "required": [
+        "taxHead",
+        "taxPeriod",
+        "BusinessService"
+      ],
+      "properties": {
+        "taxHead": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "name",
+              "order",
+              "isDebit",
+              "service",
+              "category",
+              "isRequired",
+              "isActualDemand"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "order": {
+                "type": "string"
+              },
+              "isDebit": {
+                "type": "boolean"
+              },
+              "service": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "isRequired": {
+                "type": "boolean"
+              },
+              "isActualDemand": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "taxPeriod": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "toDate",
+              "service",
+              "fromDate",
+              "periodCycle",
+              "financialYear"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "toDate": {
+                "type": "number"
+              },
+              "service": {
+                "type": "string"
+              },
+              "fromDate": {
+                "type": "number"
+              },
+              "periodCycle": {
+                "type": "string"
+              },
+              "financialYear": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "BusinessService": {
+          "type": "object",
+          "required": [
+            "code",
+            "businessService",
+            "demandUpdateTime",
+            "isAdvanceAllowed",
+            "minAmountPayable",
+            "partPaymentAllowed",
+            "isVoucherCreationEnabled",
+            "collectionModesNotAllowed"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "businessService": {
+              "type": "string"
+            },
+            "demandUpdateTime": {
+              "type": "number"
+            },
+            "isAdvanceAllowed": {
+              "type": "boolean"
+            },
+            "minAmountPayable": {
+              "type": "number"
+            },
+            "partPaymentAllowed": {
+              "type": "boolean"
+            },
+            "isVoucherCreationEnabled": {
+              "type": "boolean"
+            },
+            "collectionModesNotAllowed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "idgen": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "format",
+          "idname"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "idname": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "inbox": {
+      "type": "object",
+      "required": [
+        "index",
+        "module",
+        "sortBy",
+        "sourceFilterPathList",
+        "allowedSearchCriteria"
+      ],
+      "properties": {
+        "index": {
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        },
+        "sortBy": {
+          "type": "object",
+          "required": [
+            "path",
+            "defaultOrder"
+          ],
+          "properties": {
+            "path": {
+              "type": "string"
+            },
+            "defaultOrder": {
+              "type": "string"
+            }
+          }
+        },
+        "sourceFilterPathList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowedSearchCriteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "path",
+              "isMandatory"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "string"
+              },
+              "isMandatory": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "required": [
+        "registry",
+        "calculator",
+        "references",
+        "validation"
+      ],
+      "properties": {
+        "registry": {
+          "type": "object",
+          "required": [
+            "type",
+            "service"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "service": {
+              "type": "string"
+            }
+          }
+        },
+        "calculator": {
+          "type": "object",
+          "required": [
+            "type",
+            "service",
+            "customFunction"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "service": {
+              "type": "string"
+            },
+            "customFunction": {
+              "type": "string"
+            }
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "type",
+              "service"
+            ],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "service": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "validation": {
+          "type": "object",
+          "required": [
+            "type",
+            "service",
+            "schemaCode",
+            "customFunction"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "service": {
+              "type": "string"
+            },
+            "schemaCode": {
+              "type": "string"
+            },
+            "customFunction": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "access": {
+      "type": "object",
+      "required": [
+        "roles",
+        "actions"
+      ],
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     },
     "fields": {
       "type": "array",
       "items": {
         "type": "object",
+        "required": [
+          "name",
+          "type",
+          "label"
+        ],
         "properties": {
           "name": {
             "type": "string"
@@ -20,73 +396,12 @@
           "type": {
             "type": "string"
           },
-          "label": {
-            "type": "string"
-          },
-          "properties": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": "string"
-                },
-                "label": {
-                  "type": "string"
-                },
-                "format": {
-                  "type": "string"
-                },
-                "schema": {
-                  "type": "string"
-                },
-                "required": {
-                  "type": "boolean"
-                },
-                "reference": {
-                  "type": "string"
-                },
-                "orderNumber": {
-                  "type": "number"
-                },
-                "defaultValue": {
-                  "type": "string"
-                },
-                "maxLength": {
-                  "type": "number"
-                },
-                "minLength": {
-                  "type": "number"
-                },
-                "validation": {
-                  "type": "object",
-                  "properties": {
-                    "regex": {
-                      "type": "string"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "regex",
-                    "message"
-                  ]
-                },
-                "dependencies": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
           "items": {
             "type": "object",
+            "required": [
+              "type",
+              "properties"
+            ],
             "properties": {
               "type": {
                 "type": "string"
@@ -95,6 +410,16 @@
                 "type": "array",
                 "items": {
                   "type": "object",
+                  "required": [
+                    "name",
+                    "type",
+                    "label",
+                    "format",
+                    "schema",
+                    "required",
+                    "reference",
+                    "orderNumber"
+                  ],
                   "properties": {
                     "name": {
                       "type": "string"
@@ -124,272 +449,85 @@
                 }
               }
             }
-          }
-        },
-        "required": [
-          "name",
-          "type",
-          "label"
-        ]
-      }
-    },
-    "pdf": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "key": {
+          },
+          "label": {
             "type": "string"
           },
-          "type": {
-            "type": "string"
-          },
-          "states": {
+          "properties": {
             "type": "array",
             "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "key",
-          "type",
-          "states"
-        ]
-      }
-    },
-    "bill": {
-      "type": "object",
-      "properties": {
-        "taxHead": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "order": {
-                "type": "string"
-              },
-              "isDebit": {
-                "type": "boolean"
-              },
-              "service": {
-                "type": "string"
-              },
-              "category": {
-                "type": "string"
-              },
-              "isRequired": {
-                "type": "boolean"
-              },
-              "isActualDemand": {
-                "type": "boolean"
-              }
-            },
-            "required": [
-              "code",
-              "name",
-              "order",
-              "isDebit",
-              "service",
-              "category",
-              "isRequired",
-              "isActualDemand"
-            ]
-          }
-        },
-        "taxPeriod": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string"
-              },
-              "toDate": {
-                "type": "number"
-              },
-              "service": {
-                "type": "string"
-              },
-              "fromDate": {
-                "type": "number"
-              },
-              "periodCycle": {
-                "type": "string"
-              },
-              "financialYear": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "code",
-              "toDate",
-              "service",
-              "fromDate",
-              "periodCycle",
-              "financialYear"
-            ]
-          }
-        },
-        "BusinessService": {
-          "type": "object",
-          "properties": {
-            "code": {
-              "type": "string"
-            },
-            "businessService": {
-              "type": "string"
-            },
-            "demandUpdateTime": {
-              "type": "number"
-            },
-            "isAdvanceAllowed": {
-              "type": "boolean"
-            },
-            "minAmountPayable": {
-              "type": "number"
-            },
-            "partPaymentAllowed": {
-              "type": "boolean"
-            },
-            "isVoucherCreationEnabled": {
-              "type": "boolean"
-            },
-            "collectionModesNotAllowed": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "required": [
-            "code",
-            "businessService",
-            "demandUpdateTime",
-            "isAdvanceAllowed",
-            "minAmountPayable",
-            "partPaymentAllowed",
-            "isVoucherCreationEnabled",
-            "collectionModesNotAllowed"
-          ]
-        }
-      },
-      "required": [
-        "taxHead",
-        "taxPeriod",
-        "BusinessService"
-      ]
-    },
-    "idgen": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "format": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "type",
-          "format"
-        ]
-      }
-    },
-    "rules": {
-      "type": "object",
-      "properties": {
-        "registry": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string"
-            },
-            "service": {
-              "type": "string"
-            }
-          }
-        },
-        "calculator": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string"
-            },
-            "service": {
-              "type": "string"
-            },
-            "customFunction": {
-              "type": "string"
-            }
-          }
-        },
-        "references": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "string"
-              },
-              "service": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "validation": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string"
-            },
-            "service": {
-              "type": "string"
-            },
-            "schemaCode": {
-              "type": "string"
-            },
-            "customFunction": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    "access": {
-      "type": "object",
-      "properties": {
-        "roles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "actions": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "url": {
-                "type": "string"
+              "type": "object",
+              "required": [
+                "name",
+                "type",
+                "label",
+                "format",
+                "required",
+                "orderNumber"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                },
+                "schema": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "maxLength": {
+                  "type": "number"
+                },
+                "minLength": {
+                  "type": "number"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "validation": {
+                  "type": "object",
+                  "required": [
+                    "regex",
+                    "message"
+                  ],
+                  "properties": {
+                    "regex": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "orderNumber": {
+                  "type": "number"
+                },
+                "defaultValue": {
+                  "type": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
         }
       }
+    },
+    "module": {
+      "type": "string"
     },
     "enabled": {
       "type": "array",
@@ -399,17 +537,24 @@
     },
     "payment": {
       "type": "object",
+      "required": [
+        "gateway"
+      ],
       "properties": {
         "gateway": {
           "type": "string"
         }
-      },
-      "required": [
-        "gateway"
-      ]
+      }
+    },
+    "service": {
+      "type": "string"
     },
     "boundary": {
       "type": "object",
+      "required": [
+        "lowestLevel",
+        "hierarchyType"
+      ],
       "properties": {
         "lowestLevel": {
           "type": "string"
@@ -417,31 +562,20 @@
         "hierarchyType": {
           "type": "string"
         }
-      },
-      "required": [
-        "lowestLevel",
-        "hierarchyType"
-      ]
+      }
     },
     "workflow": {
       "type": "object",
+      "required": [
+        "ACTIVE",
+        "states",
+        "INACTIVE",
+        "business",
+        "businessService",
+        "businessServiceSla"
+      ],
       "properties": {
         "ACTIVE": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "generateDemandAt": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "nextActionAfterPayment": {
-          "type": "string"
-        },
-        "autoTransitionEnabledStates": {
           "type": "array",
           "items": {
             "type": "string"
@@ -451,17 +585,35 @@
           "type": "array",
           "items": {
             "type": "object",
+            "required": [
+              "actions",
+              "isStartState",
+              "isStateUpdatable",
+              "isTerminateState",
+              "docUploadRequired"
+            ],
             "properties": {
               "sla": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "state": {
-                "type": "string"
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "actions": {
                 "type": "array",
                 "items": {
                   "type": "object",
+                  "required": [
+                    "roles",
+                    "action",
+                    "nextState"
+                  ],
                   "properties": {
                     "roles": {
                       "type": "array",
@@ -475,16 +627,17 @@
                     "nextState": {
                       "type": "string"
                     }
-                  },
-                  "required": [
-                    "roles",
-                    "action",
-                    "nextState"
-                  ]
+                  }
                 }
               },
               "isStartState": {
                 "type": "boolean"
+              },
+              "generateDemandAt": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               "isStateUpdatable": {
                 "type": "boolean"
@@ -493,19 +646,33 @@
                 "type": "boolean"
               },
               "applicationStatus": {
-                "type": "string"
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "docUploadRequired": {
                 "type": "boolean"
+              },
+              "nextActionAfterPayment": {
+                "type": "string"
+              },
+              "triggerParallelWorkflows": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "autoTransitionEnabledStates": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
-            },
-            "required": [
-              "actions",
-              "isStartState",
-              "isStateUpdatable",
-              "isTerminateState",
-              "docUploadRequired"
-            ]
+            }
           }
         },
         "INACTIVE": {
@@ -529,6 +696,13 @@
       "type": "array",
       "items": {
         "type": "object",
+        "required": [
+          "host",
+          "type",
+          "method",
+          "service",
+          "endpoint"
+        ],
         "properties": {
           "host": {
             "type": "string"
@@ -550,6 +724,11 @@
     },
     "applicant": {
       "type": "object",
+      "required": [
+        "types",
+        "maximum",
+        "minimum"
+      ],
       "properties": {
         "types": {
           "type": "array",
@@ -569,6 +748,16 @@
       "type": "array",
       "items": {
         "type": "object",
+        "required": [
+          "action",
+          "active",
+          "category",
+          "isMandatory",
+          "maxSizeInMB",
+          "documentTypes",
+          "maxFilesAllowed",
+          "allowedFileTypes"
+        ],
         "properties": {
           "action": {
             "type": "array",
@@ -588,15 +777,17 @@
           "maxSizeInMB": {
             "type": "number"
           },
-          "templatePDFKey": {
-            "type": "string"
-          },
-          "templatedownloadURL": {},
           "documentTypes": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          },
+          "templatePDFKey": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "maxFilesAllowed": {
             "type": "number"
@@ -606,17 +797,34 @@
             "items": {
               "type": "string"
             }
+          },
+          "templatedownloadURL": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }
     },
     "calculator": {
       "type": "object",
+      "required": [
+        "type",
+        "billingSlabs"
+      ],
       "properties": {
+        "type": {
+          "type": "string"
+        },
         "billingSlabs": {
           "type": "array",
           "items": {
             "type": "object",
+            "required": [
+              "key",
+              "value"
+            ],
             "properties": {
               "key": {
                 "type": "string"
@@ -631,6 +839,9 @@
     },
     "localization": {
       "type": "object",
+      "required": [
+        "modules"
+      ],
       "properties": {
         "modules": {
           "type": "array",
@@ -642,11 +853,20 @@
     },
     "notification": {
       "type": "object",
+      "required": [
+        "sms",
+        "email"
+      ],
       "properties": {
         "sms": {
           "type": "array",
           "items": {
             "type": "object",
+            "required": [
+              "code",
+              "states",
+              "template"
+            ],
             "properties": {
               "code": {
                 "type": "string"
@@ -667,6 +887,11 @@
           "type": "array",
           "items": {
             "type": "object",
+            "required": [
+              "code",
+              "states",
+              "template"
+            ],
             "properties": {
               "code": {
                 "type": "string"
@@ -684,63 +909,6 @@
           }
         }
       }
-    },
-    "inbox": {
-      "type": "object",
-      "properties": {
-        "module": {
-          "type": "string"
-        },
-        "index": {
-          "type": "string"
-        },
-        "allowedSearchCriteria": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "path": {
-                "type": "string"
-              },
-              "isMandatory": {
-                "type": "boolean"
-              },
-              "operator": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "sortBy": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            },
-            "defaultOrder": {
-              "type": "string"
-            }
-          }
-        },
-        "sourceFilterPathList": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
     }
-  },
-  "required": [
-    "module",
-    "service",
-    "fields",
-    "idgen",
-    "boundary",
-    "workflow",
-    "applicant"
-  ]
+  }
 }
