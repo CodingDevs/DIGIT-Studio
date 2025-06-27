@@ -229,12 +229,9 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 		v.PersistData("workflow", input, true, nil)
 	}
 
-	resp, err = v.localization_service.SendLocalizationMessage(req)
-	if err != nil {
-		log.Println(err)
-	} else {
-		log.Println(resp)
-	}
+	v.localization_service.BasicLocalization(data, req)
+	v.localization_service.Localization(data, req)
+	v.localization_service.WorkflowLocalization(data, req)
 
 	return true, nil
 }

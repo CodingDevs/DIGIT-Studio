@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -176,64 +175,8 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 	return msgDetail
 }
 
-func (l *LocalizationService) SendLocalizationMessage(req model.ServiceRequest) (map[string]interface{}, error) {
+func (l *LocalizationService) SendLocalizationMessage(messages []model.Message, req model.ServiceRequest) (map[string]interface{}, error) {
 	tenantId := req.Service.TenantId
-	business_service := req.Service.BusinessService
-	module := req.Service.Module
-
-	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
-	filters := map[string]string{
-		"service": business_service, 
-		"module": module, 
-	}
-	resp, _ := l.mdms_service.SearchMDMS(tenantId, schemaCode, filters, req.RequestInfo)
-
-	mdmsList, ok := resp["mdms"].([]interface{})
-	if !ok || len(mdmsList) == 0 {
-		log.Println("MDMS data missing or invalid")
-		return nil, errors.New("MDMS data missing or invalid")
-	}
-
-	firstEntry, ok := mdmsList[0].(map[string]interface{})
-	if !ok {
-		log.Println("Invalid MDMS format: first entry is not a map")
-		return nil, errors.New("invalid MDMS format: first entry is not a map")
-	}
-
-	data, ok := firstEntry["data"].(map[string]interface{})
-	if !ok {
-		log.Println("Invalid MDMS format: missing or invalid 'data'")
-		return nil, errors.New("invalid MDMS format: missing or invalid 'data'")
-	}
-
-	localization := data["localization"].(map[string]interface{})
-	modules := localization["modules"].([]interface{})
-	module = modules[0].(string)
-	log.Println(modules)
-
-	notification := data["notification"].(map[string]interface{})
-	sms := notification["sms"].([]interface{})
-	email := notification["email"].([]interface{})
-
-	var arr []interface{}
-	arr = append(arr, sms...)
-	arr = append(arr, email...)
-	var messages []model.Message
-	for _, val := range arr {
-		data := val.(map[string]interface{})
-		code := data["code"].(string)
-		message := data["template"].(string)
-		locale := os.Getenv("NOTIFICATION_LOCALE")
-
-		messag :=  model.Message{
-			Code: code,
-			Message: message,
-			Module: module,
-			Locale: locale,
-		}
-
-		messages = append(messages, messag)	
-	}
 
 	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
 	payload := model.Localization{
@@ -245,6 +188,7 @@ func (l *LocalizationService) SendLocalizationMessage(req model.ServiceRequest) 
 	var result map[string]interface{}
 	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
 	if err != nil {
+		log.Println(err.Error())
 		return result, err;
 	}
 
@@ -252,3 +196,179 @@ func (l *LocalizationService) SendLocalizationMessage(req model.ServiceRequest) 
 
 	return result, nil
 } 
+
+func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req model.ServiceRequest) {
+	var messages []model.Message
+	locale := os.Getenv("NOTIFICATION_LOCALE")
+	module := strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService)
+	
+	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
+	set := make(map[string]struct{})
+	fields := data["fields"].([]interface{})
+
+	for key := range fields {
+		value := fields[key].(map[string]interface{})
+		heading := value["name"].(string)
+		headingLabel := value["label"].(string)
+		
+		message := model.Message{
+			Code: module + "_" + strings.ToUpper(heading),
+			Message: headingLabel,
+			Locale: locale,
+			Module: localizationModule,
+		}
+		if _, exists := set[message.Code]; exists {
+			//already exists
+		} else {
+			messages = append(messages, message)
+			set[message.Code] = struct{}{}
+		}
+		
+		properties := value["properties"].([]interface{})
+		
+		for key := range properties {
+			value := properties[key].(map[string]interface{})
+			fieldName := value["name"].(string)
+			fieldLabel := value["label"].(string)
+			message := model.Message{
+				Code: module + "_" + strings.ToUpper(fieldName),
+				Message: fieldLabel,
+				Locale: locale,
+				Module: localizationModule,
+			}
+			if _, exists := set[message.Code]; exists {
+				//already exists
+			} else {
+				messages = append(messages, message)
+				set[message.Code] = struct{}{}
+			}
+			if dropdownVals, found := value["values"].([]interface{}); found {
+				for key := range dropdownVals {
+					message := model.Message{
+						Code: module + "_" + strings.ToUpper(fieldName) + "_" + strings.ToUpper(dropdownVals[key].(string)),
+						Message: dropdownVals[key].(string),
+						Locale: locale,
+						Module: localizationModule,
+					}
+					if _, exists := set[message.Code]; exists {
+						//already exists
+					} else {
+						messages = append(messages, message)
+						set[message.Code] = struct{}{}
+					}
+				}	
+			} else {
+				//do nothing
+			}
+		}
+	}
+	log.Println(messages)
+	resp, err := l.SendLocalizationMessage(messages, req)
+	log.Println(resp)
+	log.Println(err)
+}
+
+
+func(l *LocalizationService) Localization(data map[string]interface{}, req model.ServiceRequest) {
+	var messages []model.Message
+	locale := os.Getenv("NOTIFICATION_LOCALE")
+	module := strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService)
+	
+	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
+
+	message := model.Message{
+		Code: module + "_" + "HEADING", 
+		Message: module + " Application Form",
+		Locale: locale,
+		Module: localizationModule,
+	}
+	messages = append(messages, message)
+
+	field := []string{"NEXT", "ADD", "SUBMIT", "OWNERNAME", "ADDRESS", "PINCODE", "STREETNAME", "CITY", "ACTIONS"}
+	for key := range field {
+		message := model.Message{
+			Code: module + "_" + field[key],
+			Message: field[key],
+			Locale: locale,
+			Module: localizationModule,
+		}
+		messages = append(messages, message)
+	}
+	
+	
+	resp, err := l.SendLocalizationMessage(messages, req)
+	log.Println(resp)
+	log.Println(err)
+
+}
+
+func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, req model.ServiceRequest) {
+	var messages []model.Message
+	locale := os.Getenv("NOTIFICATION_LOCALE")
+	module := "WF_" + strings.ToUpper(req.Service.Module) + "_" 
+	
+	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
+
+	actionArr := make(map[string]struct{})
+	stateArr := make(map[string]struct{})
+
+	workflow := data["workflow"].(map[string]interface{})
+	businessService := workflow["businessService"].(string)
+	actionModuleArr := strings.Split(businessService, ".")
+	actionModule := ""
+
+	for key := range actionModuleArr {
+		actionModule += strings.ToUpper(actionModuleArr[key])  
+		actionModule += "_"
+	}
+	actionModule += "ACTION_"
+	log.Println(actionModule)
+	states := workflow["states"].([]interface{})
+	for key := range states {
+		state := states[key].(map[string]interface{})
+		actions := state["actions"].([]interface{})
+
+		if state["state"] != nil {
+			stateArr[state["state"].(string)] = struct{}{}
+		}
+
+		for key := range actions {
+			action := actions[key].(map[string]interface{})
+			actionArr[action["action"].(string)] = struct{}{}
+		}
+	}
+
+	for key := range actionArr {
+		message := model.Message{
+			Code: module + strings.ToUpper(req.Service.BusinessService) + "STATUS_" + key,
+			Message: "Application Status: " + key,
+			Locale: locale,
+			Module: localizationModule,
+		}
+		messages = append(messages, message)
+	}
+
+	for key := range actionArr {
+		message := model.Message{
+			Code: module + actionModule + key,
+			Message: key,
+			Locale: locale,
+			Module: localizationModule,
+		}
+		messages = append(messages, message)
+	}
+
+	for key := range stateArr {
+		message := model.Message{
+			Code: module + strings.ToUpper(req.Service.BusinessService) + "STATE_" + key,
+			Message: "Current State: " + key,
+			Locale: locale,
+			Module: localizationModule,
+		}
+		messages = append(messages, message)
+	}
+	log.Println(messages)
+	resp, err := l.SendLocalizationMessage(messages, req)
+	log.Println(resp)
+	log.Println(err)
+}
