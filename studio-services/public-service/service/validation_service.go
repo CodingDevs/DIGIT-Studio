@@ -12,9 +12,6 @@ import (
 	producer "public-service/kafka/producer"
 	"public-service/model"
 	"time"
-
-	"strings"
-
 	"github.com/google/uuid"
 )
 
@@ -48,7 +45,7 @@ func (v ValidateService) Validate(ctx context.Context, req model.ServiceRequest)
 	return val, err
 }
 
-func (v ValidateService) PersistData(service string, input model.Validation, success bool, err error) {
+func (v ValidateService) PersistData(service string, input model.Validation, success bool, err error) error {
 	req := input.Req
 	id := uuid.New()
 	process_name := service
@@ -69,38 +66,39 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 	}
 
 	log.Println(string(failureReason))
-	err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason) 
+	/*err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason) 
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, id, process_name, input.Service, input.Module, createdby, created_time, success, failureReason).Scan(&id)
 	if err != nil {
 		log.Fatal("Insert failed:", err)
-	}
+	}*/
 
-	// payload := map[string]interface{}{
-	// 	"id": id,
-	// 	"process_name": process_name,
-	// 	"businessService": business_service,
-	// 	"module": module,
-	// 	"createdBy": createdby,
-	// 	"createdTime": created_time,
-	// 	"success": success,
-	// 	"failureReason": failureReason,
-	// }
+	payload := map[string]interface{}{
+	 	"id": id,
+		"process_name": process_name,
+		"businessService": input.Service,
+		"module": input.Module,
+	 	"createdBy": createdby,
+	 	"createdTime": created_time,
+	 	"success": success,
+	 	"failureReason": failureReason,
+	 }
 
-	// kafkaPayload, err := json.Marshal(payload)
-	// if err != nil {
-	// 	return false, fmt.Errorf("failed to marshal application request for Kafka: %w", err)
-	// }
-
-	// if v.kafkaProducer != nil {
-	// 	log.Println("request", string(kafkaPayload))
-	// 	err = v.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE_PROCESS"), kafkaPayload)
-	// 	if err != nil {
-	// 		log.Printf("failed to push kafka message: %v", err)
-	// 		return false, err
-	// 	}
-	// } else {
-	// 	return false, errors.New("kafka producer is not initialized")
-	// }
+	 kafkaPayload, err := json.Marshal(payload)
+	 if err != nil {
+	 	 fmt.Errorf("failed to marshal application request for Kafka: %w", err)
+	 }
+     ctx := context.Background()
+	 if v.kafkaProducer != nil {
+	 	log.Println("request", string(kafkaPayload))
+	 	err = v.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE_PROCESS"), kafkaPayload)
+	 	if err != nil {
+	 		log.Printf("failed to push kafka message: %v", err)
+			return  err
+	 	}
+	 } else {
+	 	return  errors.New("kafka producer is not initialized")
+	 }
+	 return nil
 }
 
 func (v ValidateService) ValidateServices(tenantId string, business_service string, module string, req model.ServiceRequest) (bool, error) {
@@ -140,7 +138,6 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 
 	funcMap := map[string]func(model.Validation) []model.ValidationResponse{
 		"idgen":     v.IDgenValidation,
-		"documents": v.DocumentValidation,
 		"bill":      v.BillValidation,
 	}
 
@@ -236,22 +233,6 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 	return true, nil
 }
 
-// func (v ValidateService) DocumentValidation(input model.Validation) ([]model.ValidationResponse) {
-// 	module := input.Module + "." + input.Service
-// 	data := make(map[string]interface{})
-// 	data["module"] = module
-// 	var arr []interface{}
-// 	for key := range input.DataArr {
-// 		value := input.DataArr[key].(map[string]interface{})
-// 		action := value["action"].([]interface{})
-// 		actionValue := action[0]
-
-// 		value["action"] = actionValue
-// 		arr = append(arr, value)
-// 	}
-// 	data["actions"] = arr
-
-// 	var resp []model.ValidationResponse
 // 	resp = append(resp,
 // 		model.ValidationResponse{
 // 			Filters: map[string]string{
@@ -265,7 +246,7 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 // 	return resp
 // }
 
-func (v ValidateService) DocumentValidation(input model.Validation) []model.ValidationResponse {
+/*func (v ValidateService) DocumentValidation(input model.Validation) []model.ValidationResponse {
 	module := input.Module + "." + input.Service
 	documents := input.DataArr
 
@@ -343,7 +324,7 @@ func (v ValidateService) DocumentValidation(input model.Validation) []model.Vali
 		},
 	)
 	return resp
-}
+}*/
 
 func (v ValidateService) IDgenValidation(input model.Validation) []model.ValidationResponse {
 	var resp []model.ValidationResponse
