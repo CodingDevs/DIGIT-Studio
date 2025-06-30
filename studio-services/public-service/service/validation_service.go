@@ -56,13 +56,13 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 
 	var failureReason interface{}
 	if err != nil {
-		failureReason, _ = json.Marshal(map[string]interface{}{
+		failureReason = map[string]interface{}{
 			"error": err.Error(),
-		})
+		}
 	} else {
-		failureReason, _ = json.Marshal(map[string]interface{}{
+		failureReason = map[string]interface{}{
 			"error": "none",
-		})
+		}
 	}
 
 	/*err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason) 
