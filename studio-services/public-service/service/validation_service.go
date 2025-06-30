@@ -80,7 +80,7 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 	 	"createdBy": createdby,
 	 	"createdTime": created_time.UnixMilli(),
 	 	"success": success,
-	 	"failureReason": string(failureReason),
+	 	"failureReason": failureReason,
 	 }
 
 	 kafkaPayload, err := json.Marshal(payload)
