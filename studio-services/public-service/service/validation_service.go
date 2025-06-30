@@ -54,7 +54,7 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 
 	// log.Println(err)
 
-	var failureReason []byte
+	var failureReason interface{}
 	if err != nil {
 		failureReason, _ = json.Marshal(map[string]interface{}{
 			"error": err.Error(),
@@ -65,7 +65,6 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 		})
 	}
 
-	log.Println(string(failureReason))
 	/*err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason) 
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, id, process_name, input.Service, input.Module, createdby, created_time, success, failureReason).Scan(&id)
 	if err != nil {
