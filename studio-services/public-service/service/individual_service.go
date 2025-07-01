@@ -121,6 +121,11 @@ func mapToIndividualRequest(req model.Applicant, info model.RequestInfo) individ
 					Code:     "CITIZEN",
 					TenantId: info.UserInfo.TenantId,
 				},
+				{ 
+                    Name:     "STUDIO AMIN",
+					Code:     "STUDIO_ADMIN",
+					TenantId: info.UserInfo.TenantId,
+				},
 			},
 			Type:     req.Type,
 		},
