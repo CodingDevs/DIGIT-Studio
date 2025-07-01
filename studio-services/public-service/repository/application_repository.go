@@ -228,7 +228,18 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 				UserId: applicantUserId.String,
 				Active: applicantActive.Bool,
 			}
-			app.Applicants = append(app.Applicants, applicant)
+		
+			// Prevent duplicate applicants
+			alreadyExists := false
+			for _, existing := range app.Applicants {
+				if existing.Id == applicant.Id {
+					alreadyExists = true
+					break
+				}
+			}
+			if !alreadyExists {
+				app.Applicants = append(app.Applicants, applicant)
+			}
 		}
 
 		// Document
