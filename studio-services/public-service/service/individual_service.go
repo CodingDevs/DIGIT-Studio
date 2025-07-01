@@ -111,7 +111,17 @@ func mapToIndividualRequest(req model.Applicant, info model.RequestInfo) individ
 		UserDetails: &individual.UserDetail{
 			UserName: mobileStr,
 			TenantId: info.UserInfo.TenantId,
-			Roles:    info.UserInfo.Roles,
+			Roles: []struct {
+				Name     string `json:"name"`
+				Code     string `json:"code"`
+				TenantId string `json:"tenantId"`
+			}{
+				{
+					Name:     "Citizen",
+					Code:     "CITIZEN",
+					TenantId: info.UserInfo.TenantId,
+				},
+			},
 			Type:     req.Type,
 		},
 	}

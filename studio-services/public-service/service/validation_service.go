@@ -224,9 +224,11 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 	} else {
 		v.PersistData("workflow", input, true, nil)
 	}
-
+    //localization of fields data
 	v.localization_service.BasicLocalization(data, req)
+	//localization of headings and constants like next button and all
 	v.localization_service.Localization(data, req)
+	// localization of workflow action and states 
 	v.localization_service.WorkflowLocalization(data, req)
 
 	return true, nil

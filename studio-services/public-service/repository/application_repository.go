@@ -102,9 +102,15 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		args = append(args, criteria.Status)
 		argPos++
 	}
+
+	//TODO: need to see this process 
 	if criteria.UserId != "" {
 		conditions = append(conditions, fmt.Sprintf("ap.user_id = $%d", argPos))
 		args = append(args, criteria.UserId)
+		argPos++
+	} else if criteria.CreatedBy != "" {
+		conditions = append(conditions, fmt.Sprintf("a.createdby = $%d", argPos))
+		args = append(args, criteria.CreatedBy)
 		argPos++
 	}
 	if len(conditions) > 0 {

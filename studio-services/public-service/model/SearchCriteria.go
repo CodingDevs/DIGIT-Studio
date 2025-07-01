@@ -12,5 +12,6 @@ type SearchCriteria struct {
 	UserId            string      `json:"userId"`
 	Offset            int         `json:"offset"`
 	Limit             int         `json:"limit"`
+	CreatedBy         string      `json:"createdBy"`
 	SortBy            string      `json:"sortBy"`
 }

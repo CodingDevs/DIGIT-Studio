@@ -160,6 +160,7 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 	applicationNumber := r.URL.Query().Get("applicationNumber")
 	userId:=r.URL.Query().Get("userId")
 	sortBy := r.URL.Query().Get("sortBy")
+	createdBy := r.URL.Query().Get("createdBy")
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if limit, err := strconv.Atoi(limitStr); err == nil {
 			criteria.SearchCriteria.Limit = limit
@@ -187,6 +188,9 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 	}
 	if userId != "" {
 		criteria.SearchCriteria.UserId=userId
+	}
+	if createdBy != "" {
+		criteria.SearchCriteria.CreatedBy= createdBy
 	}
 	if idsParam := r.URL.Query().Get("ids"); idsParam != "" {
 		criteria.SearchCriteria.Ids = strings.Split(idsParam, ",")
