@@ -41,6 +41,9 @@ const DigitDemoViewComponent = () => {
       MdmsCriteria: {
         tenantId: tenantId,
         schemaCode: "Studio.ServiceConfiguration",
+        filters:{
+          module:module
+        }
       },
     },
   };
@@ -64,6 +67,8 @@ const DigitDemoViewComponent = () => {
       }
     }
   );
+  console.log(workflowLoading,"loadinggg");
+  console.log(workflowDetails, "workflowDetails");
 
   // Util method to generate view config for view composer
   let config = generateViewConfigFromResponse(response,t, queryStrings?.businessService || selectedBusinessService?.code, serviceConfig);

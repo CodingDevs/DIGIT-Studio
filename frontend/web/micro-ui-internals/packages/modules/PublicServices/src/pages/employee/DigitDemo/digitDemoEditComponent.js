@@ -357,6 +357,9 @@ const DigitDemoEditComponent = () => {
       MdmsCriteria: {
         tenantId: tenantId,
         schemaCode: "Studio.ServiceConfiguration",
+        filters:{
+          module:module
+        }
       },
     },
   };
