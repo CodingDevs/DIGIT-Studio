@@ -6,6 +6,7 @@ import { CustomisedHooks } from "./hooks";
 import { UICustomizations } from "./configs/UICustomizations";
 import {ErrorBoundary} from "@egovernments/digit-ui-components"
 import EmployeeApp from "./pages/employee";
+import OpenViewComp from "./components/openViewComp";
 
 const OpenPaymentModule = ({ stateCode, userType, tenants }) => {
   const { path, url } = useRouteMatch();
@@ -35,8 +36,9 @@ const OpenPaymentModule = ({ stateCode, userType, tenants }) => {
 
 const componentsToRegister = {
   // HRMSModule:OpenPaymentModule,
-  OpenPaymentModule
+  OpenPaymentModule,
   // DSSCard:OpenPaymentModule
+  OpenViewComponent:OpenViewComp,
 };
 
 const overrideHooks = () => {

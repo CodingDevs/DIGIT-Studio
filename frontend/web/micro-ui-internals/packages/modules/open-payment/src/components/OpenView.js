@@ -5,6 +5,8 @@ import { makePayment } from '../utils/payGov';
 import  { CustomisedHooks } from "../hooks";
 import $ from "jquery";
 import { useHistory, useLocation } from 'react-router-dom';
+import { FormComposerV2 } from '@egovernments/digit-ui-components';
+import { ViewConfig, CardConfig, ChequeConfig } from '../configs/OpenViewConfig';
 
 const OpenView = () => {
   const { t } = useTranslation();
@@ -13,6 +15,13 @@ const OpenView = () => {
   const mutation = CustomisedHooks?.Hooks?.openpayment?.useCreatePayment();
   const history = useHistory();
   const { state } = useLocation();
+  const defValues = {
+    "mode": {
+      code: "CASH",
+      name: "CASH",
+    }
+  };
+  const [Config, setConfig] = useState(ViewConfig);
 
   const requestCriteria = {
     url:"/billing-service/bill/v2/_fetchbill",
@@ -36,7 +45,11 @@ const OpenView = () => {
       ?.sort((a, b) => b.fromPeriod - a.fromPeriod)
       ?.reduce((total, current, index) => (index === 0 ? total : total + current.amount), 0) || 0;
   
-  const onSubmit = async () => {    
+  const onSubmit = async (formData) => {   
+    if(formData.transactionno!=formData.ReTransactionno){
+     setShowToast({ key: true, label: t("Transaction Numbers dont match") });
+    } 
+    else{
     if(window.location.href.includes("employee"))
     {
       const body = {
@@ -56,7 +69,7 @@ const OpenView = () => {
           // paymentMode: paymentData.paymentMode,
           // payerName: paymentData.payerName,
           // paidBy: paymentData.paidBy,
-          mobileNumber: bill?.mobileNumber,
+          mobileNumber: formData.payermob || bill?.mobileNumber,
           paymentDetails: [
             {
               businessService: queryParams.businessService,
@@ -68,12 +81,16 @@ const OpenView = () => {
           tenantId: queryParams.tenantId,
           totalDue: bill?.totalAmount,
           totalAmountPaid: bill?.totalAmount,
-          paymentMode: "CASH",
-          payerName: bill?.payerName,
-          paidBy: "OWNER",
+          paymentMode: formData.mode.code || "CASH",
+          payerName: formData.payername || bill?.payerName,
+          paidBy: formData.paidby.code || "OWNER",
+          ...( formData.mode.code === "CHEQUE" && { bankBranch: formData.bankb,
+            bankName: formData.bankname,
+            ifscCode: formData.ifsc,           
+           }),
+          ...( formData.mode.code === "CARD" && { transactionNumber: formData.transactionno,}),
         }
       };
-
       mutation.mutate(
         {
           url: `/collection-services/payments/_create?tenantId=${queryParams.tenantId}`,
@@ -271,8 +288,20 @@ const OpenView = () => {
         setShowToast({ key: true, label: t(messageToShow) });
       }
     }
-    
+  }
+}
 
+  const handleFormValueChange = (formData) => {
+    console.log(formData, "formDataaa");
+    if (formData?.mode?.code == "CHEQUE") {
+      setConfig(ChequeConfig);
+    }
+    if (formData?.mode?.code == "CARD") {
+      setConfig(CardConfig);
+    }
+    if (formData?.mode?.code == "CASH") {
+      setConfig(ViewConfig);
+    }
   }
 
   if(isLoading){
@@ -280,49 +309,22 @@ const OpenView = () => {
   }
   return (
     <>
-    <Card>
-      <Header className="works-header-search">{t("OP_PAYMENT_DETAILS")}</Header>
-      <StatusTable>
-          <Row label={t("OP_CONSUMER_NAME")}  text={bill?.payerName || t("ES_COMMON_NA")} />
-          <Row label={t("OP_CONSUMER_EMAIL")}  text={bill?.payerEmail || t("ES_COMMON_NA")} />
-          <Row label={t("OP_CONSUMER_ADDRESS")}  text={bill?.payerAddress || t("ES_COMMON_NA")} />
-          <Row label={t("OP_CONSUMER_PHNO")}  text={bill?.mobileNumber || t("ES_COMMON_NA")} />
-          <Row label={t("ES_PAYMENT_TAXHEADS")} labelStyle={{ fontWeight: "bold" }} textStyle={{ fontWeight: "bold" }} text={t("ES_PAYMENT_AMOUNT")} />
-          {/* <hr style={{ width: "40%" }} className="underline" /> */}
-          {bill?.billDetails?.[0]?.billAccountDetails
-            ?.sort((a, b) => a.order - b.order)
-            .map((amountDetails, index) => (
-              <Row
-                key={index + "taxheads"}
-                labelStyle={{ fontWeight: "normal" }}
-                textStyle={{ textAlign: "right", maxWidth: "100px" }}
-                label={t(amountDetails.taxHeadCode)}
-                text={"₹ " + amountDetails.amount?.toFixed(2)}
-              />
-            ))}
-
-          {arrears?.toFixed?.(2) ? (
-            <Row
-              labelStyle={{ fontWeight: "normal" }}
-              textStyle={{ textAlign: "right", maxWidth: "100px" }}
-              label={t("COMMON_ARREARS")}
-              text={"₹ " + arrears?.toFixed?.(2) || Number(0).toFixed(2)}
-            />
-          ) : null}
-
-          <hr style={{ width: "40%" }} className="underline" />
-          <Row
-            label={t("CS_PAYMENT_TOTAL_AMOUNT")}
-            labelStyle={{ fontWeight: "bold" }}
-            textStyle={{ fontWeight: "bold", textAlign: "right", maxWidth: "100px" }}
-            text={"₹ " + Number(bill?.totalAmount).toFixed(2)}
-          />
-        </StatusTable>
-    </Card>
-    <ActionBar style={{ display: "flex", justifyContent: "flex-end", alignItems: "baseline" }}>
-          {/* {displayMenu ? <Menu localeKeyPrefix={"ES_COMMON"} options={ACTIONS} t={t} onSelect={onActionSelect} /> : null} */}
-          <SubmitBar disabled={Number(bill?.totalAmount) === 0} onSubmit={onSubmit} label={t("OP_PROCEED_TO_PAY")} />
-    </ActionBar>
+      <FormComposerV2
+        defaultValues={defValues}
+        label={t("Submit")}
+        config={Config}
+        onFormValueChange={(setValue, formData) => { handleFormValueChange(formData) }}
+        onSubmit={onSubmit}
+        fieldStyle={{ marginRight: 2 }}
+        labelfielddirectionvertical={true}
+        noBreakLine={false}
+        breaklineStyle={{
+          border: "0.063rem solid #d6d5d4",
+          width: "100%",
+          margin: "0"
+        }}
+        className={"open-view-form"}
+      />
     {showToast && (
         <Toast
           error={showToast.key}
