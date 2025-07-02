@@ -89,3 +89,20 @@
     }
   }
 }
+
+.open-view-form {
+  .digit-card-component {
+    .digit-label-field-pair {
+      margin-bottom: 0px;
+      .label-field-wrapper {
+        flex-direction: row !important;
+        .digit-field {
+          margin-bottom: 0px !important;
+        }
+      }
+    }
+    .digit-card-section-header{
+        font-size: 24px !important;
+    }
+  }
+}
