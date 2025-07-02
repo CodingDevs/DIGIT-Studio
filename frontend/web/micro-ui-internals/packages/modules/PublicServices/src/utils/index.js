@@ -94,7 +94,8 @@ import cloneDeep from "lodash/cloneDeep";
   };  
 
   //function to manage workfloe action for payload incase of create, save or edit.
-  const getWorkflowState = (workflowDetails, lastWorkflowAction = null) => {
+  const getWorkflowState = (workflowDetails, lastWorkflowAction = null, action) => {
+    if(action) return action;
     if(lastWorkflowAction === null)
     return workflowDetails?.BusinessServices?.[0]?.states.filter((ob) => ob?.state === lastWorkflowAction)?.[0]?.actions?.[0]?.action || "CREATE"
     else{
@@ -128,7 +129,7 @@ import cloneDeep from "lodash/cloneDeep";
     }
   }
 
-  export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails, applicationNumber, serviceCode) => {
+  export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails, applicationNumber, serviceCode, action) => {
     const currentConfig = configMap?.ServiceConfiguration?.find(ob => ob?.service === service);
   
     const serviceDetails = getServiceDetails(formData);
@@ -179,7 +180,7 @@ import cloneDeep from "lodash/cloneDeep";
           ref1: "val1" 
         },
         Workflow: {
-          action: getWorkflowState(workflowDetails, formData?.response?.workflow?.action),
+          action: getWorkflowState(workflowDetails, formData?.response?.workflow?.action, action),
           comment: "",
           assignees: [],
           businessService: config?.data?.workflow?.businessService

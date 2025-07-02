@@ -124,7 +124,7 @@ const DigitDemoComponent = ({editdata}) => {
             "auth-token" : window?.localStorage?.getItem("Employee.token"),
           } : { "X-Tenant-Id" : tenantId },
           method: queryStrings?.applicationNumber ? "PUT" : "POST",
-          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode),
+          body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode, queryStrings?.action),
           config: { enable: true },
         },
         {
@@ -200,7 +200,7 @@ const DigitDemoComponent = ({editdata}) => {
         url: `/public-service/v1/application/${schemaCode}`,
         headers: { "x-tenant-id": tenantId },
         method: queryStrings?.applicationNumber ? "PUT" : "POST",
-        body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode),
+        body: transformToApplicationPayload(updatedFormData, Updatedconfig, service, tenantId, config, workflowDetails, queryStrings?.applicationNumber, schemaCode?.queryStrings?.action),
         config: { enable: true },
       },
       {

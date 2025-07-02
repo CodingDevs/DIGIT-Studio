@@ -161,7 +161,7 @@ const WorkflowActions = ({
       );
     }
     else if(action.action === "EDIT") {
-      history.push(`/${window.contextPath}/employee/publicservices/${module}/${service}/Edit?serviceCode=${queryStrings?.serviceCode}&applicationNumber=${queryStrings?.applicationNumber}`);
+      history.push(`/${window.contextPath}/employee/publicservices/${module}/${service}/Edit?serviceCode=${queryStrings?.serviceCode}&applicationNumber=${queryStrings?.applicationNumber}&action=${action.action}`);
     }
      else {
       setShowModal(true);
