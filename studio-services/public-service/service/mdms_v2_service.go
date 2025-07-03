@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"public-service/config"
 )
 
 const (
@@ -55,38 +56,107 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[stri
 	return resp, nil
 }
 
-func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid string, requestInfo model.RequestInfo) (map[string]interface{}, error) {
+func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid string, apps model.ServiceRequest) (map[string]interface{}, error) {
+	var resp map[string]interface{}
 
 	url := os.Getenv("MDMS_SERVICE_HOST") + RoleActionCreatePath
+	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
 
-	payload := model.MDMSCreateV2Request{
-		RequestInfo: requestInfo,
-		MDMS: model.Mdms{
-			TenantID:   tenantId,
-			SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
-			Data: model.MdmsRoleActionData{
-				RoleCode:   "STUDIO_ADMIN",
-				ActionID:   actionid,
-				ActionCode: "", // Use nil if you want actual JSON null
-				TenantID:   tenantId,
-			},
-			IsActive: true,
-		},
+	filters := map[string]string{
+		"service": apps.Service.BusinessService,
+		"module":  apps.Service.Module,
 	}
 
-	log.Printf("Calling MDMS Create RoleActionMapping\nURL: %s\nPayload: %+v\n", url, payload)
-	b, _ := json.MarshalIndent(payload, "", "  ")
-	fmt.Println("Final Payload:\n", string(b))
-
-	var resp map[string]interface{}
-	err := s.restCallRepo.Post(url, payload, &resp)
+	mdmsData, err := s.SearchMDMS(tenantId, schemaCode, filters, apps.RequestInfo)
 	if err != nil {
-		log.Printf("Error calling MDMS create RoleActionMapping: %v", err)
+		log.Println("Failed to fetch MDMS:", err)
+		return nil, fmt.Errorf("failed to fetch MDMS: %w", err)
+	}
+
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return nil, fmt.Errorf("mdms data missing or invalid")
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	data, _ := firstEntry["data"].(map[string]interface{})
+	accessMdms, _ := data["access"].(map[string]interface{})
+	rolesMap, _ := accessMdms["roles"].(map[string]interface{})
+
+	// Prepare role lists
+	var creatorRoles, editorRoles, viewerRoles []string
+
+	if cr, ok := rolesMap["creator"].([]interface{}); ok {
+		for _, r := range cr {
+			if roleStr, ok := r.(string); ok {
+				creatorRoles = append(creatorRoles, roleStr)
+			}
+		}
+	}
+
+	if er, ok := rolesMap["editor"].([]interface{}); ok {
+		for _, r := range er {
+			if roleStr, ok := r.(string); ok {
+				editorRoles = append(editorRoles, roleStr)
+			}
+		}
+	}
+
+	if vr, ok := rolesMap["viewer"].([]interface{}); ok {
+		for _, r := range vr {
+			if roleStr, ok := r.(string); ok {
+				viewerRoles = append(viewerRoles, roleStr)
+			}
+		}
+	}
+
+	// Helper function to post for each role
+	postRoleMappings := func(roleList []string, roleType string) error {
+		for _, roleCode := range roleList {
+			payload := model.MDMSCreateV2Request{
+				RequestInfo: apps.RequestInfo,
+				MDMS: model.Mdms{
+					TenantID:   tenantId,
+					SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
+					Data: model.MdmsRoleActionData{
+						RoleCode:   roleCode,
+						ActionID:   actionid,
+						ActionCode: "",
+						TenantID:   tenantId,
+					},
+					IsActive: true,
+				},
+			}
+
+			log.Printf("[%s] Posting RoleActionMapping for role: %s", roleType, roleCode)
+			b, _ := json.MarshalIndent(payload, "", "  ")
+			fmt.Println("Payload:\n", string(b))
+
+			var postResp map[string]interface{}
+			err := s.restCallRepo.Post(url, payload, &postResp)
+			if err != nil {
+				log.Printf("Error posting RoleActionMapping for role %s: %v", roleCode, err)
+				return err
+			}
+
+			respJSON, _ := json.MarshalIndent(postResp, "", "  ")
+			log.Println("Response:\n", string(respJSON))
+		}
+		return nil
+	}
+
+	// Post for each role group
+	if err := postRoleMappings(creatorRoles, "creator"); err != nil {
+		return nil, err
+	}
+	if err := postRoleMappings(editorRoles, "editor"); err != nil {
+		return nil, err
+	}
+	if err := postRoleMappings(viewerRoles, "viewer"); err != nil {
 		return nil, err
 	}
 
-	respJSON, _ := json.MarshalIndent(resp, "", "  ")
-	log.Println("MDMS Create RoleActionMapping Response:\n", string(respJSON))
 	return resp, nil
 }
 
@@ -101,7 +171,7 @@ func (s *MDMSV2Service) getNextMDMSActionTestID() (int64, error) {
 	return newID, nil
 }
 
-func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string, requestInfo model.RequestInfo) (map[string]interface{}, error) {
+func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string, apps model.ServiceRequest) (map[string]interface{}, error) {
 
 	// Step 1: Get next ID from sequence
 	newID, err := s.getNextMDMSActionTestID()
@@ -112,7 +182,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	url := os.Getenv("MDMS_SERVICE_HOST") + ActionTestCreatePath
 
 	payload := model.MDMSCreateV2Request{
-		RequestInfo: requestInfo,
+		RequestInfo: apps.RequestInfo,
 		MDMS: model.Mdms{
 			TenantID:   tenantId,
 			SchemaCode: "ACCESSCONTROL-ACTIONS-TEST.actions-test",
@@ -149,7 +219,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	var roleMappingErr error
 	const attempts = 10    //we are doing this aspersister was taking sometimetopersist the above action-test data hence was getting reference doesn't exist error 
 	for i := 0; i < attempts; i++ {
-		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), requestInfo)
+		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), apps)
 		if roleMappingErr == nil {
 			break
 		}

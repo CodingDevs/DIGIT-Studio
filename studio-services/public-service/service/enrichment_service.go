@@ -367,7 +367,7 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 	if len(ids) > 0 {
 		apps.Service.ServiceCode = ids[0]
 	}
-    _,err = s.MDMSV2Service.createMDMSActionTest(apps.Service.TenantId,apps.Service.ServiceCode,apps.RequestInfo)
+    _,err = s.MDMSV2Service.createMDMSActionTest(apps.Service.TenantId,apps.Service.ServiceCode,apps)
 	if err !=nil {
 		return apps, fmt.Errorf("error creating MDMS for Action-test / role_mapping : %w", err)
 	}

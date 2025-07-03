@@ -71,9 +71,80 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Enrichment failed: "+err.Error())
 	    return
 	}
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+        "service": req.Application.BusinessService,
+        "module":  req.Application.Module,}
+
+	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(req.Application.TenantId, schemaCode, filters, req.RequestInfo)
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
+		return
+	}
+	
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: first entry is not a map")
+		return
+	}
+	
+	data, ok := firstEntry["data"].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: missing or invalid 'data'")
+		return
+	}
+	
+	applicantMDMS, ok := data["applicant"].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No applicant section in MDMS data")
+		return
+	}
+	
+	allowedTypes, ok := applicantMDMS["types"].([]interface{})
+	if !ok || len(allowedTypes) == 0 {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No 'types' defined in applicant MDMS data")
+		return
+	}
+
 	for i := range req.Application.Applicants {
 		applicant := req.Application.Applicants[i]
-		mobile := strconv.FormatInt(applicant.MobileNumber, 10)
+		typeValid := false
+		for _, t := range allowedTypes {
+			if typeStr, ok := t.(string); ok && typeStr == applicant.Type {
+				typeValid = true
+				break
+			}
+		}
+		if !typeValid {
+			utils.WriteErrorResponse(w, http.StatusBadRequest, "Invalid applicant type: "+applicant.Type)
+			return
+		}
+		if strings.EqualFold(applicant.Type, "individual") {
+			if  applicant.UserId == "" {
+				mobile := strconv.FormatInt(applicant.MobileNumber, 10)
+				criteria := map[string]interface{}{
+					"mobileNumber": mobile,
+					"tenantId":     req.Application.TenantId,
+				}
+		
+				resp := c.individualService.GetIndividual(req.RequestInfo, criteria)
+		
+				if len(resp.Individual) == 0 {
+					createdResp := c.individualService.CreateUser(applicant, req.RequestInfo, req.Application)
+					if createdResp.Individual.IndividualId != "" {
+						req.Application.Applicants[i].UserId = createdResp.Individual.IndividualId
+					} else {
+						log.Println("Failed to create individual for applicant:", applicant.Name)
+						utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create individual")
+						return
+					}
+				} else {
+					req.Application.Applicants[i].UserId = resp.Individual[0].IndividualId
+					log.Println("Existing individual found")
+				}
+			}
+		/*mobile := strconv.FormatInt(applicant.MobileNumber, 10)
 		criteria := map[string]interface{}{
 			"mobileNumber": mobile,
 			"tenantId":     req.Application.TenantId,
@@ -98,8 +169,12 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 			req.Application.Applicants[i].UserId = resp.Individual[0].IndividualId
 		     log.Println("Existing individual found")
 			
-		}
+		}*/
+	} else{
+		log.Printf("Skipping individual lookup for applicant '%s' of type '%s'", applicant.Name, applicant.Type)
+	    // TODO: Add organization-specific logic here if needed
 	}
+}
 
 	// Call workflow integrator on success
 	err = c.workflowIntegrator.CallWorkflow(&req)
@@ -120,7 +195,7 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 
     err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
 	if err != nil {
-		log.Printf("error sending to indexer topic   %v",err2)
+		log.Printf("error sending to indexer topic   %v",err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)

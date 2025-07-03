@@ -12,20 +12,45 @@ import (
 
 type IndividualService struct {
 	restCallRepo repository.RestCallRepository
+	mdms         MDMSV2Service
 }
 
-func NewIndividualService(repo repository.RestCallRepository) *IndividualService {
+func NewIndividualService(repo repository.RestCallRepository, mdms MDMSV2Service) *IndividualService {
 	return &IndividualService{
 		restCallRepo: repo,
+		mdms:         mdms,
 	}
 }
 
-func (s *IndividualService) CreateUser(req model.Applicant, info model.RequestInfo) individual.IndividualResponse {
-	individualReq := mapToIndividualRequest(req, info)
-	log.Println("individualReq", individualReq)
+func (s *IndividualService) CreateUser(req model.Applicant, info model.RequestInfo, application model.Application) individual.IndividualResponse {
+	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+		"service": application.BusinessService,
+		"module":  application.Module,
+	}
+
+	mdmsData, err := s.mdms.SearchMDMS(application.TenantId, schemaCode, filters, info)
+	if err != nil {
+		log.Println("Failed to fetch MDMS:", err)
+		return individual.IndividualResponse{}
+	}
+
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return individual.IndividualResponse{}
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	data, _ := firstEntry["data"].(map[string]interface{})
+	applicantMDMS, _ := data["applicant"].(map[string]interface{})
+	configMap, _ := applicantMDMS["config"].(map[string]interface{})
+
+	individualReq := mapToIndividualRequest(req, info, configMap)
+    log.Println("individualReq",individualReq)
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_CREATE_ENDPOINT")
 	var resp individual.IndividualResponse
-	err := s.restCallRepo.Post(url, individualReq, &resp)
+	err = s.restCallRepo.Post(url, individualReq, &resp)
 	if err != nil {
 		log.Printf("Error calling create individual API: %v", err)
 		return individual.IndividualResponse{}
@@ -33,11 +58,34 @@ func (s *IndividualService) CreateUser(req model.Applicant, info model.RequestIn
 	return resp
 }
 
-func (s *IndividualService) UpdateUser(req model.Applicant, info model.RequestInfo) individual.IndividualResponse {
-	individualReq := mapToIndividualRequest(req, info)
+
+func (s *IndividualService) UpdateUser(req model.Applicant, info model.RequestInfo, application model.Application) individual.IndividualResponse {
+	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+		"service": application.BusinessService,
+		"module":  application.Module,
+	}
+
+	mdmsData, err := s.mdms.SearchMDMS(application.TenantId, schemaCode, filters, info)
+	if err != nil {
+		log.Println("Failed to fetch MDMS:", err)
+		return individual.IndividualResponse{}
+	}
+
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		log.Println("MDMS data missing or invalid")
+		return individual.IndividualResponse{}
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	data, _ := firstEntry["data"].(map[string]interface{})
+	applicantMDMS, _ := data["applicant"].(map[string]interface{})
+	configMap, _ := applicantMDMS["config"].(map[string]interface{})
+	individualReq := mapToIndividualRequest(req, info, configMap)
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_UPDATE_ENDPOINT")
 	var resp individual.IndividualResponse
-	err := s.restCallRepo.Post(url, individualReq, &resp)
+	err = s.restCallRepo.Post(url, individualReq, &resp)
 	if err != nil {
 		log.Printf("Error calling update individual API: %v", err)
 		return individual.IndividualResponse{}
@@ -86,19 +134,49 @@ func (s *IndividualService) GetIndividual(requestInfo model.RequestInfo, criteri
 
 // Helper functions
 
-func mapToIndividualRequest(req model.Applicant, info model.RequestInfo) individual.IndividualRequest {
-
-	// You can replace this with actual DOB in future, currently hardcoded
+func mapToIndividualRequest(req model.Applicant, info model.RequestInfo, config map[string]interface{}) individual.IndividualRequest {
+	// Hardcoded DOB (can be replaced with actual DOB from `req` if needed)
 	dobTime := convertMillisecondsToDate(1139529600000)
-
-	// Format as dd/MM/yyyy
 	dob := dobTime.Format("02/01/2006")
-
 	mobileStr := strconv.FormatInt(req.MobileNumber, 10)
+
+	// Extract system user flag from config
+	isSystemUser := false
+	if val, ok := config["systemUser"].(bool); ok {
+		isSystemUser = val
+	}
+
+	// Extract system roles from config
+	roles := []struct {
+		Name     string `json:"name"`
+		Code     string `json:"code"`
+		TenantId string `json:"tenantId"`
+	}{}
+	if roleList, ok := config["systemRoles"].([]interface{}); ok {
+		for _, r := range roleList {
+			if roleStr, ok := r.(string); ok {
+				roles = append(roles, struct {
+					Name     string `json:"name"`
+					Code     string `json:"code"`
+					TenantId string `json:"tenantId"`
+				}{
+					Name:     roleStr,
+					Code:     roleStr,
+					TenantId: info.UserInfo.TenantId,
+				})
+			}
+		}
+	}
+
+	// Extract user type from config (default to "CITIZEN" if missing)
+	userType := "CITIZEN"
+	if val, ok := config["systemUserType"].(string); ok {
+		userType = val
+	}
 
 	individualrequest := individual.Individual{
 		IndividualId:       req.UserId,
-		IsSystemUser:       true,
+		IsSystemUser:       isSystemUser,
 		IsSystemUserActive: req.Active,
 		Name: &individual.Name{
 			GivenName: req.Name,
@@ -111,30 +189,17 @@ func mapToIndividualRequest(req model.Applicant, info model.RequestInfo) individ
 		UserDetails: &individual.UserDetail{
 			UserName: mobileStr,
 			TenantId: info.UserInfo.TenantId,
-			Roles: []struct {
-				Name     string `json:"name"`
-				Code     string `json:"code"`
-				TenantId string `json:"tenantId"`
-			}{
-				{
-					Name:     "Citizen",
-					Code:     "CITIZEN",
-					TenantId: info.UserInfo.TenantId,
-				},
-				{ 
-                    Name:     "STUDIO AMIN",
-					Code:     "STUDIO_ADMIN",
-					TenantId: info.UserInfo.TenantId,
-				},
-			},
-			Type:     req.Type,
+			Roles:    roles,
+			Type:     userType,
 		},
 	}
+
 	return individual.IndividualRequest{
 		RequestInfo: info,
 		Individual:  individualrequest,
 	}
 }
+
 
 func convertMillisecondsToDate(ms int64) *time.Time {
 	t := time.UnixMilli(ms)
@@ -148,7 +213,6 @@ func getString(val interface{}) string {
 	}
 	return ""
 }
-
 
 func ptrToGender(g individual.Gender) *individual.Gender {
 	return &g

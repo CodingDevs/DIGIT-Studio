@@ -58,9 +58,10 @@ func main() {
 
 	// Initialize services
 	
-	individualSvc := service.NewIndividualService(restRepo)
+	
 	mdmsSvc := service.NewMDMSService(restRepo)
 	mdmsv2sSvc := service.NewMDMSV2Service(restRepo,dbConn)
+	individualSvc := service.NewIndividualService(restRepo,*mdmsv2sSvc)
 	idgenSvc := service.NewIdGenService(restRepo)
 	demandSvc := service.NewDemandService(restRepo,mdmsv2sSvc)
 	localizationService := service.NewLocalizationService(restRepo,*mdmsv2sSvc)
