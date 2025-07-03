@@ -4,7 +4,7 @@ import { DigitUI } from "@egovernments/digit-ui-module-core";
 import { UICustomizations } from "./Customisations/UICustomizations";
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
 import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
-import { initServiceDesignerComponents } from "../micro-ui-internals/packages/modules/ServiceDesigner/src/Module";
+import { initServiceDesignerComponents } from "@egovernments/digit-ui-module-service-designer";
 window.contextPath = window?.globalConfigs?.getConfig("CONTEXT_PATH");
 
 const enabledModules = [
