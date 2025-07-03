@@ -70,7 +70,8 @@
     "styled-components":"5.0.0"
   },
   "resolutions": {
-    "styled-components": "5.0.0"
+    "styled-components": "5.0.0",
+    "glob": "7.2.3"
   },
   "browserslist": {
     "production": [

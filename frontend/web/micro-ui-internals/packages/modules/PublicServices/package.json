@@ -30,7 +30,8 @@
     "react-router-dom": "5.3.0"
   },
   "resolutions": {
-    "styled-components": "5.0.0"
+    "styled-components": "5.0.0",
+    "glob": "7.2.3"
   },
   "author": "Jagankumar <jagan.kumar@egov.org.in>",
   "license": "MIT"
