@@ -141,6 +141,7 @@ import cloneDeep from "lodash/cloneDeep";
       gender : applicant?.gender?.code,
       emailId: applicant?.email || `user${index + 1}@example.com`,
       prefix: "91",
+      type:"individual",
       active: true,
     })) || [];
   
