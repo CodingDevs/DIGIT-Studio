@@ -31,7 +31,8 @@
   },
   "resolutions": {
     "styled-components": "5.0.0",
-    "glob": "7.2.3"
+    "glob": "7.2.3",
+    "minimatch": "^3.0.8"
   },
   "author": "Jagankumar <jagan.kumar@egov.org.in>",
   "license": "MIT"
