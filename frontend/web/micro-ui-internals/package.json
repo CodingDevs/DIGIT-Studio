@@ -40,7 +40,8 @@
     "**/@babel/traverse": "7.25.9",
     "**/babel-preset-react-app": "10.0.0",
     "**/@jridgewell/gen-mapping": "0.3.5",
-    "minimatch": "^3.0.8"
+    "glob": "7.2.3",
+    "**/minimatch": "7.4.6"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",

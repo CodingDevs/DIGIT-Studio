@@ -71,7 +71,8 @@
   },
   "resolutions": {
     "styled-components": "5.0.0",
-    "minimatch": "^3.0.8"
+    "glob": "7.2.3",
+    "**/minimatch": "7.4.6"
   },
   "browserslist": {
     "production": [
