@@ -110,6 +110,33 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			}
 		}
 	}
+	// Always create RoleActionMapping for STUDIO_ADMIN first
+	studioAdminPayload := model.MDMSCreateV2Request{
+		RequestInfo: apps.RequestInfo,
+		MDMS: model.Mdms{
+			TenantID:   tenantId,
+			SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
+			Data: model.MdmsRoleActionData{
+				RoleCode:   "STUDIO_ADMIN",
+				ActionID:   actionid,
+				ActionCode: "",
+				TenantID:   tenantId,
+			},
+			IsActive: true,
+		},
+	}
+
+	log.Println("[INIT] Posting RoleActionMapping for role: STUDIO_ADMIN")
+	b, _ := json.MarshalIndent(studioAdminPayload, "", "  ")
+	fmt.Println("Payload:\n", string(b))
+
+	if err := s.restCallRepo.Post(url, studioAdminPayload, &resp); err != nil {
+		log.Printf("Error posting RoleActionMapping for STUDIO_ADMIN: %v", err)
+		return nil, err
+	}
+
+	respJSON, _ := json.MarshalIndent(resp, "", "  ")
+	log.Println("Response:\n", string(respJSON))
 
 	// Helper function to post for each role
 	postRoleMappings := func(roleList []string, roleType string) error {
