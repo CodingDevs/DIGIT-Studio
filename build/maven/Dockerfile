@@ -1,7 +1,10 @@
 # Stage 1: Build the Go binary
-FROM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
 
 ARG WORK_DIR
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /app
 
 # Install git (sometimes required by Go modules)
@@ -14,11 +17,11 @@ RUN go mod download
 # Copy source code
 COPY ${WORK_DIR}/ ./
 
-# Build the Go binary
-RUN go build -o service-binary
+# Build the Go binary for the target platform
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o service-binary
 
 # Stage 2: Create a minimal runtime image
-FROM alpine:3.18
+FROM --platform=$TARGETOS/$TARGETARCH alpine:3.18
 
 WORKDIR /opt/egov
 
@@ -28,5 +31,8 @@ COPY build/maven/start.sh .
 
 # Make start.sh executable
 RUN chmod +x ./start.sh
+
+# Optional: Print architecture inside container
+RUN echo "Built for $(uname -m)"
 
 CMD ["./start.sh"]
