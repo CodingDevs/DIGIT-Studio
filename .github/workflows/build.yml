@@ -137,7 +137,7 @@ jobs:
       - name: Check if DB folder exists
         id: check-db-folder
         run: |
-          FOLDER_PATH="${{ github.event.inputs.service_folder }}/${{ matrix.service }}/src/main/resources/db"
+          FOLDER_PATH="studio-services/${{ matrix.service }}/scripts/migration"
           if [ -d "$FOLDER_PATH" ]; then
             echo "folder_exists=true" >> "$GITHUB_OUTPUT"
           else
