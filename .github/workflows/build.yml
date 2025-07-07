@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - studio-services
+          - utilities
         default: studio-services
       service:
         description: 'Name of the service to build and deploy'
@@ -16,6 +17,7 @@ on:
         type: choice
         options:
           - public-service
+          - studio-pdf
         default: "audit-service"
 
 env:
