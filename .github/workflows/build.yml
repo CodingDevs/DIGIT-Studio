@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - studio-services
+          - studio-ui
           - utilities
         default: studio-services
       service:
@@ -18,7 +19,8 @@ on:
         options:
           - public-service
           - studio-pdf
-        default: "audit-service"
+          - digit-studio
+        default: "public-service"
 
 env:
   DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
@@ -57,8 +59,9 @@ jobs:
           echo "All build entries from build-config.yml:"
           yq eval '.config[].build[] | "✱ image-name: \(.["image-name"]) → dockerfile: \(.dockerfile // "N/A")"' build/build-config.yml || true
 
-          # Try matching with the SERVICE variable directly (no strenv)
+          # Try matching with the SERVICE variable directly
           DF=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .dockerfile // \"\"" build/build-config.yml)
+          WORK_DIR=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .\"work-dir\" // \"\"" build/build-config.yml)
 
           if [ -z "$DF" ] || [ "$DF" = "null" ]; then
             echo "No dockerfile entry found for \"$SERVICE\" in build-config.yml; using default"
@@ -67,8 +70,17 @@ jobs:
             echo "Found dockerfile \"$DF\" for service \"$SERVICE\"."
           fi
 
+          if [ -z "$WORK_DIR" ] || [ "$WORK_DIR" = "null" ]; then
+            echo "No work-dir entry found for \"$SERVICE\" in build-config.yml"
+            WORK_DIR=""
+          else
+            echo "Found work-dir \"$WORK_DIR\" for service \"$SERVICE\"."
+          fi
+
           echo "dockerfile_path=$DF" >> "$GITHUB_OUTPUT"
+          echo "work_dir=$WORK_DIR" >> "$GITHUB_OUTPUT"
           echo "DOCKERFILE_PATH=$DF" >> "$GITHUB_ENV"
+          echo "WORK_DIR=$WORK_DIR" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -134,16 +146,21 @@ jobs:
           tags: |
             egovio/${{ matrix.service }}:${{ steps.tag.outputs.tag }}
           build-args: |
-            WORK_DIR=${{ github.event.inputs.service_folder }}/${{ matrix.service }}
+            WORK_DIR=${{ env.WORK_DIR }}
 
       - name: Check if DB folder exists
         id: check-db-folder
         run: |
-          FOLDER_PATH="studio-services/${{ matrix.service }}/scripts/migration"
-          if [ -d "$FOLDER_PATH" ]; then
-            echo "folder_exists=true" >> "$GITHUB_OUTPUT"
-          else
+          # For digit-studio (frontend), there's no DB migration
+          if [ "${{ matrix.service }}" = "digit-studio" ]; then
             echo "folder_exists=false" >> "$GITHUB_OUTPUT"
+          else
+            FOLDER_PATH="${{ env.WORK_DIR }}/scripts/migration"
+            if [ -d "$FOLDER_PATH" ]; then
+              echo "folder_exists=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "folder_exists=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Build and Push Database Docker Image
@@ -152,8 +169,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/amd64,linux/arm64
-          context: ${{ github.event.inputs.service_folder }}/${{ matrix.service }}/src/main/resources/db
-          file: ${{ github.event.inputs.service_folder }}/${{ matrix.service }}/src/main/resources/db/Dockerfile
+          context: ${{ env.WORK_DIR }}/src/main/resources/db
+          file: ${{ env.WORK_DIR }}/src/main/resources/db/Dockerfile
           push: true
           tags: |
             egovio/${{ matrix.service }}-db:${{ steps.tag.outputs.tag }}
