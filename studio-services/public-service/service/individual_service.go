@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"log"
 	"public-service/config"
 	"public-service/model"
@@ -47,7 +48,13 @@ func (s *IndividualService) CreateUser(req model.Applicant, info model.RequestIn
 	configMap, _ := applicantMDMS["config"].(map[string]interface{})
 
 	individualReq := mapToIndividualRequest(req, info, configMap)
-    log.Println("individualReq",individualReq)
+
+	individualJSON, err := json.MarshalIndent(individualReq, "", "  ")
+	if err != nil {
+		log.Println("Error marshaling individualReq:", err)
+	} else {
+		log.Println("individualReq JSON:", string(individualJSON))
+	}
 	url := config.GetEnv("INDIVIDUAL_SERVICE_HOST") + config.GetEnv("INDIVIDUAL_CREATE_ENDPOINT")
 	var resp individual.IndividualResponse
 	err = s.restCallRepo.Post(url, individualReq, &resp)
