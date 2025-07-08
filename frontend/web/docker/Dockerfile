@@ -1,5 +1,5 @@
 # Use Alpine-based Node.js image as the build stage
-FROM egovio/alpine-node-builder-14:yarn AS build
+FROM node:14-alpine AS build
 
 # Update and upgrade the package lists and add required dependencies
 RUN apk update && apk upgrade
