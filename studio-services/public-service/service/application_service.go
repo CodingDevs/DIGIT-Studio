@@ -58,3 +58,9 @@ func (s *ApplicationService) UpdateApplication(ctx context.Context, req model.Ap
 	return s.repo.UpdateUsingKafka(ctx, req, serviceCode)
 
 }
+
+func (s *ApplicationService) DeleteMDMSSchema(ctx context.Context, schemaCode, tenantId string) ( error) {
+
+	return s.repo.DeleteMDMSSchema(ctx, schemaCode, tenantId)
+
+}

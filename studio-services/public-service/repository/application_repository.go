@@ -435,3 +435,22 @@ func (r *ApplicationRepository) UpdateUsingKafka(ctx context.Context, req model.
 		Application: req.Application,
 	}, nil
 }
+
+func (r *ApplicationRepository) DeleteMDMSSchema(ctx context.Context, schemaCode, tenantId string) error {
+	// Validate input to prevent accidental mass deletion
+	if strings.TrimSpace(schemaCode) == "" || strings.TrimSpace(tenantId) == "" {
+		return errors.New("schemaCode and tenantId must not be empty")
+	}
+
+	query := `DELETE FROM eg_mdms_data WHERE schemacode = $1 AND tenantid = $2`
+
+	_, err := r.db.ExecContext(ctx, query, schemaCode, tenantId)
+	if err != nil {
+		log.Printf("failed to delete MDMS schema data for schemaCode=%s and tenantId=%s: %v", schemaCode, tenantId, err)
+		return err
+	}
+
+	log.Printf("successfully deleted MDMS schema data for schemaCode=%s and tenantId=%s", schemaCode, tenantId)
+	return nil
+}
+

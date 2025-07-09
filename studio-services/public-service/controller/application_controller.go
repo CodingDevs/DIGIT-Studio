@@ -449,3 +449,23 @@ func (c *ApplicationController) CalculateHandler(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(res)
 }
 
+func (c *ApplicationController) DeleteMDMSSchema(w http.ResponseWriter, r *http.Request) {
+	schemaCode := mux.Vars(r)["schemaCode"]
+    tenantId := mux.Vars(r)["tenantId"]
+	if schemaCode == ""  {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "schemaCode variable 'SchemaCode' is required")
+		return
+	}
+    if tenantId == ""  {
+		utils.WriteErrorResponse(w, http.StatusBadRequest, "tenantId variable 'TenantId' is required")
+		return
+	}
+	ctx := context.Background()
+	
+	 err := c.service.DeleteMDMSSchema(ctx, schemaCode, tenantId)
+	if err != nil {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+

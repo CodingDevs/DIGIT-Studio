@@ -102,6 +102,8 @@ func main() {
 	router.HandleFunc("/public-service/v1/application",appCtrl.SearchMyApplicationHandler).Methods("GET")
 
 	router.HandleFunc("/public-service/_calculate", appCtrl.CalculateHandler).Methods("POST")
+    router.HandleFunc("/public-service/_deleteMDMSSchema", appCtrl.DeleteMDMSSchema).Methods("POST")
+
 
 	// Start HTTP server
 	port := os.Getenv("SERVER_PORT")
