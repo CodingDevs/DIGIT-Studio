@@ -173,6 +173,14 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 			"tenantId": apps.Application.TenantId,
 		}
 		indResp := s.individualService.GetIndividual(model.RequestInfo{}, criteria)
+	
+		if indRespJson, err := json.MarshalIndent(indResp, "", "  "); err != nil {
+			log.Printf("Error marshaling indResp: %v", err)
+		} else {
+			log.Println("indResp JSON:", string(indRespJson))
+		}
+		
+		
 		if len(indResp.Individual) > 0 {
 			individual := indResp.Individual[0]
 			parsedUUID, err := uuid.Parse(individual.UserUuid)
