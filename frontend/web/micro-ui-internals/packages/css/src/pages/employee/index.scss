@@ -216,6 +216,7 @@
 .state-card-content {
   display: flex;
   align-items: center;
+  overflow: hidden;
 }
 
 .state-card-disabled {

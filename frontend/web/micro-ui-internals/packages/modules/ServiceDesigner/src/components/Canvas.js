@@ -14,7 +14,6 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag }) => {
       const rect = viewportRef.current.getBoundingClientRect();
       const x = (e.clientX - rect.left - transform.x) / transform.scale;
       const y = (e.clientY - rect.top - transform.y) / transform.scale;
-      console.log('Canvas coordinates:', x, y);
     }
   }, [isDragging, draggedElement, transform]);
 

@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CustomSVG } from "@egovernments/digit-ui-components";
 
 const StateComp = ({ onStateClick, type, State, desc, icon, disabled=false }) => {
+  const { t } = useTranslation();
 
   return (
     <div className={`state-card ${disabled ? "state-card-disabled" : ""}`}
@@ -14,7 +16,7 @@ const StateComp = ({ onStateClick, type, State, desc, icon, disabled=false }) =>
         <div className="text-section">
           <h3 className="state-title">{State}</h3>
           <p className="state-description">{desc}</p>
-          <div className="state-addtoclick">Click to add</div>
+          <div className="state-addtoclick">{t("CLICK_TO_ADD")}</div>
         </div>
       </div>
     </div>

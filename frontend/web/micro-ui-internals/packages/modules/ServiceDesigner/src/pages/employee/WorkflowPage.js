@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { SidePanel } from "@egovernments/digit-ui-components";
 import { Card } from "@egovernments/digit-ui-react-components";
 import InfiniteCanvas from "../../components/Canvas";
+import { useTranslation } from "react-i18next";
 import { FieldV1 } from "@egovernments/digit-ui-components";
 import WorkflowNode from "../../components/WorkflowNode";
 import { Button } from "@egovernments/digit-ui-components";
@@ -9,6 +10,7 @@ import { Toast } from "@egovernments/digit-ui-react-components";
 import StateComp from "../../components/StateComponent";
 
 const Workflow = () => {
+    const { t } = useTranslation();
     const [selectedElement, setSelectedElement] = useState(null);
     const [canvasElements, setCanvasElements] = useState([]);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
@@ -40,7 +42,6 @@ const Workflow = () => {
     }
 
     const EditClick = (id, e) => {
-        console.log("edit action is clicked", id);
         const element = canvasElements.find(el => el.id === id);
         if (element) {
             handleElementClick(element);
@@ -65,7 +66,6 @@ const Workflow = () => {
     };
 
     const AddState = (state) => {
-        console.log(state, "is Clicked");
 
         const currentX = coords[0].x;
         const currentY = coords[0].y;
@@ -75,18 +75,18 @@ const Workflow = () => {
         if (state === "start") {
             type = "node";
             nodetype = "start";
-            name = "Start";
-            desc = "Initial State";
+            name = t("START");
+            desc = t("INITIAL_STATE");
         } else if (state === "end") {
             type = "node";
             nodetype = "end";
-            name = "End";
-            desc = "Final State";
+            name = t("END");
+            desc = t("FINAL_STATE");
         } else {
             type = "node";
             nodetype = "intermediate";
-            name = "Processing";
-            desc = "Intermediate State";
+            name = t("PROCESSING");
+            desc = t("INTERMEDIATE_STATE");
         }
 
         const elementId = Date.now();
@@ -105,7 +105,6 @@ const Workflow = () => {
     };
 
     const onDataChange = (e) => {
-        console.log(e,"onchange");
         const { name, value } = e.target;
         setStateData(prev => ({
             ...prev,
@@ -114,7 +113,6 @@ const Workflow = () => {
     }
 
     const handleElementClick = (element) => {
-        console.log("Element clicked:", element?.type);
         setSelectedElement(element);
         setStateData({ name: element.name, desc: element.desc});
     }
@@ -126,7 +124,6 @@ const Workflow = () => {
     };
 
     const updateProperties = () => {
-        console.log("Updating properties for element:", selectedElement.id);
 
         setCanvasElements(prev =>
             prev.map(element => {
@@ -154,48 +151,47 @@ const Workflow = () => {
     const Workflow_Sections = [
         [
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>Workflow Components</div>
-                <div className="state-description">Click states to add to your workflow</div>
+                <div>{t("WORKFLOW_COMPONENT")}</div>
+                <div className="state-description">{t("WORKFLOW_DESCRIPTION")}</div>
             </div>
         ],
         [
             <div>
                 <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                    <div >States</div>
-                    <div className="state-description">Add workflow states and connect with actions</div>
+                    <div >{t("WORKFLOW_STATES")}</div>
                 </div>
             </div>,
             <StateComp
                 onStateClick={() => AddState("start")}
                 type={"start"}
-                State={"Start State"}
-                desc={"Initial workflow state"}
+                State={t("START_STATE")}
+                desc={t("START_STATE_DESC")}
                 disabled={hasStart}
             />,
             <StateComp
                 onStateClick={() => AddState("intermediate")}
                 type={"intermediate"}
-                State={"Process State"}
-                desc={"Intermediate workflow state"}
+                State={t("INTER_STATE")}
+                desc={t("INTER_STATE_DESC")}
             />,
             <StateComp
                 onStateClick={() => AddState("end")}
                 type={"end"}
-                State={"End State"}
-                desc={"Final workflow state"}
+                State={t("END_STATE")}
+                desc={t("END_STATE_DESC")}
             />
         ],
         [
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>How to Connect</div>
+                <div>{t("HOW_TO_CONNECT")}</div>
             </div>
         ],
     ];
 
-     const Properties_Section = [
+    const Properties_Section = [
         [
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>Properties</div>
+                <div>{t("PROPERTIES")}</div>
             </div>,
         ],
         []
@@ -204,13 +200,13 @@ const Workflow = () => {
     const Node_Properties_Section = [
         [
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>Properties</div>
+                <div>{t("PROPERTIES")}</div>
             </div>,
         ],
         [
             <FieldV1
                 error=""
-                label="State Name"
+                label={t("STATE_NAME")}
                 onChange={onDataChange}
                 populators={{
                     name: "name",
@@ -225,7 +221,7 @@ const Workflow = () => {
             />,
             <FieldV1
                 error=""
-                label="Description"
+                label={t("DESCRIPTION")}
                 onChange={onDataChange}
                 populators={{
                     name: "desc",
@@ -240,7 +236,7 @@ const Workflow = () => {
             />,
             <Button
                 variation="primary"
-                label={"Update Properties"}
+                label={t("UPDATE_PROPERTIES")}
                 type="button"
                 size={"large"}
                 style={{ width: "100%" }}
@@ -248,7 +244,7 @@ const Workflow = () => {
             />,
             <Button
                 variation="secondary"
-                label={"Delete State"}
+                label={t("DELETE_STATE")}
                 type="button"
                 style={{ width: "100%" }}
                 onClick={(e) => DeleteClick(selectedElement?.id, e)}
@@ -296,7 +292,7 @@ const Workflow = () => {
                     type="static"
                     position="left"
                     isDraggable={true}
-                    sections={selectedElement?.type=="node"? Node_Properties_Section: Properties_Section}
+                    sections={selectedElement?.type === "node" ? Node_Properties_Section : Properties_Section}
                     defaultOpenWidth={400}
                     addClose={true}
                     isOverlay={false}
