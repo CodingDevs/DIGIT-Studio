@@ -135,7 +135,7 @@ import cloneDeep from "lodash/cloneDeep";
     const serviceDetails = getServiceDetails(formData);
   
     const applicants = formData.applicantDetails?.filter(Boolean)?.map((applicant, index) => ({
-      type: "CITIZEN",
+      type: "individual",
       name: applicant?.name,
       mobileNumber: Number(applicant?.mobileNumber),
       gender : applicant?.gender?.code,

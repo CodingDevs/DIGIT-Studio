@@ -4,6 +4,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Switch } from "react-router-dom";
 import LandingPage from "./LandingPage";
+import Workflow from "./WorkflowPage";
 
 const SampleBreadCrumbs = ({ location }) => {
   const { t } = useTranslation();
@@ -33,6 +34,7 @@ const App = ({ path, stateCode, userType, tenants }) => {
           <SampleBreadCrumbs location={location} />
         </React.Fragment>
         <PrivateRoute path={`${path}/LandingPage`} component={() => <LandingPage />} />
+        <PrivateRoute path={`${path}/Workflow`} component={() => <Workflow />} />
       </AppContainer>
     </Switch>
   );

@@ -18,6 +18,10 @@ const ServiceDesignerCard = () => {
         label: t("SERVICE_DESIGNER_LANDING"),
         link: `/${window?.contextPath}/employee/servicedesigner/LandingPage`,
       },
+      {
+        label: t("SERVICE_DESIGNER_WORKFLOW"),
+        link: `/${window?.contextPath}/employee/servicedesigner/Workflow`,
+      },
     ],
   };
 
