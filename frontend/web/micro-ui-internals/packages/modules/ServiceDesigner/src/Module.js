@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useRouteMatch } from "react-router-dom";
 import { default as EmployeeApp } from "./pages/employee";
 import ServiceDesignerCard from "./components/ServiceDesignerCard";
+import CreateQuestion from "./components/CreateQuestion";
+import CreateQuestionContext from "./components/CreateQuestionContext";
 
 export const ServiceDesignerModule = ({ stateCode, userType, tenants }) => {
   const { path } = useRouteMatch();
@@ -26,6 +28,8 @@ export const ServiceDesignerModule = ({ stateCode, userType, tenants }) => {
 const componentsToRegister = {
   ServiceDesignerModule,
   ServiceDesignerCard,
+  CreateQuestion,
+  CreateQuestionContext
 };
 
 export const initServiceDesignerComponents = () => {

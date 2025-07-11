@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Switch } from "react-router-dom";
 import LandingPage from "./LandingPage";
 import Workflow from "./WorkflowPage";
+import { CreateChecklist } from "./checklist/CreateChecklist";
+import ChecklistHomePage from "./checklist/ChecklistHomePage";
 
 const SampleBreadCrumbs = ({ location }) => {
   const { t } = useTranslation();
@@ -35,6 +37,8 @@ const App = ({ path, stateCode, userType, tenants }) => {
         </React.Fragment>
         <PrivateRoute path={`${path}/LandingPage`} component={() => <LandingPage />} />
         <PrivateRoute path={`${path}/Workflow`} component={() => <Workflow />} />
+        <PrivateRoute path={`${path}/checklist`} component={() => <ChecklistHomePage />} />
+        <PrivateRoute path={`${path}/create-checklist`} component={() => <CreateChecklist />} />
       </AppContainer>
     </Switch>
   );
