@@ -247,15 +247,35 @@
   color: #0B4B66;
 }
 
+.state-title-disabled{
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  color: #7ba9bd;
+}
+
 .state-description {
   font-size: 1rem;
   color: #0B4B66;
   margin: 4px 0;
 }
 
+.state-description-disabled {
+  font-size: 1rem;
+  color: #7ba9bd;
+  margin: 4px 0;
+}
+
 .state-addtoclick {
   color: #3b82f6;
   cursor: pointer;
+  text-decoration: underline;
+  margin-top: 4px;
+}
+
+.state-addtoclick-disabled {
+  color: #7ba9bd;
+  cursor: not-allowed;
   text-decoration: underline;
   margin-top: 4px;
 }

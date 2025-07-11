@@ -8,6 +8,8 @@ const WorkflowNode = ({
   elementId,
   icon,
   nodetype,
+  roles,
+  sla,
   onLeftAction,
   onRightAction,
   onEditAction,
@@ -18,14 +20,14 @@ const WorkflowNode = ({
   deleteButtonTooltip = "Delete Action"
 }) => {
 
-  const handleLeftClick = (e) => {
+  const handleLeftClick = (elementId, e) => {
     e.stopPropagation();
-    if (onLeftAction) onLeftAction();
+    if (onLeftAction) onLeftAction(elementId, e);
   };
 
-  const handleRightClick = (e) => {
+  const handleRightClick = (elementId, e) => {
     e.stopPropagation();
-    if (onRightAction) onRightAction();
+    if (onRightAction) onRightAction(elementId, e);
   };
 
   const handleEditClick = (elementId, e) => {
@@ -69,7 +71,7 @@ const WorkflowNode = ({
         {onLeftAction && (
           <button
             className="action-button left-action"
-            onClick={handleLeftClick}
+            onClick={(e) => handleLeftClick(elementId, e)}
             title={leftButtonTooltip}
           >
           </button>
@@ -89,7 +91,7 @@ const WorkflowNode = ({
         {onRightAction && (
           <button
             className="action-button right-action"
-            onClick={handleRightClick}
+            onClick={(e) => handleRightClick(elementId, e)}
             title={rightButtonTooltip}
           >
           </button>

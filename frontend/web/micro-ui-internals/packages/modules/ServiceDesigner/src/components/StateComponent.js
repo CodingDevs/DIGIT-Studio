@@ -14,9 +14,9 @@ const StateComp = ({ onStateClick, type, State, desc, icon, disabled=false }) =>
           {icon || <CustomSVG.EditIcon />}
         </div>
         <div className="text-section">
-          <h3 className="state-title">{State}</h3>
-          <p className="state-description">{desc}</p>
-          <div className="state-addtoclick">{t("CLICK_TO_ADD")}</div>
+          <h3 className={`state-title ${disabled ? "state-title-disabled" : ""}`}>{State}</h3>
+          <p className={`state-description ${disabled ? "state-description-disabled" : ""}`}>{desc}</p>
+          <div className={`state-addtoclick ${disabled ? "state-addtoclick-disabled" : ""}`}>{t("CLICK_TO_ADD")}</div>
         </div>
       </div>
     </div>
