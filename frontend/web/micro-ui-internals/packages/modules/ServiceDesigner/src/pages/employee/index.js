@@ -37,7 +37,7 @@ const App = ({ path, stateCode, userType, tenants }) => {
         </React.Fragment>
         <PrivateRoute path={`${path}/LandingPage`} component={() => <LandingPage />} />
         <PrivateRoute path={`${path}/Workflow`} component={() => <Workflow />} />
-        <PrivateRoute path={`${path}/checklist`} component={() => <ChecklistHomePage />} />
+        <PrivateRoute path={`${path}/Checklist`} component={() => <ChecklistHomePage />} />
         <PrivateRoute path={`${path}/create-checklist`} component={() => <CreateChecklist />} />
       </AppContainer>
     </Switch>

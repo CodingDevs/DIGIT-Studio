@@ -22,6 +22,10 @@ const ServiceDesignerCard = () => {
         label: t("SERVICE_DESIGNER_WORKFLOW"),
         link: `/${window?.contextPath}/employee/servicedesigner/Workflow`,
       },
+      {
+        label: t("SERVICE_DESIGNER_CHECKLIST"),
+        link: `/${window?.contextPath}/employee/servicedesigner/Checklist`,
+      },
     ],
   };
 
