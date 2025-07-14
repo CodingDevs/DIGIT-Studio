@@ -267,3 +267,9 @@
     height: 100%;
     pointer-events: auto;
   }
+
+  .create-card {
+    border: 2px dashed #000;
+    border-radius: 8px;
+  }
+  

@@ -1,232 +1,170 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, use } from "react";
 import {
   Card,
-  CardHeader,
   CardSectionHeader,
 } from "@egovernments/digit-ui-react-components";
-
-import { Toggle } from "@egovernments/digit-ui-components";
-
-// Tab Component
-const Tabs = ({ tabs, activeTab, setActiveTab }) => {
-    const { t } = useTranslation();
-    return (
-      <div className="campaign-tabs" style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-        {tabs.map((tab, index) => (
-          <button
-            key={index}
-            type="button"
-            className={`campaign-tab-head ${tab === activeTab ? "active" : ""}`}
-            style={{
-              padding: "8px 16px",
-              borderBottom: tab === activeTab ? "2px solid #000" : "2px solid transparent",
-              background: "none",
-              cursor: "pointer",
-              fontWeight: tab === activeTab ? "bold" : "normal",
-            }}
-            onClick={() => setActiveTab(tab)}
-          >
-            {t(tab)}
-          </button>
-        ))}
-      </div>
-    );
-  };
+import { Loader, Toggle } from "@egovernments/digit-ui-components";
+import { useHistory } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const ChecklistHomePage = () => {
+  const history = useHistory();
+  const { t } = useTranslation();
+  const tenantId = Digit.ULBService.getCurrentTenantId();
   const [selectedTab, setSelectedTab] = useState("MY_CHECKLIST");
+  const [checklistData, setChecklistData] = useState([]);
 
-  const checklistData = [
-    {
-      id: 1,
-      name: "Health Facility Worker Checklist",
-      description: "Warehouse health facility operations",
-      questions: 12,
-      createdDate: "2024-05-15",
-      status: "Published",
+  const requestCriteria = {
+    url: "/egov-mdms-service/v2/_search",
+    body: {
+      MdmsCriteria: {
+        tenantId: tenantId,
+        schemaCode: "Studio.Checklists"
+      },
     },
-    {
-      id: 2,
-      name: "Equipment Maintenance Checklist",
-      description: "Daily equipment inspection routine",
-      questions: 8,
-      createdDate: "2024-05-10",
-      status: "Published",
-    },
-    {
-      id: 3,
-      name: "Safety Protocol Checklist",
-      description: "Standard safety procedures",
-      questions: 15,
-      createdDate: "2024-05-08",
-      status: "Published",
-    },
-  ];
+  };
+  const { isLoading: moduleListLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
 
-  const columns = [
+  useEffect(() => {
+    if(data)
     {
-      name: "S.No",
-      selector: (_, index) => index + 1,
-      width: "80px",
-    },
-    {
-      name: "Checklist Name",
-      cell: (row) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{row.name}</div>
-          <div style={{ fontSize: "12px", color: "#6b7280" }}>{row.description}</div>
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      name: "Questions",
-      selector: (row) => row.questions,
-      sortable: true,
-    },
-    {
-      name: "Created Date",
-      selector: (row) => row.createdDate,
-      sortable: true,
-    },
-    {
-      name: "Status",
-      cell: (row) => (
-        <span
-          style={{
-            backgroundColor: "#dcfce7",
-            color: "#15803d",
-            fontSize: "12px",
-            padding: "4px 8px",
-            borderRadius: "12px",
-          }}
-        >
-          {row.status}
-        </span>
-      ),
-    },
-    {
-      name: "Actions",
-      cell: () => (
-        <Button label="View" onButtonClick={() => alert("Viewing checklist")} />
-      ),
-    },
-  ];
-
+      const formatted = data?.mdms?.map((item, index) => ({
+                id: item.id || index,
+                name: item.data?.name,
+                description: item?.data?.description || "-",
+                questions: item.data?.data?.length || 0,
+                createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
+              }));
+      
+              setChecklistData(formatted);
+    }
+  },[data])
 
   const tabOptions = [
-    { name: "My Checklists", code:"MY_CHECKLIST" },
-    { name: "Drafts", code:"DRAFTS" }
+    { name: "My Checklists", code: "MY_CHECKLIST" }
   ];
+
+  if(moduleListLoading){
+    return <Loader />
+  }
 
   return (
     <React.Fragment>
-    <Card style={{ padding: "2rem" }}>
-      {/* Section: Create New Checklist */}
-      <CardSectionHeader>Create New Checklist</CardSectionHeader>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+      <Card style={{ padding: "2rem" }}>
+        <CardSectionHeader>{t("STUDIO_CREATE_NEW_CHECKLIST")}</CardSectionHeader>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <button
-            onClick={() => window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist`}
+            onClick={() =>
+              (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist`)
+            }
             style={{
               border: "1px dashed gray",
               padding: "8px 16px",
               borderRadius: "6px",
               cursor: "pointer",
-              width:"100%", height:"3rem",
-              backgroundColor:"white"
+              width: "100%",
+              height: "5rem",
+              backgroundColor: "white",
             }}
           >
-            + Create New Checklist
+            + {t("STUDIO_CREATE_NEW_CHECKLIST_SUB_HEADER")}
           </button>
         </div>
-    </Card>
-    <Card>
-      {/* Section Header and Toggle */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "2rem",
-          marginBottom: "1rem",
-          alignItems: "center",
-        }}
-      >
-        <Toggle
-          name="tabs"
-          numberOfToggleItems={tabOptions.length}
-          options={tabOptions}
-          optionsKey="name"
-          selectedOption={selectedTab}
-          onSelect={(val) => {
-            console.log(val);
-            setSelectedTab(val)}}
-          type="toggle"
-        />
-      </div>
+      </Card>
+      <Card style={{paddingLeft:"2rem"}}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: "2rem",
+            marginBottom: "1rem",
+            alignItems: "center",
+          }}
+        >
+          <Toggle
+            name="tabs"
+            numberOfToggleItems={tabOptions.length}
+            options={tabOptions}
+            optionsKey="name"
+            selectedOption={selectedTab}
+            onSelect={(val) => setSelectedTab(val)}
+            type="toggle"
+          />
+        </div>
 
-      {/* Table-like Layout */}
-      {selectedTab === "MY_CHECKLIST" ? (
-        <div className="checklist-table" style={{ marginTop: "1rem" }}>
-          <div
-            className="checklist-table-header"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "50px 1fr 100px 150px 100px 100px",
-              fontWeight: "bold",
-              backgroundColor: "#f0f0f0",
-              padding: "10px",
-              borderRadius: "4px",
-            }}
-          >
-            <div>S.No.</div>
-            <div>Checklist Name</div>
-            <div>Questions</div>
-            <div>Created Date</div>
-            <div>Status</div>
-            <div>Actions</div>
-          </div>
-
-          {checklistData.map((item, index) => (
-            <div
-              key={item.id}
-              className="checklist-table-row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "50px 1fr 100px 150px 100px 100px",
-                padding: "10px",
-                borderBottom: "1px solid #e0e0e0",
-              }}
-            >
-              <div>{index + 1}</div>
-              <div>
-                <div style={{ fontWeight: "600" }}>{item.name}</div>
-                <div style={{ fontSize: "12px", color: "#555" }}>{item.description}</div>
+        {moduleListLoading ? (
+          <div style={{ padding: "1rem" }}>Loading...</div>
+        ) : selectedTab === "MY_CHECKLIST" ? (
+          checklistData.length > 0 ? (
+            <div className="checklist-table" style={{ marginTop: "1rem" }}>
+              <div
+                className="checklist-table-header"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "50px 0.75fr 150px 150px 100px",
+                  fontWeight: "200",
+                  backgroundColor: "#f0f0f0",
+                  padding: "20px",
+                  borderRadius: "4px",
+                }}
+              >
+                <div>{t("STUDIO_SNO")}</div>
+                <div>{t("STUDIO_CHECKLIST_NAME")}</div>
+                <div>{t("STUDIO_QUESTIONS")}</div>
+                <div>{t("STUDIO_CREATED_DATE")}</div>
+                <div>{t("STUDIO_CREATED_ACTIONS")}</div>
               </div>
-              <div>{item.questions}</div>
-              <div>{item.createdDate}</div>
-              <div>
-                <span
+
+              {checklistData.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="checklist-table-row"
                   style={{
-                    background: "#dcfce7",
-                    color: "#15803d",
-                    padding: "2px 8px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
+                    display: "grid",
+                    gridTemplateColumns:
+                      "50px 0.75fr 150px 150px 100px",
+                    padding: "20px",
+                    borderBottom: "1px solid #e0e0e0",
                   }}
                 >
-                  {item.status}
-                </span>
-              </div>
-              <div>
-                <button style={{ color: "#2563eb", fontSize: "14px" }}>View</button>
-              </div>
+                  <div>{index + 1}</div>
+                  <div>
+                    <div style={{ fontWeight: "400" }}>{item.name}</div>
+                    <div
+                      style={{ fontSize: "12px", color: "#555" }}
+                    >
+                      {item.description}
+                    </div>
+                  </div>
+                  <div>{item.questions}</div>
+                  <div>{item.createdDate}</div>
+                  <div>
+                    <button
+                      style={{ color: "#c84c0e", fontSize: "14px", width:"4rem" }}
+                      onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/update-checklist?checklistName=${item.name}`)}
+                    >
+                      {t("STUDIO_EDIT")}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{ padding: "1rem", color: "#666" }}>No drafts available.</div>
-      )}
-    </Card>
+          ) : (
+            <div style={{ padding: "1rem" }}>{t("STUDIO_NO_CHECKLIST_AVAILABLE")}</div>
+          )
+        ) : (
+          <div style={{ padding: "1rem", color: "#666" }}>
+           {t("STUDIO_NO_DATA_AVAILABLE")}
+          </div>
+        )}
+      </Card>
     </React.Fragment>
   );
 };

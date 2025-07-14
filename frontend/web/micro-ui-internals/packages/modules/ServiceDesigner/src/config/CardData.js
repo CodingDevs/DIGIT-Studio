@@ -3,10 +3,11 @@ const CardData = {
       {
         title: "Create New Service",
         description: "Start new or can use one of our template",
-        link:"/employee"
+        link:"/employee",
+         isCreateCard: true,
       },
       {
-        title: "Property Tax",
+        title: "Property Tax",  
         description: "Assessment and payment system for Mumbai Municipal Corporation",
       },
       {

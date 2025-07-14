@@ -6,16 +6,8 @@ const MobileChecklist = ({ questions, campaignName, checklistRole, typeOfCheckli
 
   return (
     <div className="mobile-screen">
-      <div className="mobile-top-bar">
-        <div className="mobile-menu-icon">&#9776;</div>
-      </div>
 
       <div className="mobile-container">
-        <div className="mobile-header">
-          <h2 className='mobile-checklist-highlight' style={{fontSize:"1.5rem"}}>{campaignName} {typeOfChecklist} {checklistRole}</h2>
-          {/* <h1 className="mobile-checklist-highlight">{checklistRole}</h1> */}
-          {/* <p className="mobile-description"></p> */}
-        </div>
 
         <div className="mobile-questions">
           {topLevelQuestions.map((question, index) => (

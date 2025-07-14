@@ -2,7 +2,7 @@ import { CustomSVG } from "@egovernments/digit-ui-components";
 import React from "react";
 import { useHistory } from "react-router-dom";
 
-const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link }) => {
+const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className }) => {
   const history = useHistory();
 
   const handleClick = () => {
@@ -13,7 +13,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link }) => {
 
   return (
     <div
-      className="service-card"
+      className={`service-card ${className || ""}`}
       style={{ cursor: link ? "pointer" : "default" }}
       onClick={handleClick}
     >

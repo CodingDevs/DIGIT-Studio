@@ -416,7 +416,7 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
                     <div className="question-label" style={{ height: "3.5rem", display: "flex", justifyContent: "space-between", width: "100%" }}>
                       <div style={{ display: "flex", gap: "1rem" , alignItems: "center"}}>
                         {/* <span style={{ fontWeight: "700", marginTop: "1rem" }}>{`${t("QUESTION")} ${index + 1}`}</span> */}
-                        <span style={{ fontWeight: "700", fontSize: "1.5rem", display: "flex", justifyContent: "center", alignItems: "center" }}>{`${t("HCM_CHECKLIST_QUESTION")} ${questionNumber}`}</span>
+                        <span style={{ fontWeight: "700", fontSize: "1.5rem", display: "flex", justifyContent: "center", alignItems: "center" }}>{`${t("STUDIO_CHECKLIST_QUESTION")} ${questionNumber}`}</span>
                         <div style={{ alignItems: "center" }}>
                           <CheckBox
                             disabled={dis}
