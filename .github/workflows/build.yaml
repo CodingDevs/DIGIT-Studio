@@ -19,7 +19,6 @@ on:
         type: choice
         options:
           - public-service
-          - studio-pdf
           - digit-studio
         default: public-service
 
@@ -56,7 +55,8 @@ jobs:
           SERVICE="${{ github.event.inputs.service }}"
 
           # fetch the matching config block and build entry
-          CONFIG_JSON=$(yq eval -o=json ".config[] | select(.name==\"$SERVICE_FOLDER\")" build/build-config.yml)
+          # Look for config entries that contain the service folder name
+          CONFIG_JSON=$(yq eval -o=json ".config[] | select(.name | contains(\"$SERVICE_FOLDER\"))" build/build-config.yml)
           if [ -z "$CONFIG_JSON" ] || [ "$CONFIG_JSON" = "null" ]; then
             echo "No config for folder '$SERVICE_FOLDER'" >&2
             exit 1
