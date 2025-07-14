@@ -53,7 +53,6 @@ jobs:
           SERVICE="${{ github.event.inputs.service }}"
           DEFAULT_DF="build/maven/Dockerfile"
 
-          # Try lookup in your build-config.yml
           DF=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .dockerfile // \"\"" build/build-config.yml)
           WD=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .\"work-dir\" // \"\"" build/build-config.yml)
 
@@ -64,12 +63,11 @@ jobs:
             echo "Found Dockerfile: $DF"
           fi
 
-          # export for next jobs
-          echo "work_dir=$WD"     >> "$GITHUB_OUTPUT"
-          echo "dockerfile=$DF"   >> "$GITHUB_OUTPUT"
-          echo "image_name=$SERVICE" >> "$GITHUB_OUTPUT"
-          echo "WORK_DIR=$WD"     >> "$GITHUB_ENV"
-          echo "DOCKERFILE=$DF"   >> "$GITHUB_ENV"
+          echo "work_dir=$WD"         >> "$GITHUB_OUTPUT"
+          echo "dockerfile=$DF"       >> "$GITHUB_OUTPUT"
+          echo "image_name=$SERVICE"  >> "$GITHUB_OUTPUT"
+          echo "WORK_DIR=$WD"         >> "$GITHUB_ENV"
+          echo "DOCKERFILE=$DF"       >> "$GITHUB_ENV"
 
       - name: Generate Next Tag
         id: tag
@@ -115,8 +113,8 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     outputs:
-      amd64_digest: ${{ steps.digest_amd64.outputs.digest }}
-      arm64_digest: ${{ steps.digest_arm64.outputs.digest }}
+      amd64_digest: ${{ steps.export-amd64.outputs.digest }}
+      arm64_digest: ${{ steps.export-arm64.outputs.digest }}
 
     steps:
       - name: Checkout
@@ -151,10 +149,18 @@ jobs:
             --iidfile=out-${{ matrix.arch }}.json \
             .
 
-      - name: Export Digest
-        id: digest_${{ matrix.arch }}
+      - name: Export amd64 digest
+        if: matrix.arch == 'amd64'
+        id: export-amd64
         run: |
-          digest=$(jq -r '.aux[].digest' out-${{ matrix.arch }}.json)
+          digest=$(jq -r '.aux[].digest' out-amd64.json)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Export arm64 digest
+        if: matrix.arch == 'arm64'
+        id: export-arm64
+        run: |
+          digest=$(jq -r '.aux[].digest' out-arm64.json)
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
   create-manifest:
@@ -183,5 +189,5 @@ jobs:
 
       - name: Summary
         run: |
-          echo "- Image: egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: amd64, arm64"                                   >> $GITHUB_STEP_SUMMARY
+          echo "- Image: egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}"  >> $GITHUB_STEP_SUMMARY
+          echo "- Platforms: amd64, arm64"                                                    >> $GITHUB_STEP_SUMMARY
