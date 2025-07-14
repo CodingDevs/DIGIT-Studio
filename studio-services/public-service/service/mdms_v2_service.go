@@ -84,6 +84,24 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	accessMdms, _ := data["access"].(map[string]interface{})
 	rolesMap, _ := accessMdms["roles"].(map[string]interface{})
 
+	
+
+	for _, roleList := range rolesMap {
+		if list, ok := roleList.([]interface{}); ok {
+			for _, r := range list {
+				if roleStr, ok := r.(string); ok {
+					err := s.createRoleIfNotExists( tenantId, roleStr, apps.RequestInfo)
+					if err != nil {
+						log.Printf("[ERROR] Failed to create role %s: %v", roleStr, err)
+					}
+				}
+			}
+		}
+	}
+
+	// Always ensure STUDIO_ADMIN role is created
+	_ = s.createRoleIfNotExists( tenantId, "STUDIO_ADMIN", apps.RequestInfo)
+
 	// Prepare role lists
 	var creatorRoles, editorRoles, viewerRoles []string
 
@@ -195,6 +213,36 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 
 	return resp, nil
 }
+
+func (s *MDMSV2Service) createRoleIfNotExists( tenantId, roleCode string, reqInfo model.RequestInfo) error {
+	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + "/egov-mdms-service/v2/_create/ACCESSCONTROL-ROLES.roles"
+	payload := map[string]interface{}{
+		"RequestInfo": reqInfo,
+		"Mdms": map[string]interface{}{
+			"tenantId":   tenantId,
+			"schemaCode": "ACCESSCONTROL-ROLES.roles",
+			"data": map[string]interface{}{
+				"code":        roleCode,
+				"name":        roleCode,
+				"description": roleCode,
+			},
+		},
+	}
+
+	var resp map[string]interface{}
+	err := s.restCallRepo.Post(roleCreateURL, payload, &resp)
+	if err != nil {
+		if isDuplicateError(err) {
+			log.Printf("[SKIPPED - DUPLICATE] Role already exists: %s", roleCode)
+			return nil
+		}
+		return err
+	}
+
+	log.Printf("[CREATED] Role created: %s", roleCode)
+	return nil
+}
+
 
 func isDuplicateError(err error) bool {
 	if err == nil {
