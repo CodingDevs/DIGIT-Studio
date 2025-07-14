@@ -215,7 +215,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 }
 
 func (s *MDMSV2Service) createRoleIfNotExists( tenantId, roleCode string, reqInfo model.RequestInfo) error {
-	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + "/egov-mdms-service/v2/_create/ACCESSCONTROL-ROLES.roles"
+	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLES.roles"
 	payload := map[string]interface{}{
 		"RequestInfo": reqInfo,
 		"Mdms": map[string]interface{}{
