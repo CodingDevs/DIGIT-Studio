@@ -16,10 +16,7 @@ on:
       service:
         description: 'Name of the service to build and deploy'
         required: true
-        type: choice
-        options:
-          - public-service
-          - digit-studio
+        type: string
         default: public-service
 
 env:
@@ -61,9 +58,15 @@ jobs:
             echo "No config for folder '$SERVICE_FOLDER'" >&2
             exit 1
           fi
+          
+          # List available services for better error messaging
+          AVAILABLE_SERVICES=$(echo "$CONFIG_JSON" | jq -r '.build[].["image-name"]' | tr '\n' ', ' | sed 's/,$//')
+          echo "Available services for '$SERVICE_FOLDER': $AVAILABLE_SERVICES"
+          
           BUILD_ENTRY=$(echo "$CONFIG_JSON" | jq -c ".build[] | select(.\"image-name\"==\"$SERVICE\")")
           if [ -z "$BUILD_ENTRY" ] || [ "$BUILD_ENTRY" = "null" ]; then
             echo "No build entry for service '$SERVICE' in '$SERVICE_FOLDER'" >&2
+            echo "Available services: $AVAILABLE_SERVICES" >&2
             exit 1
           fi
 
