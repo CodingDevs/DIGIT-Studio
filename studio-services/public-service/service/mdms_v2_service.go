@@ -131,8 +131,12 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	fmt.Println("Payload:\n", string(b))
 
 	if err := s.restCallRepo.Post(url, studioAdminPayload, &resp); err != nil {
-		log.Printf("Error posting RoleActionMapping for STUDIO_ADMIN: %v", err)
-		return nil, err
+		if isDuplicateError(err) {
+			log.Println("[SKIPPED - DUPLICATE] RoleActionMapping already exists for STUDIO_ADMIN")
+		} else {
+			log.Printf("Error posting RoleActionMapping for STUDIO_ADMIN: %v", err)
+			return nil, err
+		}
 	}
 
 	respJSON, _ := json.MarshalIndent(resp, "", "  ")
@@ -163,6 +167,11 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			var postResp map[string]interface{}
 			err := s.restCallRepo.Post(url, payload, &postResp)
 			if err != nil {
+				// Check if the error is a duplicate record error
+				if isDuplicateError(err) {
+					log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s", roleCode)
+					continue
+				}
 				log.Printf("Error posting RoleActionMapping for role %s: %v", roleCode, err)
 				return err
 			}
@@ -185,6 +194,14 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	}
 
 	return resp, nil
+}
+
+func isDuplicateError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "DUPLICATE_RECORD") && strings.Contains(errStr, "HTTP 400")
 }
 
 func (s *MDMSV2Service) getNextMDMSActionTestID() (int64, error) {
