@@ -442,11 +442,11 @@ func (r *ApplicationRepository) DeleteMDMSSchema(ctx context.Context, schemaCode
 		return errors.New("schemaCode and tenantId must not be empty")
 	}
 
-	query := `DELETE FROM eg_mdms_data WHERE schemacode = $1 AND tenantid = $2`
+	query := `DELETE FROM eg_mdms_schema_definition WHERE schemacode = $1 AND tenantid = $2`
 
 	_, err := r.db.ExecContext(ctx, query, schemaCode, tenantId)
 	if err != nil {
-		log.Printf("failed to delete MDMS schema data for schemaCode=%s and tenantId=%s: %v", schemaCode, tenantId, err)
+		log.Printf("failed to delete MDMS schema data for code=%s and tenantId=%s: %v", schemaCode, tenantId, err)
 		return err
 	}
 
