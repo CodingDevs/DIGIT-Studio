@@ -450,8 +450,8 @@ func (c *ApplicationController) CalculateHandler(w http.ResponseWriter, r *http.
 }
 
 func (c *ApplicationController) DeleteMDMSSchema(w http.ResponseWriter, r *http.Request) {
-	schemaCode := mux.Vars(r)["schemaCode"]
-    tenantId := mux.Vars(r)["tenantId"]
+	schemaCode := r.URL.Query().Get("schemaCode")
+	tenantId := r.URL.Query().Get("tenantId")
 	if schemaCode == ""  {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "schemaCode variable 'SchemaCode' is required")
 		return
