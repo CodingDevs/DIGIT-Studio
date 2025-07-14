@@ -1,5 +1,4 @@
 name: Build Pipeline
-run-name: Build ${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}
 
 on:
   workflow_dispatch:
@@ -21,23 +20,26 @@ on:
           - public-service
           - studio-pdf
           - digit-studio
-        default: public-service
+        default: "public-service"
 
 env:
   DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
 jobs:
-  resolve-config:
-    name: ▶ Resolve config
+  build:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service: [ "${{ github.event.inputs.service }}" ]
+
     outputs:
-      work_dir:    ${{ steps.pick.outputs.work_dir }}
-      dockerfile:  ${{ steps.pick.outputs.dockerfile }}
-      image_name:  ${{ steps.pick.outputs.image_name }}
-      tag:         ${{ steps.tag.outputs.tag }}
+      docker_image: ${{ steps.save_docker_image.outputs.docker_image }}
+      db_image:     ${{ steps.save_db_image.outputs.db_image }}
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Install yq
@@ -47,88 +49,49 @@ jobs:
           sudo curl -sSL "$URL" -o /usr/local/bin/yq
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Pick Dockerfile & Work-dir
-        id: pick
+      - name: Determine Dockerfile path from build-config.yml
+        id: pick_dockerfile
         run: |
-          SERVICE="${{ github.event.inputs.service }}"
-          DEFAULT_DF="build/maven/Dockerfile"
+          SERVICE="${{ matrix.service }}"
+          DEFAULT_DOCKERFILE="build/maven/Dockerfile"
 
+          # Debug: list all image-name / dockerfile pairs
+          echo "All build entries from build-config.yml:"
+          yq eval '.config[].build[] | "✱ image-name: \(.["image-name"]) → dockerfile: \(.dockerfile // "N/A")"' build/build-config.yml || true
+
+          # Try matching with the SERVICE variable directly
           DF=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .dockerfile // \"\"" build/build-config.yml)
-          WD=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .\"work-dir\" // \"\"" build/build-config.yml)
+          WORK_DIR=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .\"work-dir\" // \"\"" build/build-config.yml)
 
           if [ -z "$DF" ] || [ "$DF" = "null" ]; then
-            echo "Using default Dockerfile: $DEFAULT_DF"
-            DF="$DEFAULT_DF"
+            echo "No dockerfile entry found for \"$SERVICE\" in build-config.yml; using default"
+            DF="$DEFAULT_DOCKERFILE"
           else
-            echo "Found Dockerfile: $DF"
+            echo "Found dockerfile \"$DF\" for service \"$SERVICE\"."
           fi
 
-          echo "work_dir=$WD"         >> "$GITHUB_OUTPUT"
-          echo "dockerfile=$DF"       >> "$GITHUB_OUTPUT"
-          echo "image_name=$SERVICE"  >> "$GITHUB_OUTPUT"
-          echo "WORK_DIR=$WD"         >> "$GITHUB_ENV"
-          echo "DOCKERFILE=$DF"       >> "$GITHUB_ENV"
-
-      - name: Generate Next Tag
-        id: tag
-        run: |
-          set -euxo pipefail
-          BRANCH="${GITHUB_REF##*/}"
-          SHORT_HASH=$(git rev-parse --short HEAD)
-
-          TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login/" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"$DOCKER_USERNAME\",\"password\":\"$DOCKER_PASSWORD\"}" \
-            | jq -r .token)
-
-          IMAGE="${{ steps.pick.outputs.image_name }}"
-          HTTP=$(curl -s -o /dev/null -w '%{http_code}' \
-            -H "Authorization: JWT $TOKEN" \
-            "https://hub.docker.com/v2/repositories/$DOCKER_USERNAME/$IMAGE/")
-
-          if [ "$HTTP" -ne 200 ]; then
-            NEXT="$BRANCH-$SHORT_HASH"
+          if [ -z "$WORK_DIR" ] || [ "$WORK_DIR" = "null" ]; then
+            echo "No work-dir entry found for \"$SERVICE\" in build-config.yml"
+            WORK_DIR=""
           else
-            EXIST=$(curl -s -H "Authorization: JWT $TOKEN" \
-              "https://hub.docker.com/v2/repositories/$DOCKER_USERNAME/$IMAGE/tags?page_size=100" \
-              | jq -r '.results[].name')
-            LATEST=$(echo "$EXIST" | grep "^${BRANCH}-${SHORT_HASH}" || true | sort -V | tail -n1)
-            NEXT="${LATEST:-$BRANCH-$SHORT_HASH}"
+            echo "Found work-dir \"$WORK_DIR\" for service \"$SERVICE\"."
           fi
 
-          echo "tag=$NEXT"       >> "$GITHUB_OUTPUT"
-          echo "NEXT_TAG=$NEXT"  >> "$GITHUB_ENV"
+          echo "dockerfile_path=$DF" >> "$GITHUB_OUTPUT"
+          echo "work_dir=$WORK_DIR" >> "$GITHUB_OUTPUT"
+          echo "DOCKERFILE_PATH=$DF" >> "$GITHUB_ENV"
+          echo "WORK_DIR=$WORK_DIR" >> "$GITHUB_ENV"
 
-  build-matrix:
-    name: ▶ Build images (${{ matrix.arch }})
-    needs: resolve-config
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            platform: linux/amd64
-            runner: ubuntu-latest
-          - arch: arm64
-            platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
-    outputs:
-      amd64_digest: ${{ steps.export-amd64.outputs.digest }}
-      arm64_digest: ${{ steps.export-arm64.outputs.digest }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Buildx
+      - name: Cache Docker Layers
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ matrix.arch }}-buildx-${{ github.event.inputs.service }}-${{ github.ref_name }}
-          restore-keys: ${{ runner.os }}-${{ matrix.arch }}-buildx-${{ github.event.inputs.service }}-
+          key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ github.ref_name }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -136,58 +99,101 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
-      - name: Build & Push (${{ matrix.arch }})
+      - name: Generate the Next Tag
+        id: tag
         run: |
-          docker buildx build \
-            --platform ${{ matrix.platform }} \
-            --build-arg WORK_DIR="${{ needs.resolve-config.outputs.work_dir }}" \
-            --file "${{ needs.resolve-config.outputs.dockerfile }}" \
-            --tag egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}-${{ matrix.arch }} \
-            --cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
-            --push \
-            --iidfile=out-${{ matrix.arch }}.json \
-            .
+          set -euxo pipefail
 
-      - name: Export amd64 digest
-        if: matrix.arch == 'amd64'
-        id: export-amd64
-        run: |
-          digest=$(jq -r '.aux[].digest' out-amd64.json)
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          BRANCH="${GITHUB_REF##*/}"
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          SERVICE_NAME="${{ matrix.service }}"
 
-      - name: Export arm64 digest
-        if: matrix.arch == 'arm64'
-        id: export-arm64
-        run: |
-          digest=$(jq -r '.aux[].digest' out-arm64.json)
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login/" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\": \"$DOCKER_USERNAME\", \"password\": \"$DOCKER_PASSWORD\"}" \
+            | jq -r .token)
 
-  create-manifest:
-    name: ▶ Create & Push Manifest
-    needs: build-matrix
-    runs-on: ubuntu-latest
-    steps:
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to authenticate with Docker Hub." >&2
+            exit 1
+          fi
+
+          REPO_CHECK=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: JWT $TOKEN" \
+            "https://hub.docker.com/v2/repositories/$DOCKER_USERNAME/$SERVICE_NAME/")
+
+          if [ "$REPO_CHECK" -ne 200 ]; then
+            NEXT_TAG="${BRANCH}-${COMMIT_HASH}"
+          else
+            EXISTING_TAGS=$(curl -s -H "Authorization: JWT $TOKEN" \
+              "https://hub.docker.com/v2/repositories/$DOCKER_USERNAME/$SERVICE_NAME/tags?page_size=100" \
+              | jq -r '.results[].name')
+            LATEST_TAG=$(echo "$EXISTING_TAGS" | grep "^${BRANCH}-${COMMIT_HASH}" || true | sort -V | tail -n 1)
+            NEXT_TAG="${LATEST_TAG:-${BRANCH}-${COMMIT_HASH}}"
+          fi
+
+          echo "tag=$NEXT_TAG" >> "$GITHUB_OUTPUT"
+          echo "NEXT_TAG=$NEXT_TAG" >> "$GITHUB_ENV"
+
+      - name: Build and Push Application Docker Image
+        id: build_push_docker
+        uses: docker/build-push-action@v5
         with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_PASSWORD }}
+          platforms: linux/amd64,linux/arm64
+          context: .
+          file: ${{ env.DOCKERFILE_PATH }}
+          push: true
+          tags: |
+            egovio/${{ matrix.service }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            WORK_DIR=${{ env.WORK_DIR }}
 
-      - name: Create manifest
+      - name: Check if DB folder exists
+        id: check-db-folder
         run: |
-          IMAGE=egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}
-          docker manifest create $IMAGE \
-            --amend $IMAGE@${{ needs.build-matrix.outputs.amd64_digest }} \
-            --amend $IMAGE@${{ needs.build-matrix.outputs.arm64_digest }}
-          docker manifest push $IMAGE
+          # For digit-studio (frontend), there's no DB migration
+          if [ "${{ matrix.service }}" = "digit-studio" ]; then
+            echo "folder_exists=false" >> "$GITHUB_OUTPUT"
+          else
+            FOLDER_PATH="${{ env.WORK_DIR }}/scripts/migration"
+            if [ -d "$FOLDER_PATH" ]; then
+              echo "folder_exists=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "folder_exists=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
 
-      - name: Cleanup local refs
-        run: |
-          docker manifest rm egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}-amd64 || true
-          docker manifest rm egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}-arm64 || true
+      - name: Build and Push Database Docker Image
+        if: ${{ steps.check-db-folder.outputs.folder_exists == 'true' }}
+        id: build_push_db_docker
+        uses: docker/build-push-action@v5
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: ${{ env.WORK_DIR }}/src/main/resources/db
+          file: ${{ env.WORK_DIR }}/src/main/resources/db/Dockerfile
+          push: true
+          tags: |
+            egovio/${{ matrix.service }}-db:${{ steps.tag.outputs.tag }}
 
-      - name: Summary
+      - name: Save Application Docker Image
+        id: save_docker_image
         run: |
-          echo "- Image: egovio/${{ needs.resolve-config.outputs.image_name }}:${{ needs.resolve-config.outputs.tag }}"  >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: amd64, arm64"                                                    >> $GITHUB_STEP_SUMMARY
+          IMG="egovio/${{ matrix.service }}:${{ steps.tag.outputs.tag }}"
+          echo "$IMG"
+          echo "docker_image=$IMG" >> "$GITHUB_OUTPUT"
+
+          # Append to GitHub Actions summary
+          echo "### Application Docker Image" >> "$GITHUB_STEP_SUMMARY"
+          echo "$IMG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save Database Docker Image
+        id: save_db_image
+        if: ${{ steps.check-db-folder.outputs.folder_exists == 'true' }}
+        run: |
+          IMG="egovio/${{ matrix.service }}-db:${{ steps.tag.outputs.tag }}"
+          echo "$IMG"
+          echo "db_image=$IMG" >> "$GITHUB_OUTPUT"
+
+          # Append to GitHub Actions summary
+          echo "### Database Docker Image" >> "$GITHUB_STEP_SUMMARY"
+          echo "$IMG" >> "$GITHUB_STEP_SUMMARY"
