@@ -137,6 +137,11 @@
     margin-bottom: 12px;
   }
 
+  .service-created-date {
+    font-size: 13px;
+    color: #555;
+  }
+
   .create-card {
     border: 2px dashed #ddd;
     border-radius: 8px;
