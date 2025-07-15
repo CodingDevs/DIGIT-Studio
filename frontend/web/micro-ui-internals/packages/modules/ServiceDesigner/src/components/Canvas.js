@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Fragment } from "react";
+import QuickStart from "./QuickStart";
 
 const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick }) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
@@ -263,24 +264,37 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
               className="interactive-canvas-container"
               style={{ minWidth: "200vw", minHeight: "200vh" }}
             >
-              {elements.map((element) => (
+              {elements.length === 0 ? (
                 <div
-                  key={element.id}
                   style={{
                     position: "absolute",
-                    left: element.position.x,
-                    top: element.position.y,
-                    zIndex: 10,
-                    cursor: draggedElement?.id === element.id ? "grabbing" : "grab",
-                    opacity: draggedElement?.id === element.id ? 0.7 : 1,
-                    transition: draggedElement?.id === element.id ? "none" : "opacity 0.2s ease",
+                    left: 250,
+                    top: 300,
+                    zIndex: 5,
                   }}
-                  onMouseDown={(e) => handleElementMouseDown(element, e)}
-                  onClick={(e) => handleElementClick(element, e)}
                 >
-                  {element.component}
+                  <QuickStart />
                 </div>
-              ))}
+              ) : (
+                elements.map((element) => (
+                  <div
+                    key={element.id}
+                    style={{
+                      position: "absolute",
+                      left: element.position.x,
+                      top: element.position.y,
+                      zIndex: 10,
+                      cursor: draggedElement?.id === element.id ? "grabbing" : "grab",
+                      opacity: draggedElement?.id === element.id ? 0.7 : 1,
+                      transition: draggedElement?.id === element.id ? "none" : "opacity 0.2s ease",
+                    }}
+                    onMouseDown={(e) => handleElementMouseDown(element, e)}
+                    onClick={(e) => handleElementClick(element, e)}
+                  >
+                    {element.component}
+                  </div>
+                )))
+                }
             </div>
           </div>
         </div>
