@@ -1,9 +1,11 @@
 import { CustomSVG } from "@egovernments/digit-ui-components";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
 
 const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className }) => {
   const history = useHistory();
+  const { t } = useTranslation();
 
   const handleClick = () => {
     if (link) {
@@ -26,7 +28,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className 
         <h3 className="service-title">{cardHeader || "Property Tax"}</h3>
         <p className="service-description">
           {cardBody ||
-            "Property tax assessment and payment system for Mumbai Municipal Corporation"}
+            t("STUDIO_CREATE_SERVICE_DESCRIPTION")}
         </p>
         {createdDate && (
           <div className="service-created-date">Created: {createdDate}</div>

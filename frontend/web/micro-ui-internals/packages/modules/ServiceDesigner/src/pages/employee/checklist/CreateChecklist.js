@@ -84,13 +84,13 @@ useEffect(() => {
       key: 1,
       type: { code: "SingleValueList" },
       level: 1,
-      title: "enter your first question here!!",
+      title: t("STUDIO_FIRST_QUES_HELP_TEXT"),
       value: null,
       options: [
         {
           id: "0cff9846-03a2-4453-bf0e-200cdda5f390",
           key: 1,
-          label: "Enter your first option here",
+          label: t("STUDIO_FIRST_OPTION_HELP_TEXT"),
           optionComment: false,
           optionDependency: false,
           parentQuestionId: "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c",

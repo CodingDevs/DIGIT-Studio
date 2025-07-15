@@ -41,7 +41,7 @@ const ChecklistHomePage = () => {
   },[data])
 
   const tabOptions = [
-    { name: "My Checklists", code: "MY_CHECKLIST" }
+    { name: "My Checklists", code: "MY_CHECKLIST", i18nKey: t("STUDIO_MY_CHECKLIST") },
   ];
 
   if(moduleListLoading){
@@ -91,7 +91,7 @@ const ChecklistHomePage = () => {
             name="tabs"
             numberOfToggleItems={tabOptions.length}
             options={tabOptions}
-            optionsKey="name"
+            optionsKey="i18nKey"
             selectedOption={selectedTab}
             onSelect={(val) => setSelectedTab(val)}
             type="toggle"

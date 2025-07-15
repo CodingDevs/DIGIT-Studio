@@ -15,8 +15,8 @@ const LandingPageConfig = [
       type: "ToggleGroup",
       name: "serviceGroupToggle",
       options: [
-        { code: "Published", name: "Published" },
-        { code: "Drafts", name: "Drafts" },
+        { code: "Published", name: "Published", i18nKey:"STUDIO_TOGGLE_PUBLISH" },
+        { code: "Drafts", name: "Drafts", i18nKey:"STUDIO_TOGGLE_DRAFTS" },
       ],
       default: "Published",
     },
