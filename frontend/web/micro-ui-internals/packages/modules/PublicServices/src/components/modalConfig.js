@@ -9,7 +9,7 @@ const configModal = (
     const { action: actionString } = action;
     const prefix = `${moduleCode?.toUpperCase()}_${businessService.toUpperCase()}`;
     const currentModule = `${moduleCode?.toLowerCase()}.${businessService.toLowerCase()}`;
-    const docData = documentConfig?.find((ob) => ob?.module.toLowerCase() === currentModule)?.actions;
+    const docData = documentConfig?.[0]?.actions;
   
     // If specific action not found, fallback to DEFAULT
     let docConfig = docData?.find((item) => item?.action === actionString) || 

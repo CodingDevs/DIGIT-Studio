@@ -32,27 +32,42 @@ const UploadAndDownloadDocumentHandler = ({
   let moduleName = `${module?.toLowerCase()}.${service?.toLowerCase()}`;
   const { serviceCode, applicationNumber:applicationNo = "" } = Digit.Hooks.useQueryParams();
 
-  const requestCriteria = {
-    url: "/egov-mdms-service/v1/_search",
-    body: {
-      MdmsCriteria: {
-        "tenantId": tenantId,
-        "moduleDetails": [
-            {
-                "moduleName": "DigitStudio",
-                "masterDetails": [
-                    {
-                        "name": "DocumentConfig2"
-                    }
-                ]
-            }
-        ]
-    },
-    },
-    changeQueryName: "documentConfig",
-  };
+  // const requestCriteria = {
+  //   url: "/egov-mdms-service/v1/_search",
+  //   body: {
+  //     MdmsCriteria: {
+  //       "tenantId": tenantId,
+  //       "moduleDetails": [
+  //           {
+  //               "moduleName": "DigitStudio",
+  //               "masterDetails": [
+  //                   {
+  //                       "name": "DocumentConfig2"
+  //                   }
+  //               ]
+  //           }
+  //       ]
+  //   },
+  //   },
+  //   changeQueryName: "documentConfig",
+  // };
 
-  const { isLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+  // const { isLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+
+    const serviceconfigrequestCriteria = {
+        url: "/egov-mdms-service/v2/_search",
+        body: {
+          MdmsCriteria: {
+            tenantId: tenantId,
+            schemaCode: "Studio.ServiceConfiguration",
+            filters:{
+              module:module
+            }
+          },
+        },
+      };
+      const { isLoading, data:serviceconfig } = Digit.Hooks.useCustomAPIHook(serviceconfigrequestCriteria);
+
 
   const downloadPdf = (blob, fileName) => {
     if (window.mSewaApp && window.mSewaApp.isMsewaApp() && window.mSewaApp.downloadBase64File) {
@@ -139,7 +154,8 @@ const UploadAndDownloadDocumentHandler = ({
   };
   
 
-  let docData = data ? data?.MdmsRes?.DigitStudio?.DocumentConfig2?.filter((ob) => ob?.module.toLowerCase() === moduleName)?.[0]?.actions : [];
+  //let docData = data ? data?.MdmsRes?.DigitStudio?.DocumentConfig2?.filter((ob) => ob?.module.toLowerCase() === moduleName)?.[0]?.actions : [];
+  let docData = serviceconfig ? serviceconfig?.mdms?.filter((ob) => ob?.uniqueIdentifier.toLowerCase() === moduleName)?.[0]?.data?.documents?.[0].actions : [];
 
   const docConfig = docData?.filter((item) => item?.action === ("APPLY" || "apply"))?.[0];
   const updatedDocuments = docConfig?.documents?.flatMap((doc) => {

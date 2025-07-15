@@ -17,7 +17,7 @@ const DigitDemoComponent = ({editdata}) => {
   const queryStrings = Digit.Hooks.useQueryParams();
 
   const serviceCode = `${module.toUpperCase()}_${service.toUpperCase()}`;
-  const enableSaveAsDraftStep = 5; //Step number where I want to enable save as draft button
+  const enableSaveAsDraftStep = 4; //Step number where I want to enable save as draft button
 
   // Get persisted state from localStorage
   const savedStep = parseInt(localStorage.getItem("currentStep"), 10) || 1;
@@ -100,7 +100,7 @@ const DigitDemoComponent = ({editdata}) => {
   };
 
   const onSubmit = async (data) => {
-    const sectionName = currentFormConfig.name || `section_${currentStep}`;
+    const sectionName = currentFormConfig?.name || `section_${currentStep}`;
 
     const updatedFormData = ["multiChildForm", "documents"].includes(currentFormConfig?.type)
       ? { ...formData, ...data }
@@ -170,7 +170,7 @@ const DigitDemoComponent = ({editdata}) => {
   };
 
   const onFormValueChange = (_, updatedData) => {
-    const sectionName = currentFormConfig.name || `section_${currentStep}`;
+    const sectionName = currentFormConfig?.name || `section_${currentStep}`;
     const updatedSectionData = updatedData[sectionName] || updatedData;
     const sessionSectionData = sessionData?.[sectionName];
     const hasChanged = JSON.stringify(sessionSectionData) !== JSON.stringify(updatedSectionData);
@@ -186,7 +186,7 @@ const DigitDemoComponent = ({editdata}) => {
 
   //on click of draft button
   const onDraftLabelClick = async (data) => {
-    const sectionName = currentFormConfig.name || `section_${currentStep}`;
+    const sectionName = currentFormConfig?.name || `section_${currentStep}`;
 
     const updatedFormData = ["multiChildForm", "documents"].includes(currentFormConfig?.type)
       ? { ...formData, ...data }
@@ -232,7 +232,7 @@ const DigitDemoComponent = ({editdata}) => {
       <FormComposerV2
         key={`${currentStep}-${currentFormConfig?.name}`}
         heading={t(`${serviceCode}_HEADING`)}
-        draftLabel={enableSaveAsDraftStep === currentStep ? t(`${serviceCode}_SAVE`) : ""}
+        draftLabel={enableSaveAsDraftStep === currentStep && currentStep!== rawConfig?.length ? t(`${serviceCode}_SAVE`) : ""}
         onDraftLabelClick={onDraftLabelClick}
         label={currentStep === steps.length ? t(`${serviceCode}_SUBMIT`) : t(`${serviceCode}_NEXT`)}
         config={[

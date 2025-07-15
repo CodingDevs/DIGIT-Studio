@@ -43,7 +43,7 @@ const generateFormDataFromSearch = (config = [], searchData = {}, module, servic
     config.forEach((section) => {
       const sectionName = section?.name;
       // if (!sectionName) return;
-      if (section.type === "multiChildForm" && Array.isArray(searchData[sectionName])) {
+      if (section?.type === "multiChildForm" && Array.isArray(searchData[sectionName])) {
         formData[sectionName] = searchData[sectionName].map((item) => {
           const entry = {};
           section.body?.forEach((field) => {

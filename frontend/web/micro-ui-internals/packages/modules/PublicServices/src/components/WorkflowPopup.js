@@ -6,6 +6,7 @@ import Modal from './Modal';
 
 // External components
 import { Loader, FormComposerV2 } from '@egovernments/digit-ui-components';
+import { useParams } from 'react-router-dom';
 
 // Basic heading component
 const Heading = (props) => {
@@ -62,6 +63,9 @@ const updatePayload = (applicationDetails, data, action, businessService) => {
 
 const WorkflowPopup = ({ applicationDetails, ...props }) => {
     const { action, tenantId, t, closeModal, submitAction, businessService, moduleCode } = props;
+    const { module, service } = useParams();
+    const serviceCode = `${module.toUpperCase()}.${service.toUpperCase()}`;
+
 
     // Enable assignee dropdown based on config
     const enableAssignee = Digit?.Customizations?.["commonUiConfig"]?.enableHrmsSearch(businessService, action);
@@ -83,33 +87,45 @@ const WorkflowPopup = ({ applicationDetails, ...props }) => {
     assigneeOptions?.forEach((emp) => (emp.nameOfEmp = emp?.user?.name || t("ES_COMMON_NA")));
 
     // Request criteria for Document config
-    const requestCriteria = {
-        url: "/egov-mdms-service/v1/_search",
+    // const requestCriteria = {
+    //     url: "/egov-mdms-service/v1/_search",
+    //     body: {
+    //         MdmsCriteria: {
+    //             tenantId: Digit.ULBService.getCurrentTenantId(),
+    //             moduleDetails: [
+    //                 {
+    //                     moduleName: "DigitStudio",
+    //                     masterDetails: [
+    //                         {
+    //                             name: "DocumentConfig2",
+    //                         },
+    //                     ],
+    //                 },
+    //             ],
+    //         },
+    //     },
+    //     changeQueryName: "documentConfig",
+    // };
+
+    // // Load Document config
+    // const { isLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+
+    const serviceconfigrequestCriteria = {
+        url: "/egov-mdms-service/v2/_search",
         body: {
-            MdmsCriteria: {
-                tenantId: Digit.ULBService.getCurrentTenantId(),
-                moduleDetails: [
-                    {
-                        moduleName: "DigitStudio",
-                        masterDetails: [
-                            {
-                                name: "DocumentConfig2",
-                            },
-                        ],
-                    },
-                ],
-            },
+          MdmsCriteria: {
+            tenantId: Digit.ULBService.getCurrentTenantId(),
+            schemaCode: "Studio.ServiceConfiguration",
+            filters:{
+              module:moduleCode
+            }
+          },
         },
-        changeQueryName: "documentConfig",
-    };
-
-    // Load Document config
-    const { isLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
-
-
+      };
+      const { isLoading: moduleListLoading, data:serviceconfig } = Digit.Hooks.useCustomAPIHook(serviceconfigrequestCriteria);
     // Set config when HRMS and MDMS data is available
     useEffect(() => {
-        if (data) {
+        if (serviceconfig) {
             setConfig(
                 configModal(
                     t,
@@ -117,11 +133,11 @@ const WorkflowPopup = ({ applicationDetails, ...props }) => {
                     assigneeOptions?.length >= 0 ? assigneeOptions : undefined,
                     businessService,
                     moduleCode,
-                    data?.MdmsRes?.DigitStudio?.DocumentConfig2
+                    serviceconfig?.mdms?.filter((ob) => ob?.uniqueIdentifier.toUpperCase() === serviceCode)?.[0]?.data?.documents
                 )
             );
         }
-    }, [assigneeOptions, data]);
+    }, [assigneeOptions, serviceconfig]);
 
     // Form submit handler
     const _submit = (data) => {
@@ -134,7 +150,7 @@ const WorkflowPopup = ({ applicationDetails, ...props }) => {
         Digit?.Customizations?.["commonUiConfig"]?.enableModalSubmit(businessService, action, setModalSubmit, formData);
     };
 
-    if (isLoadingHrmsSearch || isLoading) return <Loader />;
+    if (isLoadingHrmsSearch || moduleListLoading) return <Loader />;
 
     return action && config?.form ? (
         <Modal
