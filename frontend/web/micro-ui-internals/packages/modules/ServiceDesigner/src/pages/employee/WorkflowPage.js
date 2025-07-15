@@ -8,9 +8,13 @@ import WorkflowNode from "../../components/WorkflowNode";
 import { Button } from "@egovernments/digit-ui-components";
 import { Toast } from "@egovernments/digit-ui-react-components";
 import StateComp from "../../components/StateComponent";
+import { Loader } from "@egovernments/digit-ui-react-components";
+import QuickStart from "../../components/QuickStart";
+import StageActions from "../../components/StageActions";
 
 const Workflow = () => {
     const { t } = useTranslation();
+    const tenantId = Digit.ULBService.getCurrentTenantId();
     const [selectedElement, setSelectedElement] = useState(null);
     const [canvasElements, setCanvasElements] = useState([]);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
@@ -20,23 +24,52 @@ const Workflow = () => {
     const [connections, setConnections] = useState([]);
     const [connecting, setConnecting] = useState(null);
 
+    const master = { name: "roles" };
+    const { isLoading, data } = window?.Digit?.Hooks.useCustomMDMS(Digit?.ULBService?.getStateId(), "ACCESSCONTROL-ROLES", [master], {
+        select: undefined
+            ? createFunction(config?.mdmsConfig?.select)
+            : (data) => {
+                const optionsData = _.get(data, `${"ACCESSCONTROL-ROLES"}.${"roles"}`, []);
+                return optionsData
+                    .filter((opt) => (opt?.hasOwnProperty("active") ? opt.active : true))
+                    .map((opt) => ({ ...opt, name: `${undefined}_${Digit.Utils.locale.getTransformedLocale(opt.code)}` }));
+            },
+        enabled: (true) ? true : false,
+    }, [master]);
+
+    const requestCriteria = {
+        url: "/egov-mdms-service/v2/_search",
+        body: {
+            MdmsCriteria: {
+                tenantId: tenantId,
+                schemaCode: "Studio.Checklists"
+            },
+        },
+    };
+    const { isLoading: moduleListLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+    const checklistData = dataa?.mdms?.map((item) => ({
+        code: item.data.name,
+        name: item.data.name,
+    }));
+
     const [stateData, setStateData] = useState({
         name: "",
         desc: "",
-        roles: "",
-        sla: 24,
+        roles: [],
+        sla: 0,
     });
 
     const [actionData, setActionData] = useState({
         label: "",
         desc: "",
+        aroles: [],
     });
 
     const onLeftClick = (elementId, e) => {
         if (connectionStart && connectionStart !== elementId) {
             setConnections((prev) => [
                 ...prev,
-                { id: Date.now(), from: connectionStart, to: elementId, label: "+ action", type: "action", desc: "" }
+                { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
             ]);
             setConnectionStart(null);
         }
@@ -54,7 +87,7 @@ const Workflow = () => {
 
         if (selectedElement && selectedElement.id === elementId) {
             setSelectedElement(null);
-            setStateData({ name: "", desc: "", roles: "", sla: 24 });
+            setStateData({ name: "", desc: "", roles: [], sla: 0 });
         }
     }
 
@@ -64,7 +97,7 @@ const Workflow = () => {
         });  
         if (selectedElement && selectedElement.id === id) {
             setSelectedElement(null);
-            setActionData({ label: "", desc: "" });
+            setActionData({ label: "", desc: "", aroles: [] });
         }   
     }  
 
@@ -83,7 +116,7 @@ const Workflow = () => {
                 elementId={element.id}
                 State={element.name}
                 desc={element.desc}
-                roles={""}
+                roles={[]}
                 sla={24}
                 nodetype={element.nodetype}
                 onLeftAction={onLeftClick}
@@ -100,7 +133,7 @@ const Workflow = () => {
             if (connectionStart && connectionStart !== elementId) {
                 setConnections((prev) => [
                     ...prev,
-                    { id: Date.now(), from: connectionStart, to: elementId, label: "+ action", type: "action", desc: "" }
+                    { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
                 ]);
                 setConnectionStart(null);
             }
@@ -139,7 +172,7 @@ const Workflow = () => {
             type: type,
             name: name,
             desc: desc,
-            roles: "",
+            roles: [],
             sla: 24,
             nodetype: nodetype,
             position: { x: currentX, y: currentY }
@@ -151,10 +184,13 @@ const Workflow = () => {
     };
 
     const onDataChange = (e) => {
-        if (e?.code) {
+        if (Array.isArray(e) && e.length === 0) {
+            return;
+        }
+        if (Array.isArray(e) && e[0]?.code) {
             setStateData(prev => ({
                 ...prev,
-                roles: { code: e.code, name: e.name }
+                roles: e
             }));
         } else if (e?.target) {
             const { name, value } = e.target;
@@ -162,15 +198,27 @@ const Workflow = () => {
                 ...prev,
                 [name]: value
             }));
+        } else {
+            setStateData(prev => ({
+                ...prev,
+                sla: e
+            }));
         }
     };
 
     const onActionDataChange = (e) => {
-        const { name, value } = e.target;
-        setActionData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        if (Array.isArray(e) && e[0]?.code) {
+            setActionData(prev => ({
+                ...prev,
+                aroles: e
+            }));
+        } else if (e?.target) {
+            const { name, value } = e.target;
+            setActionData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     }
 
     const handleElementClick = (element) => {
@@ -206,7 +254,7 @@ const Workflow = () => {
                 })
             );
 
-            setStateData({ name: "", desc: "", roles: "", sla: 24 });
+            setStateData({ name: "", desc: "", roles: [], sla: 0 });
             setSelectedElement(null);
         }
 
@@ -224,6 +272,7 @@ const Workflow = () => {
                             ...element,
                             label: actionData.label,
                             desc: actionData.desc,
+                            aroles: actionData.aroles,
                         };
                         setSelectedElement(updatedElement);
                         return updatedElement;
@@ -231,7 +280,7 @@ const Workflow = () => {
                     return element;
                 })
             );
-            setActionData({ label: "", desc: "" });
+            setActionData({ label: "", desc: "", aroles: [] });
             setSelectedElement(null);
         }
     }
@@ -278,6 +327,7 @@ const Workflow = () => {
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
                 <div>{t("HOW_TO_CONNECT")}</div>
             </div>,
+            <QuickStart />,
             <Button
                 variation="secondary"
                 label={t("GET_WORKFLOW")}
@@ -311,11 +361,13 @@ const Workflow = () => {
                 populators={{
                     name: "name",
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 required
+                infoMessage="this is state name field"
                 type="text"
                 value={stateData.name}
             />,
@@ -326,11 +378,13 @@ const Workflow = () => {
                 populators={{
                     name: "desc",
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 type="text"
+                infoMessage="this is desc field"
                 value={stateData.desc}
             />,
             <FieldV1
@@ -340,33 +394,58 @@ const Workflow = () => {
                     name: "roles",
                     isSearchable: true,
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
-                    mdmsConfig: {
-                        masterName: "roles",
-                        moduleName: "ACCESSCONTROL-ROLES",
-                    },
+                    isSearchable: true,
+                    options: isLoading ? [] : data.map(({ code, name }) => ({ code, name })),
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
-                type="dropdown"
+                type="multiselectdropdown"
+                infoMessage="this is roles field"
                 value={stateData.roles}
             />,
             <FieldV1
                 error={stateData.sla < 1 ? t("PLEASE_ENTER_VALID_SLA_IN_HOURS(MIN 1)") : ""}
-                label="SLA Timer"
+                label="SLA_TIMER(HOURS)"
                 onChange={(e) => onDataChange(e)}
                 populators={{
                     name: "sla",
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 required
                 type="numeric"
+                infoMessage="this is sla field"
                 value={stateData.sla}
             />,
+            selectedElement?.nodetype == "start" ? (<FieldV1
+                label={t("SERVICE_REQUEST_FORM")}
+                onChange={(e) => onDataChange(e)}
+                populators={{
+                    name: "roles",
+                    alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
+                    optionsKey: "code",
+                    options: [],
+                }}
+                props={{
+                    fieldStyle: { width: "100%" }
+                }}
+                type="dropdown"
+                infoMessage="this is form field"
+                value={stateData.form}
+            />) : null,
+            <StageActions label={t("ADD_COMMENTS")} type="switch" />,
+            <StageActions label={t("ASSIGN_TO_USER")} type="switch" />,
+            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" />,
+            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" options={checklistData} />,
+            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" />,
+            <StageActions label={t("SEND_NOTIFICATION")} type="button" />,
             <Button
                 variation="primary"
                 label={t("UPDATE_PROPERTIES")}
@@ -399,12 +478,14 @@ const Workflow = () => {
                 populators={{
                     name: "label",
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 required
                 type="text"
+                infoMessage="this is action name field"
                 value={actionData.label}
             />,
             <FieldV1
@@ -414,12 +495,33 @@ const Workflow = () => {
                 populators={{
                     name: "desc",
                     alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 type="text"
                 value={actionData.desc}
+                infoMessage="this is desc field"
+            />,
+            <FieldV1
+                label={t("ROLES")}
+                onChange={(e) => onActionDataChange(e)}
+                populators={{
+                    name: "aroles",
+                    isSearchable: true,
+                    alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
+                    optionsKey: "code",
+                    isSearchable: true,
+                    options: isLoading ? [] : data.map(({ code, name }) => ({ code, name })),
+                }}
+                props={{
+                    fieldStyle: { width: "100%" }
+                }}
+                type="multiselectdropdown"
+                infoMessage="this is roles field"
+                value={actionData.aroles}
             />,
             <Button
                 variation="primary"
@@ -441,7 +543,7 @@ const Workflow = () => {
 
     const onconnectionClick = (conn, e) => {
         setSelectedElement(conn);
-        setActionData({ label: conn.label, desc: conn.desc });
+        setActionData({ label: conn.label, desc: conn.desc, aroles: conn.aroles });
     }
 
     const transformWorkflowData = (statesData, connectionsData) => {
@@ -466,7 +568,7 @@ const Workflow = () => {
             const actions = outgoingConnections.map(conn => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 return {
-                    roles: [state.roles.code],
+                    roles: state.roles?.map(role => role.code),
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase() : 'UNKNOWN'
                 };
@@ -528,8 +630,11 @@ const Workflow = () => {
         return () => window.removeEventListener("mousemove", handleMouseMove);
     }, [connectionStart]);
 
+    if (isLoading || moduleListLoading) {
+        return <Loader />;
+    }
     return (
-        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4' }} className="Workflow-card">
+        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4', height: "700px" }} className="Workflow-card">
             <Card className="Workflow-card">
                 <SidePanel
                     type="static"

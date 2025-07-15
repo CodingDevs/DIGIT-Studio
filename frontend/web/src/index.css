@@ -267,3 +267,31 @@
     height: 100%;
     pointer-events: auto;
   }
+
+  .workflow-field-pair{
+    .digit-header-content.label .label-container .label-styles{
+      overflow: visible;
+    }
+  }
+
+.quickstart-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #0B4B66;
+  text-align: center;
+  align-items: center;
+}
+
+.step-number {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.step-description {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
+}
