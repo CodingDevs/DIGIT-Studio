@@ -36,7 +36,7 @@ const Checkboxes = ({
   return (
     <div >
       {options.map((item, index) => (
-        <>
+        <React.Fragment>
           <CheckBoxOption
             key={item.key}
             index={item.key}
@@ -89,7 +89,7 @@ const Checkboxes = ({
           {
             <hr style={{ width: "100%", borderTop: "1px solid #ccc" }} />
           }
-        </>
+        </React.Fragment>
       ))}
       {!dis && <div style={{marginTop: "0.8rem"}}>
         <Button
