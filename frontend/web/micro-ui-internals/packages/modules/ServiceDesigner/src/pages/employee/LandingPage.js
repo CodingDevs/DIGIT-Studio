@@ -57,8 +57,16 @@ export const extractDraftsAndPublished = (mdmsData = [], serviceData = []) => {
   const drafts = mdmsData.filter(
     (item) => !serviceIdentifiers.includes(item?.uniqueIdentifier)
   );
+    const uniqueModules = [];
+    const modulesSet = new Set();
 
-  const published = serviceData;
+    serviceData.forEach((item) => {
+      if (!modulesSet.has(item.module)) {
+        modulesSet.add(item.module);
+        uniqueModules.push(item);
+      }
+    });
+  const published = uniqueModules;
   return { drafts, published };
 };
 
