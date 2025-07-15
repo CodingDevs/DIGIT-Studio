@@ -62,7 +62,7 @@ const WorkflowNode = ({
             title={deleteButtonTooltip}
             className="node-buttons"
           >
-            <CustomSVG.CloseSvg />
+            <CustomSVG.DustbinIcon />
           </button>
         )}
       </div>
