@@ -136,3 +136,8 @@
     color: #555;
     margin-bottom: 12px;
   }
+
+  .create-card {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+  }

@@ -8,16 +8,11 @@ import useCreateChecklist from "../../../hooks/useCreateChecklist";
 import MobileChecklist from "../../../components/MobileChecklist";
 import LocalisationEditorPopup from "../../../components/LocalisationEditorPopup";
 import useUpsertLocalisation from "../../../hooks/useUpsertLocalisation";
-//import data_hook from "../../hooks/data_hook";
-//import MobileChecklist from "../../components/MobileChecklist";
-//import { CONSOLE_MDMS_MODULENAME } from "../../Module";
-//import TagComponent from "../../components/TagComponent";
-//import LocalisationEditorPopup from "../../components/LocalisationEditorPopup";
-
+import useCreateMdmsChecklist from "../../../hooks/useCreateMdmsChecklist";
 
 let temp_data = []
 
-const CreateChecklist = () => {
+const CreateChecklist = ({isUpdate}) => {
   const { t } = useTranslation();
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const searchParams = new URLSearchParams(location.search);
@@ -25,6 +20,7 @@ const CreateChecklist = () => {
   //const checklistType = searchParams.get("checklistType") || "STUDIO";
   const checklistModule = searchParams.get("module") || "Studio";
   const checklistService = searchParams.get("service") || "Service";
+  const checklistSearchName = searchParams.get("checklistName") || "Service";
   //let clt = searchParams.get("checklistType") || "STUDIO";
   let clt = searchParams.get("module") || "STUDIO";
   //const checklistTypeLocal = (!clt?.startsWith("STUDIO_CHECKLIST_TYPE_")) ? "STUDIO_CHECKLIST_TYPE_" + clt : clt;
@@ -49,8 +45,10 @@ const CreateChecklist = () => {
   const [previewData, setPreviewData] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading_new, setLoading_New] = useState(false);
+  const [initialChecklistData, setInitialChecklistData] = useState({});
   let locale = Digit?.SessionStorage.get("initData")?.selectedLanguage || "en_IN";
   const { mutateAsync } = useCreateChecklist(tenantId);
+  const { mutateAsync: mdmsMutateAsync } = useCreateMdmsChecklist(tenantId,isUpdate);
   const history = useHistory();
   const [serviceCode, setServiceCode] = useState(null);
   const [def_data, setDef_Data] = useState(null);
@@ -61,6 +59,8 @@ const CreateChecklist = () => {
   const { data: storeData, isLoading } = Digit.Hooks.useStore.getInitData();
   const { languages, stateInfo } = storeData || {};
   const currentLocales = languages?.map(locale => locale.value);
+  const [checklistName, setChecklistName] = useState();
+
 
   const presentLocale = Digit?.SessionStorage.get("locale") || locale;
   module = `studio-${checklistService}-checklist`;
@@ -76,43 +76,71 @@ const CreateChecklist = () => {
   const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
 
 
-  useEffect(() => {
-    //setting this to default template for studio - todo move to mdms
-    let formatted_data =  [
-      {
-          "id": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c",
-          "key": 1,
-          "type": {
-              "code": "SingleValueList"
-          },
-          "level": 1,
-          "title": "Question 1",
-          "value": null,
-          "options": [
-              {
-                  "id": "0cff9846-03a2-4453-bf0e-200cdda5f390",
-                  "key": 1,
-                  "label": "Option 1",
-                  "optionComment": true,
-                  "optionDependency": false,
-                  "parentQuestionId": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c"
-              },
-              {
-                  "id": "2d4a7b1e-7c0d-48b1-9d53-8601c6264b90",
-                  "key": 2,
-                  "label": "Option 2",
-                  "optionDependency": false,
-                  "parentQuestionId": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c"
-              }
-          ],
-          "isActive": true,
-          "parentId": null,
-          "isRequired": false
+useEffect(() => {
+  //default data
+  const formatted_data = [
+    {
+      id: "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c",
+      key: 1,
+      type: { code: "SingleValueList" },
+      level: 1,
+      title: "enter your first question here!!",
+      value: null,
+      options: [
+        {
+          id: "0cff9846-03a2-4453-bf0e-200cdda5f390",
+          key: 1,
+          label: "Enter your first option here",
+          optionComment: false,
+          optionDependency: false,
+          parentQuestionId: "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c",
+        }
+      ],
+      isActive: true,
+      parentId: null,
+      isRequired: false,
+    },
+  ];
+
+  const callSearch = async () => {
+    const res = await Digit.CustomService.getResponse({
+      url: `/${mdms_context_path}/v2/_search`,
+      params: { tenantId: tenantId },
+      body: {
+        MdmsCriteria: {
+          tenantId: tenantId,
+          schemaCode: `Studio.Checklists`,
+          filters: { name: checklistSearchName },
+          isActive: true,
+        },
+      },
+    });
+    return res;
+  };
+
+  const fetchData = async () => {
+    try {
+      const res = await callSearch();
+      if (res?.mdms?.[0]?.data?.data) {
+        setLoading_New(false);
+        let temp_data = res.mdms[0].data.data;
+        setInitialChecklistData(res.mdms[0]);
+        setChecklistName(res?.mdms[0]?.data?.name || "")
+        setHelpText(res?.mdms[0]?.data?.description || "");
+        setDef_Data(temp_data);
       }
-  ]
-setDef_Data(formatted_data);
-  
-  }, [])
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  if (isUpdate) {
+    fetchData();
+  } else {
+    setDef_Data(formatted_data);
+  }
+}, [isUpdate, tenantId, checklistSearchName]);
+
 
   useEffect(() => {
 
@@ -122,8 +150,6 @@ setDef_Data(formatted_data);
     }
 
   }, [def_data])
-
-  const [checklistName, setChecklistName] = useState(`${checklistModule} ${checklistService}`);
 
   const closeToast = () => {
     setShowToast(null);
@@ -524,6 +550,48 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
     }
   };
 
+  const generateMdmsChecklistPayload = ({ tenantId, module, service, name, description, data }) => {
+    let payload = {};
+    if(isUpdate && initialChecklistData)
+    {
+      payload = {
+        Mdms:{
+          ...initialChecklistData,
+          data:{
+            ...initialChecklistData?.data,
+            name,
+            description,
+            data
+          }
+        }
+      }
+    }
+    else{
+      payload = {
+        Mdms: {
+          tenantId,
+          schemaCode: "Studio.Checklists",
+          data: {
+            module,
+            service,
+            name,
+            description,
+            data,
+          },
+          isActive: true,
+        },
+        RequestInfo: {
+          apiId: "asset-services",
+          authToken: Digit.UserService.getUser()?.accessToken || "",
+          userInfo: Digit.UserService.getUser()?.info || {},
+        },
+      };
+    }
+   
+    return payload;
+  };
+  
+
 
   const onSubmit = async (formData, flag = 0, preview = null, translations) => {
     let payload;
@@ -532,6 +600,11 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
     } else {
       payload = payloadData(formData?.createQuestion?.questionData);
     }
+
+    const extractedValues = payload?.attributes?.map(
+      (item) => item?.additionalFields?.fields?.[0]?.value
+  );
+
     let allLocalisations = [...uniqueLocal, ...translations].filter(
       (value, index, self) =>
         index === self.findIndex((t) => t.code === value.code && t.locale === value.locale)
@@ -555,8 +628,9 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         }
       }
 
+      let mdmsPayload = generateMdmsChecklistPayload({tenantId:tenantId,name : checklistName,module:checklistModule,service:checklistService,description:helpText,data:extractedValues})
       // Proceed to create checklist after all locales succeed
-      const data = await mutateAsync(payload);
+      const data = await mdmsMutateAsync(mdmsPayload);
 
       if (data?.success) { // Updated success condition check
         // history.push(`/${window.contextPath}/employee/campaign/response?isSuccess=${true}`, {
@@ -567,7 +641,11 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         //   secondaryActionLabel: "VIEW_DETAILS",
         //   secondaryActionLink: `/${window?.contextPath}/employee/campaign/view-details?campaignNumber=${campaignNumber}&tenantId=${tenantId}`,
         // });
-        setShowToast({ label: "CHECKLIST_CREATED_SUCCESSFULLY", isError: "false" });
+        setShowLocalisationPopup(false)
+        setShowToast({ label: isUpdate ? "CHECKLIST_UPDATED_SUCCESSFULLY" : "CHECKLIST_CREATED_SUCCESSFULLY", isError: "false" });
+        setTimeout(() => {
+          history.push(`/${window.contextPath}/employee/servicedesigner/checklist`);
+      }, 3000);
       } else {
         setShowToast({ label: "CHECKLIST_CREATED_FAILED", isError: "true" });
       }
@@ -606,7 +684,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
           <div style={{ display: "flex", justifyContent: "space-between", height: "5.8rem", alignItems: "center" }}>
             <div>
               <h2 style={{ fontSize: "2.5rem", fontWeight: "700", fontFamily: "Roboto Condensed" }}>
-                {t("CREATE_NEW_CHECKLIST")}
+                {isUpdate ? t("UPDATE_NEW_CHECKLIST") :  t("CREATE_NEW_CHECKLIST")}
               </h2>
             </div>
             <div style={{ display: "flex", gap: "1rem" }}>
@@ -657,7 +735,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
                   type={"button"}
                   size={"large"}
                   variation={"primary"}
-                  label={t("CREATE_CHECKLIST")}
+                  label={isUpdate ? t("UPDATE_CHECKLIST") : t("CREATE_CHECKLIST")}
                   onClick={() => {
                     const processed = organizeQuestions(tempFormData);
                     const { local: generatedLocal } = generateCodes(processed);
@@ -693,14 +771,15 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
             <div style={{ display: "flex" }}>
               <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem" }}>{t("NAME_OF_CHECKLIST")}</div>
               <TextInput
-                disabled={true}
+                disabled={false}
                 className="tetxinput-example"
                 type={"text"}
                 name={t("NAME_OF_CHECKLIST")}
+                value={checklistName}
                 // value={`${checklistTypeLocal} ${roleLocal}`}
-                value={`${clTranslated} ${rlTranslated}`}
-                // onChange={(event) => addChecklistName(event.target.value)}
-                placeholder={"Checklist Name"}
+                //value={`${clTranslated} ${rlTranslated}`}
+                onChange={(event) => setChecklistName(event.target.value)}
+                placeholder={t("CHECKLIST_NAME_PALCEHOLDER")}
               />
             </div>
             <div style={{ display: "flex" }}>
@@ -720,7 +799,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
           <div style={{ height: "1rem" }}></div>
           <FormComposerV2
             showMultipleCardsWithoutNavs={true}
-            label={t("CREATE_CHECKLIST")}
+            label={isUpdate? t("UPDATE_CHECKLIST") : t("CREATE_CHECKLIST")}
             config={config}
             onSubmit={popShow}
             fieldStyle={{ marginRight: 0 }}
@@ -735,7 +814,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
 
           {showToast && (
             <Toast
-              type={showToast?.isError ? "error" : "success"}
+              varient={showToast?.isError ? "error" : "success"}
               // error={showToast?.isError}
               label={t(showToast?.label)}
               isDleteBtn={"true"}

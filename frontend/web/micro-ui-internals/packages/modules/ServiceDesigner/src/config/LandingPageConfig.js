@@ -1,15 +1,15 @@
 const LandingPageConfig = [
     {
       type: "Header",
-      text: "Create New Service Group",
+      text: "STUDIO_CREATE_NEW_SERVICE_GROUP_HEADER",
     },
     {
       type: "SubHeader",
-      text: "Build license and permit service groups for your citizens",
+      text: "STUDIO_CREATE_NEW_SERVICE_GROUP_SUB_HEADER",
     },
     {
       type: "SectionHeader",
-      text: "My Service groups",
+      text: "STUDIO_CREATE_NEW_SERVICE_SECTION_HEADER_1",
     },
     {
       type: "ToggleGroup",
@@ -27,7 +27,7 @@ const LandingPageConfig = [
     },
     {
         type: "SectionHeader",
-        text: "My Template groups",
+        text: "STUDIO_CREATE_NEW_SERVICE_SECTION_HEADER_2",
       },
     {
         type: "CardGroup",

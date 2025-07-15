@@ -268,30 +268,35 @@
     pointer-events: auto;
   }
 
+  .create-card {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+  }
+
   .workflow-field-pair{
     .digit-header-content.label .label-container .label-styles{
       overflow: visible;
     }
   }
 
-.quickstart-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 16px 0;
-  color: #0B4B66;
-  text-align: center;
-  align-items: center;
-}
+  .quickstart-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    color: #0B4B66;
+    text-align: center;
+    align-items: center;
+  }
 
-.step-number {
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 4px;
-  font-size: 0.9rem;
-}
+  .step-number {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+  }
 
-.step-description {
-  color: #666;
-  font-size: 14px;
-  line-height: 1.4;
-}
+  .step-description {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.4;
+  }

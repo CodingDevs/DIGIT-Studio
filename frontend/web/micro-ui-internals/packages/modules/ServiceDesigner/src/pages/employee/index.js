@@ -39,6 +39,7 @@ const App = ({ path, stateCode, userType, tenants }) => {
         <PrivateRoute path={`${path}/Workflow`} component={() => <Workflow />} />
         <PrivateRoute path={`${path}/Checklist`} component={() => <ChecklistHomePage />} />
         <PrivateRoute path={`${path}/create-checklist`} component={() => <CreateChecklist />} />
+        <PrivateRoute path={`${path}/update-checklist`} component={() => <CreateChecklist isUpdate={true} />} />
       </AppContainer>
     </Switch>
   );
