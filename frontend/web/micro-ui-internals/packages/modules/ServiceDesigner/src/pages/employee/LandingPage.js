@@ -161,7 +161,7 @@ const LandingPage = () => {
                     setShowAllCards(false); // reset when toggle changes
                   }}
                   options={nextItem?.options}
-                  optionsKey="name"
+                  optionsKey="i18nKey"
                   selectedOption={selectedToggle}
                   type="toggle"
                 />
@@ -223,7 +223,7 @@ const LandingPage = () => {
                     ))
                 ) : (
                     <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-                        {t("STUDIO_NO_CARDS_AVAILABLE")} {selectedToggle}
+                        {t("STUDIO_NO_CARDS_AVAILABLE")} {t(`STUDIO_${selectedToggle.toUpperCase()}`)}
                     </div>
                 )}
                 </div>
