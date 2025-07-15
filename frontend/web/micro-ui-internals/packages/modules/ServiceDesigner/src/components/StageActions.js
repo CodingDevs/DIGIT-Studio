@@ -8,7 +8,7 @@ const StageActions = ({ label, type, options }) => {
     const { t } = useTranslation();
 
     return (
-        <Card style={{ width: "360px", height: (type == "dropdown") ? "120px" : "85px" }}>
+        <Card style={{ width: "365px" }}>
             {type === "switch" ? (
                 <Switch
                     isLabelFirst={true}
@@ -17,7 +17,6 @@ const StageActions = ({ label, type, options }) => {
                     isCheckedInitially={false}
                     onToggle={(value) => console.log("Switch toggled:", value)}
                     className="stage-action-switch"
-                    switchStyle={{ width: "70px", height: "40px" }}
                     style={{ justifyContent: "space-between" }}
                 />
             ) : type === "dropdown" ? (

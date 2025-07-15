@@ -179,7 +179,7 @@ const Workflow = () => {
         };
 
         setCanvasElements(prev => [...prev, newElement]);
-        setCoords([{ x: coords[0].x + 265, y: coords[0].y }]);
+        x === undefined && setCoords([{ x: coords[0].x + 265, y: coords[0].y }]);
         return newElement.id;
     };
 
@@ -634,7 +634,7 @@ const Workflow = () => {
         return <Loader />;
     }
     return (
-        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4', height: "700px" }} className="Workflow-card">
+        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4' }} className="Workflow-card">
             <Card className="Workflow-card">
                 <SidePanel
                     type="static"
