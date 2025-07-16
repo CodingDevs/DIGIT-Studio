@@ -4,11 +4,11 @@ import React from "react";
 import { LabelFieldPair } from "@egovernments/digit-ui-react-components";
 import { HeaderComponent, Button } from "@egovernments/digit-ui-components";
 
-const StageActions = ({ label, type, options }) => {
+const StageActions = ({ label, type, desc, options }) => {
     const { t } = useTranslation();
 
     return (
-        <Card style={{ width: "365px" }}>
+        <Card style={{ width: "365px", gap: "0px" }}>
             {type === "switch" ? (
                 <Switch
                     isLabelFirst={true}
@@ -48,11 +48,13 @@ const StageActions = ({ label, type, options }) => {
                         value={""}
                         name={label}
                         isDisabled={false}
-                        label={t("CON")}
-                        variation="primary"
+                        label={t("CONFIGURE")}
+                        variation="secondary"
+                        textStyles={{ width: "100%", overflow: "visible" }}
                     />
                 </LabelFieldPair>
             ) : null}
+            <div class="step-description">{desc}</div>
         </Card>
     );
 };

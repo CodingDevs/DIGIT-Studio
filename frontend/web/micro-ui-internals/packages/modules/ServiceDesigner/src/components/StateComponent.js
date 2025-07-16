@@ -7,7 +7,7 @@ const StateComp = ({ onStateClick, type, State, desc, icon, disabled=false }) =>
 
   return (
     <div className={`state-card ${disabled ? "state-card-disabled" : ""}`}
-      onClick={() => !disabled && onStateClick(type)}
+      onClick={() => !disabled && onStateClick(type)} style={{ width: "270px" }}
     >
       <div className="state-card-content">
         <div className="state-icon">

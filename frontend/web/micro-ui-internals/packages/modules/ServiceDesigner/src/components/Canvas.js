@@ -1,15 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Fragment } from "react";
+import { Button } from "@egovernments/digit-ui-components";
 import QuickStart from "./QuickStart";
+import { useTranslation } from "react-i18next";
 
 const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick }) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedElement, setDraggedElement] = useState(null);
   const [elementDragStart, setElementDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   const viewportRef = useRef(null);
+
+  const MIN_ZOOM = 0.1;
+  const MAX_ZOOM = 3;
+  const ZOOM_STEP = 0.1;
 
   const handleClick = useCallback((e) => {
     if (!isDragging && !draggedElement) {
@@ -78,6 +85,35 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
     setDraggedElement(null);
   }, []);
 
+  // Handle mouse wheel zoom
+  const handleWheel = useCallback(
+    (e) => {
+      e.preventDefault();
+
+      const rect = viewportRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      const newScale = Math.min(
+        Math.max(transform.scale + delta, MIN_ZOOM),
+        MAX_ZOOM
+      );
+
+      if (newScale !== transform.scale) {
+        // Calculate zoom point to maintain cursor position
+        const zoomPointX = (mouseX - transform.x) / transform.scale;
+        const zoomPointY = (mouseY - transform.y) / transform.scale;
+
+        const newX = mouseX - zoomPointX * newScale;
+        const newY = mouseY - zoomPointY * newScale;
+
+        setTransform({ x: newX, y: newY, scale: newScale });
+      }
+    },
+    [transform]
+  );
+
   // Add event listeners
   useEffect(() => {
     if (isDragging || draggedElement) {
@@ -89,6 +125,55 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
       };
     }
   }, [isDragging, draggedElement, handleMouseMove, handleMouseUp]);
+
+  // Add event listeners
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (viewport) {
+      viewport.addEventListener("wheel", handleWheel, { passive: false });
+      return () => viewport.removeEventListener("wheel", handleWheel);
+    }
+  }, [handleWheel]);
+
+  const zoomToFit = useCallback((e) => {
+    if (elements.length === 0) {
+      setTransform({ x: 0, y: 0, scale: 1 });
+    }
+    else {
+      const viewport = viewportRef.current.getBoundingClientRect();
+      const padding = 50;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      elements.forEach(element => {
+        const { x, y } = element.position;
+        const elementWidth = 235;
+        const elementHeight = 180;
+
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + elementWidth);
+        maxY = Math.max(maxY, y + elementHeight);
+      });
+      // Calculate content dimensions
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
+      // Calculate available viewport space
+      const availableWidth = viewport.width - padding * 2;
+      const availableHeight = viewport.height - padding * 2;
+      // Calculate scale to fit content in viewport
+      const scaleX = availableWidth / contentWidth;
+      const scaleY = availableHeight / contentHeight;
+      const scale = Math.min(scaleX, scaleY, 1);
+      // Calculate center position
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      // Calculate transform to center the content
+      const x = viewport.width / 2 - centerX * scale;
+      const y = viewport.height / 2 - centerY * scale;
+
+      setTransform({ x, y, scale });
+    }
+  }, [elements]);
 
   // Generate grid pattern
   const generateGrid = () => {
@@ -136,6 +221,22 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
 
   return (
     <div className="canvas-container">
+      <div className="canvas-buttons">
+        <Button
+          variation="secondary"
+          label={t("ZOOM_TO_FIT")}
+          type="button"
+          style={{ width: "25%", margin: "0 8px" }}
+          onClick={zoomToFit}
+        />
+        <Button
+          variation="secondary"
+          label={t("LOAD_SAMPLE")}
+          type="button"
+          style={{ width: "25%", margin: "0 8px" }}
+          onClick={zoomToFit}
+        />
+      </div>
       <div className="canvas-child">
         <div
           ref={viewportRef}
@@ -161,7 +262,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
               transition: isDragging || draggedElement ? "none" : "transform 0.1s ease-out",
             }}
           >
-            <svg className="canvas-non-overlay" style={{ zIndex: 1 }}>
+            <svg className="canvas-non-overlay">
               <defs>
                 <marker
                   id="arrowhead"
@@ -262,15 +363,15 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
 
             <div
               className="interactive-canvas-container"
-              style={{ minWidth: "200vw", minHeight: "200vh" }}
             >
               {elements.length === 0 ? (
                 <div
                   style={{
                     position: "absolute",
-                    left: 250,
-                    top: 300,
+                    left: 300,
+                    top: 250,
                     zIndex: 5,
+                    pointerEvents: "all"
                   }}
                 >
                   <QuickStart />
@@ -287,6 +388,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                       cursor: draggedElement?.id === element.id ? "grabbing" : "grab",
                       opacity: draggedElement?.id === element.id ? 0.7 : 1,
                       transition: draggedElement?.id === element.id ? "none" : "opacity 0.2s ease",
+                      pointerEvents: "all"
                     }}
                     onMouseDown={(e) => handleElementMouseDown(element, e)}
                     onClick={(e) => handleElementClick(element, e)}
