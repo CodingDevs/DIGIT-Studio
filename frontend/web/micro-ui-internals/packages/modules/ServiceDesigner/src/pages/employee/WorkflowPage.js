@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { FieldV1 } from "@egovernments/digit-ui-components";
 import WorkflowNode from "../../components/WorkflowNode";
 import { Button } from "@egovernments/digit-ui-components";
-import { Toast } from "@egovernments/digit-ui-react-components";
+import { Toast } from "@egovernments/digit-ui-components";
 import StateComp from "../../components/StateComponent";
 import { Loader } from "@egovernments/digit-ui-react-components";
 import QuickStart from "../../components/QuickStart";
@@ -20,6 +20,7 @@ const Workflow = () => {
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
     const [showToast, setShowToast] = useState(null);
     const [hasStart, setHasStart] = useState(false);
+    const [hasEnd, setHasEnd] = useState(false);
     const [connectionStart, setConnectionStart] = useState(null);
     const [connections, setConnections] = useState([]);
     const [connecting, setConnecting] = useState(null);
@@ -57,6 +58,7 @@ const Workflow = () => {
         desc: "",
         roles: [],
         sla: 0,
+        form: [],
     });
 
     const [actionData, setActionData] = useState({
@@ -65,13 +67,29 @@ const Workflow = () => {
         aroles: [],
     });
 
+    setTimeout(() => {
+        setShowToast(null);
+    }, 20000);
+
     const onLeftClick = (elementId, e) => {
         if (connectionStart && connectionStart !== elementId) {
-            setConnections((prev) => [
-                ...prev,
-                { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
-            ]);
+            setConnections((prev) => {
+                const exists = prev.some(
+                    (conn) => conn.from === connectionStart && conn.to === elementId
+                );
+                if (exists) {
+                    setShowToast({ key: true, type: "error", label: t("CONNECTION_ALREADY_EXISTS")});
+                    return prev;
+                }
+                return [
+                    ...prev,
+                    { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
+                ];
+            });
             setConnectionStart(null);
+        }
+        else{
+            setShowToast({ key: true, type:"error", label: t("START_CONNECTION_FROM_OUTPUT_HANDLE") });
         }
         setConnecting(null);
     }
@@ -84,7 +102,9 @@ const Workflow = () => {
         setCanvasElements(prev => {
             return prev.filter(element => element.id !== elementId);
         });
-
+        setConnections((prev) =>
+            prev.filter((conn) => conn.to !== elementId)
+        );
         if (selectedElement && selectedElement.id === elementId) {
             setSelectedElement(null);
             setStateData({ name: "", desc: "", roles: [], sla: 0 });
@@ -110,21 +130,40 @@ const Workflow = () => {
 
     // Function to create WorkflowNode component
     const createWorkflowNode = (element) => {
-        return (
-            <WorkflowNode
-                type={element.type}
-                elementId={element.id}
-                State={element.name}
-                desc={element.desc}
-                roles={[]}
-                sla={24}
-                nodetype={element.nodetype}
-                onLeftAction={onLeftClick}
-                onRightAction={onRightClick}
-                onDeleteAction={DeleteClick}
-                onEditAction={EditClick}
-            />
-        );
+        if (element.nodetype === "start") {
+            return (
+                <WorkflowNode
+                    type={element.type}
+                    elementId={element.id}
+                    State={element.name}
+                    desc={element.desc}
+                    roles={[]}
+                    sla={24}
+                    form={[]}
+                    nodetype={element.nodetype}
+                    onLeftAction={onLeftClick}
+                    onRightAction={onRightClick}
+                    onDeleteAction={DeleteClick}
+                    onEditAction={EditClick}
+                />
+            );
+        } else {
+            return (
+                <WorkflowNode
+                    type={element.type}
+                    elementId={element.id}
+                    State={element.name}
+                    desc={element.desc}
+                    roles={[]}
+                    sla={24}
+                    nodetype={element.nodetype}
+                    onLeftAction={onLeftClick}
+                    onRightAction={onRightClick}
+                    onDeleteAction={DeleteClick}
+                    onEditAction={EditClick}
+                />
+            );
+        }
     };
 
     const CanvasClick = (x, y) => {
@@ -198,7 +237,13 @@ const Workflow = () => {
                 ...prev,
                 [name]: value
             }));
-        } else {
+        } else if (e?.code) {
+            setStateData(prev => ({
+                ...prev,
+                form: e
+            }));
+        }
+        else {
             setStateData(prev => ({
                 ...prev,
                 sla: e
@@ -223,7 +268,7 @@ const Workflow = () => {
 
     const handleElementClick = (element) => {
         setSelectedElement(element);
-        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla });
+        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [] });
     }
 
     const handleElementDrag = (element, newPosition) => {
@@ -234,7 +279,7 @@ const Workflow = () => {
 
     const updateProperties = () => {
         if (stateData.name === "" || stateData.sla < 1) {
-            setShowToast({ key: true, label: t("FILL_THE_REQUIRED_DETAILS") });
+            setShowToast({ key: true, type:"error", label: t("FILL_THE_REQUIRED_DETAILS") });
         }
         else {
             setCanvasElements(prev =>
@@ -246,6 +291,7 @@ const Workflow = () => {
                             desc: stateData.desc,
                             roles: stateData.roles,
                             sla: stateData.sla,
+                            form: stateData.form,
                         };
                         setSelectedElement(updatedElement);
                         return updatedElement;
@@ -253,16 +299,13 @@ const Workflow = () => {
                     return element;
                 })
             );
-
-            setStateData({ name: "", desc: "", roles: [], sla: 0 });
-            setSelectedElement(null);
         }
 
     }
 
     const updateActionProperties = () => {
         if (actionData.label === "") {
-            setShowToast({ key: true, label: t("FILL_THE_REQUIRED_DETAILS") });
+            setShowToast({ key: true, type:"error", label: t("FILL_THE_REQUIRED_DETAILS") });
         }
         else {
             setConnections(prev =>
@@ -280,8 +323,6 @@ const Workflow = () => {
                     return element;
                 })
             );
-            setActionData({ label: "", desc: "", aroles: [] });
-            setSelectedElement(null);
         }
     }
 
@@ -321,6 +362,7 @@ const Workflow = () => {
                 type={"end"}
                 State={t("END_STATE")}
                 desc={t("END_STATE_DESC")}
+                disabled={hasEnd}
             />
         ],
         [
@@ -367,7 +409,7 @@ const Workflow = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 required
-                infoMessage="this is state name field"
+                infoMessage={t("STATE_INFO")}
                 type="text"
                 value={stateData.name}
             />,
@@ -384,7 +426,7 @@ const Workflow = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 type="text"
-                infoMessage="this is desc field"
+                infoMessage={t("DESC_INFO")}
                 value={stateData.desc}
             />,
             <FieldV1
@@ -403,7 +445,7 @@ const Workflow = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 type="multiselectdropdown"
-                infoMessage="this is roles field"
+                infoMessage={t("ROLES_INFO")}
                 value={stateData.roles}
             />,
             <FieldV1
@@ -420,32 +462,35 @@ const Workflow = () => {
                 }}
                 required
                 type="numeric"
-                infoMessage="this is sla field"
+                infoMessage={t("SLA_INFO")}
                 value={stateData.sla}
             />,
             selectedElement?.nodetype == "start" ? (<FieldV1
                 label={t("SERVICE_REQUEST_FORM")}
                 onChange={(e) => onDataChange(e)}
                 populators={{
-                    name: "roles",
+                    name: "form",
                     alignFieldPairVerically: true,
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
-                    options: [],
+                    options: [{
+                        code: "form1",
+                        name: "Form 1"
+                    }],
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
                 type="dropdown"
-                infoMessage="this is form field"
+                infoMessage={t("FORM_INFO")}
                 value={stateData.form}
             />) : null,
-            <StageActions label={t("ADD_COMMENTS")} type="switch" />,
-            <StageActions label={t("ASSIGN_TO_USER")} type="switch" />,
-            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" />,
-            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" options={checklistData} />,
-            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" />,
-            <StageActions label={t("SEND_NOTIFICATION")} type="button" />,
+            <StageActions label={t("ADD_COMMENTS")} type="switch" desc={t("COMMENTS_DESC")} />,
+            <StageActions label={t("ASSIGN_TO_USER")} type="switch" desc={t("ASSIGN_DESC")} />,
+            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" desc={t("DOC_DESC")}  />,
+            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" options={checklistData} desc={t("CHECLIST_DESC")} />,
+            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" desc={t("GEN_DOC_DESC")} />,
+            <StageActions label={t("SEND_NOTIFICATION")} type="button" desc={t("NOFITICATION_DESC")} />,
             <Button
                 variation="primary"
                 label={t("UPDATE_PROPERTIES")}
@@ -485,7 +530,7 @@ const Workflow = () => {
                 }}
                 required
                 type="text"
-                infoMessage="this is action name field"
+                infoMessage={t("ACTION_STATE_INFO")}
                 value={actionData.label}
             />,
             <FieldV1
@@ -502,7 +547,7 @@ const Workflow = () => {
                 }}
                 type="text"
                 value={actionData.desc}
-                infoMessage="this is desc field"
+                infoMessage={t("ACTION_DESC_INFO")}
             />,
             <FieldV1
                 label={t("ROLES")}
@@ -520,7 +565,7 @@ const Workflow = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 type="multiselectdropdown"
-                infoMessage="this is roles field"
+                infoMessage={t("ACTION_ROLES_INFO")}
                 value={actionData.aroles}
             />,
             <Button
@@ -607,6 +652,10 @@ const Workflow = () => {
             (el) => el.nodetype === "start"
         );
         setHasStart(foundStart);
+        const foundEnd = canvasElements.some(
+            (el) => el.nodetype === "end"
+        );
+        setHasEnd(foundEnd);
     }, [canvasElements]);
 
     useEffect(() => {
@@ -674,11 +723,12 @@ const Workflow = () => {
             </Card>
             {showToast && (
                 <Toast
-                    error={showToast.key}
-                    label={t(showToast.label)}
+                    type={showToast?.type}
+                    label={t(showToast?.label)}
                     onClose={() => {
                         setShowToast(null);
                     }}
+                    isDleteBtn={showToast?.isDleteBtn}
                 />
             )}
         </Card>
