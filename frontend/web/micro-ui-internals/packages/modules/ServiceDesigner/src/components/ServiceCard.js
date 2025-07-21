@@ -16,7 +16,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className 
   return (
     <div
       className={`service-card ${className || ""}`}
-      style={{ cursor: link ? "pointer" : "default" }}
+      style={{ cursor: link ? "pointer" : "default", height:"15rem" }}
       onClick={handleClick}
     >
       <div className="service-card-header">

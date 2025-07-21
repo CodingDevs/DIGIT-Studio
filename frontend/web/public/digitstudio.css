@@ -105,7 +105,7 @@
 }
 
 .service-card {
-  width: 265px;
+  width: 15rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   overflow: hidden;
@@ -113,7 +113,7 @@
   background-color: #fff;
   font-family: Arial, sans-serif;
   margin: 10px;
-  height: 300px;
+  height: 15rem;
 }
 
 .service-icon {

@@ -3,7 +3,7 @@ import {
   Card,
   CardSectionHeader,
 } from "@egovernments/digit-ui-react-components";
-import { Loader, Toggle } from "@egovernments/digit-ui-components";
+import { Button, Loader, Toggle } from "@egovernments/digit-ui-components";
 import { useHistory } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -59,22 +59,19 @@ const ChecklistHomePage = () => {
             alignItems: "center",
           }}
         >
-          <button
-            onClick={() =>
-              (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist`)
-            }
-            style={{
-              border: "1px dashed gray",
-              padding: "8px 16px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              width: "100%",
-              height: "5rem",
-              backgroundColor: "white",
-            }}
-          >
-            + {t("STUDIO_CREATE_NEW_CHECKLIST_SUB_HEADER")}
-          </button>
+          <Button
+              // className="custom-class"
+              //icon="Delete"
+              //iconFill=""
+              label={t(`STUDIO_CREATE_NEW_CHECKLIST_SUB_HEADER`)}
+              onClick={() =>
+                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist`)
+              }
+              size="medium"
+              style={{width: "100%", height: "5rem"}}
+              title=""
+              variation="secondary"
+            />
         </div>
       </Card>
       <Card style={{paddingLeft:"2rem"}}>

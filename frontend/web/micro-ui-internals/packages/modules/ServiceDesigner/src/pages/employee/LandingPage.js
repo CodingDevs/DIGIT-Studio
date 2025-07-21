@@ -8,7 +8,7 @@ import {
   CardHeader,
 } from "@egovernments/digit-ui-react-components";
 import ServiceCard from "../../components/ServiceCard";
-import { Toggle, CustomSVG, Loader } from "@egovernments/digit-ui-components";
+import { Toggle, CustomSVG, Loader, Tab } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
 
 export const buildCardData = (drafts = [], published = [], t) => {
@@ -161,6 +161,17 @@ const LandingPage = () => {
                 <CardSectionHeader style={{ marginBottom: "unset" }}>
                   {t(item.text)}
                 </CardSectionHeader>
+                {/* <Tab
+                 configNavItems={nextItem?.options}
+                 showNav={ nextItem?.options?.length > 0}
+                 configItemKey={"i18nKey"}
+                 configDisplayKey={"i18nKey"}
+                 activeLink={selectedToggle}
+                 setActiveLink={(e) => {
+                  setSelectedToggle(e)
+                 }}
+                 style={{ width: "fit-content", marginRight: "1rem" }}
+                /> */}
                 <Toggle
                   name="toggleOptions"
                   numberOfToggleItems={nextItem?.options?.length}
@@ -168,6 +179,7 @@ const LandingPage = () => {
                     setSelectedToggle(e);
                     setShowAllCards(false); // reset when toggle changes
                   }}
+                  style={{maxWidth:"23.5rem"}}
                   options={nextItem?.options}
                   optionsKey="i18nKey"
                   selectedOption={selectedToggle}
@@ -200,14 +212,14 @@ const LandingPage = () => {
             const visibleCards = showAllCards ? cards : cards.slice(0, maxCardsToShow);
 
             return (
-              <Card key={index}>
+              <div key={index}>
                 <div
                   style={{
                     display: "flex",
                     flexWrap: "wrap",
                     gap: "16px",
                     justifyContent: "flex-start",
-                    maxWidth: "80%",
+                    maxWidth: "100%",
                     marginTop: "16px",
                   }}
                 >
@@ -251,7 +263,7 @@ const LandingPage = () => {
                   </span>
                 </div>
                 )}
-              </Card>
+              </div>
             );
           default:
             return null;
