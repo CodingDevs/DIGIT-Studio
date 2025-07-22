@@ -36,7 +36,7 @@ export const AddressFields = [
                 layoutConfig: {
                   // isDropdownLayoutHorizontal: true,
                   // isLabelFieldLayoutHorizontal: true,
-                  isLabelNeeded:false
+                  isLabelNotNeeded:true
                 },
                 //"preSelected":["NEWTEST00222_MO","NEWTEST00222_MO_11_MARYLAND","NEWTEST00222_MO_11_06_PLEEBO"],
                 

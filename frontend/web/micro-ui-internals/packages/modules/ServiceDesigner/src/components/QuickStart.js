@@ -6,7 +6,7 @@ const QuickStart = ({ }) => {
     const { t } = useTranslation();
 
     return (
-        <div className={`state-card`} style={{width: "270px"}}>
+        <div className={`state-card`}>
             <div className="state-card-content" style={{justifyContent: "center", flexDirection: "column", alignItems: "normal"}}>
                 <h3 className={`quickstart-title`}>{t("QUICK_START")}</h3>
                 

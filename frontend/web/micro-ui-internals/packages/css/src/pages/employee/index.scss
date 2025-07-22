@@ -171,15 +171,8 @@
   display: flex;
 }
 
-.properties-panel{
-  width: 400px;
-  background: #fafafa;
-}
-
 .card-container {
   position: relative;
-  height: 140px;
-  width: 230px;
   &:hover .top-actions {
     opacity: 1;
     pointer-events: auto;
@@ -204,14 +197,13 @@
 }
 
 .state-card {
-  width: 245px;
   border: 1px solid #ddd;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   background-color: #fff;
   font-family: Arial, sans-serif;
   margin: 10px;
-  padding: 12px;
+  padding: 24px;
   cursor: pointer;
   position: relative;
   box-sizing: border-box;
@@ -230,13 +222,9 @@
 }
 
 .state-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
   flex-shrink: 0;
 }
 
@@ -246,43 +234,46 @@
 }
 
 .state-title {
-  font-size: 1.3rem;
+  font-size: 18px;
   font-weight: 600;
+  display: flex;
+  gap: 8px;
+  flex-direction: row;
   margin: 0;
   color: #0B4B66;
 }
 
 .state-title-disabled{
-  font-size: 1.3rem;
+  font-size: 18px;
   font-weight: 600;
   margin: 0;
   color: #7ba9bd;
 }
 
 .state-description {
-  font-size: 1rem;
+  font-size: 14px;
   color: #0B4B66;
-  margin: 4px 0;
+  margin: 0px 0;
 }
 
 .state-description-disabled {
-  font-size: 1rem;
+  font-size: 14px;
   color: #7ba9bd;
-  margin: 4px 0;
+  margin: 0px 0;
 }
 
 .state-addtoclick {
+  font-size: 14px;
   color: #3b82f6;
   cursor: pointer;
-  text-decoration: underline;
-  margin-top: 4px;
+  text-decoration: none;
 }
 
 .state-addtoclick-disabled {
+  font-size: 14px;
   color: #7ba9bd;
   cursor: not-allowed;
-  text-decoration: underline;
-  margin-top: 4px;
+  text-decoration: none;
 }
 
 .action-button {
@@ -427,3 +418,64 @@
   line-height: 1.4;
 }
 
+.conditional-icons-container {
+  position: absolute;
+  top: 30px;
+  left: 20px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.conditional-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 4px;
+  cursor: help;
+}
+
+.conditional-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.roles-list {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 45px;
+  overflow: hidden;
+  gap: 3px;
+  border-radius: 6px;
+  padding: 5px;
+  width: 175px;
+  background-color: #d3d6d8;
+}
+
+.view-more-btn,
+.view-less-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 2px 0;
+  text-align: right;
+  transition: color 0.2s ease;
+}
+
+.view-more-btn:hover,
+.view-less-btn:hover {
+  color: #1d4ed8;
+}
+
+.view-more-btn:focus,
+.view-less-btn:focus {
+  outline: none;
+  color: #1d4ed8;
+}
