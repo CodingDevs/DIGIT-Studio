@@ -59,6 +59,10 @@ const Workflow = () => {
         roles: [],
         sla: 0,
         form: [],
+        comments: false,
+        assign: false,
+        askfordoc: false,
+        checklist: [],
     });
 
     const [actionData, setActionData] = useState({
@@ -137,9 +141,15 @@ const Workflow = () => {
                     elementId={element.id}
                     State={element.name}
                     desc={element.desc}
-                    roles={[]}
-                    sla={24}
-                    form={[]}
+                    roles={element.roles}
+                    sla={element.sla}
+                    form={element.form}
+                    comments={element.comments}
+                    assign={element.assign}
+                    askfordoc={element.askfordoc}
+                    checklist={element.checklist}
+                    generatedoc={element.generatedoc}
+                    sendnotif={element.sendnotif}
                     nodetype={element.nodetype}
                     onLeftAction={onLeftClick}
                     onRightAction={onRightClick}
@@ -154,8 +164,14 @@ const Workflow = () => {
                     elementId={element.id}
                     State={element.name}
                     desc={element.desc}
-                    roles={[]}
-                    sla={24}
+                    roles={element.roles}
+                    sla={element.sla}
+                    comments={element.comments}
+                    assign={element.assign}
+                    askfordoc={element.askfordoc}
+                    checklist={element.checklist}
+                    generatedoc={element.generatedoc}
+                    sendnotif={element.sendnotif}
                     nodetype={element.nodetype}
                     onLeftAction={onLeftClick}
                     onRightAction={onRightClick}
@@ -185,23 +201,26 @@ const Workflow = () => {
         const currentX = x || coords[0].x;
         const currentY = y || coords[0].y;
 
-        let type, nodetype, name, desc;
+        let type, nodetype, name, desc, form;
 
         if (state === "start") {
             type = "node";
             nodetype = "start";
             name = t("START");
             desc = t("INITIAL_STATE");
+            form = "";
         } else if (state === "end") {
             type = "node";
             nodetype = "end";
             name = t("END");
             desc = t("FINAL_STATE");
+            form = null;
         } else {
             type = "node";
             nodetype = "intermediate";
             name = t("PROCESSING");
             desc = t("INTERMEDIATE_STATE");
+            form = null;
         }
 
         const elementId = Date.now();
@@ -213,6 +232,13 @@ const Workflow = () => {
             desc: desc,
             roles: [],
             sla: 24,
+            form: form, 
+            comments: false,
+            assign: false,
+            askfordoc: false,
+            checklist: [],
+            generatedoc:[],
+            sendnotif:[],
             nodetype: nodetype,
             position: { x: currentX, y: currentY }
         };
@@ -231,7 +257,13 @@ const Workflow = () => {
                 ...prev,
                 roles: e
             }));
-        } else if (e?.target) {
+        } else if (Array.isArray(e)) {
+            setStateData(prev => ({
+                ...prev,
+                [e[0]]: e[1]
+            }));
+        }
+        else if (e?.target) {
             const { name, value } = e.target;
             setStateData(prev => ({
                 ...prev,
@@ -268,7 +300,7 @@ const Workflow = () => {
 
     const handleElementClick = (element) => {
         setSelectedElement(element);
-        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [] });
+        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [], comments: element.comments, assign: element.assign, askfordoc: element.askfordoc, checklist: element.checklist });
     }
 
     const handleElementDrag = (element, newPosition) => {
@@ -291,7 +323,11 @@ const Workflow = () => {
                             desc: stateData.desc,
                             roles: stateData.roles,
                             sla: stateData.sla,
-                            form: stateData.form,
+                            form: stateData?.form,
+                            comments: stateData?.comments,
+                            assign: stateData?.assign,
+                            askfordoc: stateData?.askfordoc,
+                            checklist: stateData?.checklist,
                         };
                         setSelectedElement(updatedElement);
                         return updatedElement;
@@ -333,12 +369,6 @@ const Workflow = () => {
 
     const Workflow_Sections = [
         [
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>{t("WORKFLOW_COMPONENT")}</div>
-                <div className="state-description">{t("WORKFLOW_DESCRIPTION")}</div>
-            </div>
-        ],
-        [
             <div>
                 <div className="typography heading-m" style={{ color: "#0B4B66" }}>
                     <div >{t("WORKFLOW_STATES")}</div>
@@ -374,6 +404,7 @@ const Workflow = () => {
                 variation="secondary"
                 label={t("GET_WORKFLOW")}
                 type="button"
+                className="secondary-button"
                 style={{ width: "100%" }}
                 onClick={(e) => getWrorkflowData(e)}
             />
@@ -485,12 +516,12 @@ const Workflow = () => {
                 infoMessage={t("FORM_INFO")}
                 value={stateData.form}
             />) : null,
-            <StageActions label={t("ADD_COMMENTS")} type="switch" desc={t("COMMENTS_DESC")} />,
-            <StageActions label={t("ASSIGN_TO_USER")} type="switch" desc={t("ASSIGN_DESC")} />,
-            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" desc={t("DOC_DESC")}  />,
-            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" options={checklistData} desc={t("CHECLIST_DESC")} />,
-            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" desc={t("GEN_DOC_DESC")} />,
-            <StageActions label={t("SEND_NOTIFICATION")} type="button" desc={t("NOFITICATION_DESC")} />,
+            <StageActions label={t("ADD_COMMENTS")} type="switch" name="comments" desc={t("COMMENTS_DESC")} onClick={(data) => onDataChange(data)} value={stateData.comments}/>,
+            <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="assign" desc={t("ASSIGN_DESC")} onClick={(e) => onDataChange(e)} value={stateData.assign}/>,
+            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="askfordoc" desc={t("DOC_DESC")} onClick={(e) => onDataChange(e)} value={stateData.askfordoc}/>,
+            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
+            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
+            <StageActions label={t("SEND_NOTIFICATION")} type="button" name="sendnotif" desc={t("NOFITICATION_DESC")}/>,
             <Button
                 variation="primary"
                 label={t("UPDATE_PROPERTIES")}
@@ -503,6 +534,7 @@ const Workflow = () => {
                 variation="secondary"
                 label={t("DELETE_STATE")}
                 type="button"
+                className="secondary-button"
                 style={{ width: "100%" }}
                 onClick={(e) => DeleteClick(selectedElement?.id, e)}
             />
@@ -580,6 +612,7 @@ const Workflow = () => {
                 variation="secondary"
                 label={t("DELETE_CONNECTION")}
                 type="button"
+                className="secondary-button"
                 style={{ width: "100%" }}
                 onClick={(e) => DeleteActionClick(selectedElement?.id, e)}
             />
@@ -647,6 +680,13 @@ const Workflow = () => {
         console.log(JSON.stringify(transformWorkflowData(canvasElements, connections), null, 2));
     };
 
+    const onClear =() =>{
+        setCanvasElements([]);
+        setConnections([]);
+        setConnectionStart(null);
+        setConnecting(null);
+    }
+
     useEffect(() => {
         const foundStart = canvasElements.some(
             (el) => el.nodetype === "start"
@@ -690,7 +730,6 @@ const Workflow = () => {
                     position="left"
                     isDraggable={true}
                     sections={Workflow_Sections}
-                    defaultOpenWidth={330}
                     addClose={true}
                     isOverlay={false}
                     hideScrollIcon={true}
@@ -706,21 +745,21 @@ const Workflow = () => {
                 connecting={connecting}
                 canvasPoints={CanvasClick}
                 onConnectionLabelClick={(conn, e) => onconnectionClick(conn, e)}
+                onClear={onClear}
             />
-            <Card className="properties-panel Workflow-card">
+            { selectedElement && <Card className="Workflow-card">
                 <SidePanel
                     type="static"
                     position="left"
                     isDraggable={true}
                     sections={selectedElement?.type === "node" ? Node_Properties_Section : selectedElement?.type === "action" ? Action_Properties_Section : Properties_Section}
-                    defaultOpenWidth={400}
                     addClose={true}
                     isOverlay={false}
                     hideScrollIcon={true}
                     hideArrow={false}
                     className="slider-container"
                 />
-            </Card>
+            </Card>}
             {showToast && (
                 <Toast
                     type={showToast?.type}

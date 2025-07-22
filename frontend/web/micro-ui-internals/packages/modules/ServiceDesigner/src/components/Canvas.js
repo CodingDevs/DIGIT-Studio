@@ -3,8 +3,9 @@ import { Fragment } from "react";
 import { Button } from "@egovernments/digit-ui-components";
 import QuickStart from "./QuickStart";
 import { useTranslation } from "react-i18next";
+import { CustomSVG } from "@egovernments/digit-ui-components";
 
-const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick }) => {
+const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick, onClear }) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
@@ -88,27 +89,29 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
   // Handle mouse wheel zoom
   const handleWheel = useCallback(
     (e) => {
-      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
 
-      const rect = viewportRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
+        const rect = viewportRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
 
-      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      const newScale = Math.min(
-        Math.max(transform.scale + delta, MIN_ZOOM),
-        MAX_ZOOM
-      );
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+        const newScale = Math.min(
+          Math.max(transform.scale + delta, MIN_ZOOM),
+          MAX_ZOOM
+        );
 
-      if (newScale !== transform.scale) {
-        // Calculate zoom point to maintain cursor position
-        const zoomPointX = (mouseX - transform.x) / transform.scale;
-        const zoomPointY = (mouseY - transform.y) / transform.scale;
+        if (newScale !== transform.scale) {
+          // Calculate zoom point to maintain cursor position
+          const zoomPointX = (mouseX - transform.x) / transform.scale;
+          const zoomPointY = (mouseY - transform.y) / transform.scale;
 
-        const newX = mouseX - zoomPointX * newScale;
-        const newY = mouseY - zoomPointY * newScale;
+          const newX = mouseX - zoomPointX * newScale;
+          const newY = mouseY - zoomPointY * newScale;
 
-        setTransform({ x: newX, y: newY, scale: newScale });
+          setTransform({ x: newX, y: newY, scale: newScale });
+        }
       }
     },
     [transform]
@@ -224,17 +227,45 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
       <div className="canvas-buttons">
         <Button
           variation="secondary"
-          label={t("ZOOM_TO_FIT")}
+          label={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <CustomSVG.EditIcon width={16} height={16} />
+              {t("CLEAR_CANVAS")}
+            </div>
+          }
           type="button"
-          style={{ width: "25%", margin: "0 8px" }}
-          onClick={zoomToFit}
+          className="secondary-button"
+          style={{ margin: "0 8px", borderRadius: "6px" }}
+          onClick={onClear}
+          size={"small"}
         />
         <Button
           variation="secondary"
-          label={t("LOAD_SAMPLE")}
+          label={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <CustomSVG.EditIcon width={16} height={16} />
+              {t("ZOOM_TO_FIT")}
+            </div>
+          }
           type="button"
-          style={{ width: "25%", margin: "0 8px" }}
+          className="secondary-button"
+          style={{ margin: "0 8px", borderRadius: "6px" }}
           onClick={zoomToFit}
+          size={"small"}
+        />
+        <Button
+          variation="secondary"
+          label={
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <CustomSVG.EditIcon width={16} height={16} />
+              {t("LOAD_SAMPLE")}
+            </div>
+          }
+          type="button"
+          className="secondary-button"
+          style={{ margin: "0 8px", borderRadius: "6px" }}
+          onClick={zoomToFit}
+          size={"small"}
         />
       </div>
       <div className="canvas-child">
@@ -304,9 +335,9 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                 if (!fromEl || !toEl) return null;
 
                 const fromX = fromEl.position.x + 225; 
-                const fromY = fromEl.position.y + 90; 
+                const fromY = fromEl.position.y + 85; 
                 const toX = toEl.position.x + 10;
-                const toY = toEl.position.y + 90;
+                const toY = toEl.position.y + 85;
 
                 const midX = (fromX + toX) / 2;
                 const midY = (fromY + toY) / 2;

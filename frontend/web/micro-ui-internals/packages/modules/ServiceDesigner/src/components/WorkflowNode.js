@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { CustomSVG } from "@egovernments/digit-ui-components";
 
 const WorkflowNode = ({
@@ -8,8 +8,14 @@ const WorkflowNode = ({
   elementId,
   icon,
   nodetype,
-  roles,
+  roles = [],
   sla,
+  comments,
+  assign,
+  askfordoc,
+  checklist,
+  generatedoc,
+  sendnotif,
   onLeftAction,
   onRightAction,
   onEditAction,
@@ -19,6 +25,7 @@ const WorkflowNode = ({
   editButtonTooltip = "Edit Action",
   deleteButtonTooltip = "Delete Action"
 }) => {
+  const [showAllRoles, setShowAllRoles] = useState(false);
 
   const handleLeftClick = (elementId, e) => {
     e.stopPropagation();
@@ -40,8 +47,86 @@ const WorkflowNode = ({
     onDeleteAction(elementId,e);
   }
 
+  // Function to render roles with view more functionality
+  const renderRoles = () => {
+    if (!roles || roles.length === 0) return null;
+
+    const maxVisibleRoles = 1;
+    const visibleRoles = showAllRoles ? roles : roles.slice(0, maxVisibleRoles);
+    const hasMoreRoles = roles.length > maxVisibleRoles;
+
+    return (
+      <div className="conditional-icons-container">
+        <div className="roles-list">
+          {visibleRoles.map((role, index) => (
+            <p className={`state-description`}>{role.code || role.name}</p>
+          ))}
+          {hasMoreRoles && !showAllRoles && (
+            <button 
+              className="view-more-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAllRoles(true);
+              }}
+              title={`View ${roles.length - maxVisibleRoles} more roles`}
+            >
+              +{roles.length - maxVisibleRoles} more
+            </button>
+          )}
+          {showAllRoles && hasMoreRoles && (
+            <button 
+              className="view-less-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAllRoles(false);
+              }}
+            >
+              Show less
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Function to render conditional icons based on prop values
+  const renderConditionalIcons = () => {
+    const icons = [];
+    
+    if (assign) {
+      icons.push(
+        <div key="assign" className="conditional-icon" title="Assignment Required">
+          <CustomSVG.EditIcon />
+        </div>
+      );
+    }
+    
+    if (askfordoc) {
+      icons.push(
+        <div key="askfordoc" className="conditional-icon" title="Document Required">
+          <CustomSVG.EditIcon />
+        </div>
+      );
+    }
+    
+    if (comments) {
+      icons.push(
+        <div key="comments" className="conditional-icon" title="Comments Required">
+          <CustomSVG.EditIcon />
+        </div>
+      );
+    }
+    
+    return icons;
+  };
+
   return (
     <div className="card-container">
+      {(assign || askfordoc || comments) && (
+        <div className="conditional-icons-container">
+          {renderConditionalIcons()}
+        </div>
+      )}
       {/* Top right buttons - Edit and Remove */}
       <div className="top-actions">
         {/* Edit Button */}
@@ -66,7 +151,7 @@ const WorkflowNode = ({
           </button>
         )}
       </div>
-      <div className="state-card" style={{ height: "100px", paddingTop: "25px", width: "215px" }}>
+      <div className="state-card" style={{ width: "215px", whiteSpace: "nowrap", textOverflow: "ellipsis"}} >
         {/* Left Action Button */}
         {onLeftAction && (
           <button
@@ -78,12 +163,15 @@ const WorkflowNode = ({
         )}
 
         <div className="state-card-content">
-          <div className="state-icon">
-            {icon || <CustomSVG.EditIcon />}
-          </div>
           <div className="text-section">
-            <h3 className="state-title">{State}</h3>
+            <h3 className="state-title">
+              <div className="state-icon">
+                {icon || <CustomSVG.EditIcon />}
+              </div>
+              {State}
+            </h3>
             <p className="state-description">{desc}</p>
+            {renderRoles()}
           </div>
         </div>
 
