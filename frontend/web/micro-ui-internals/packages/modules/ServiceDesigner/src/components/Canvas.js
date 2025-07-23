@@ -19,6 +19,67 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
   const MAX_ZOOM = 3;
   const ZOOM_STEP = 0.1;
 
+  // ADDED: Function to create X-Y only connection paths
+  const createXYConnectionPath = useCallback((fromX, fromY, toX, toY) => {
+    if(toY==fromY){
+      if(toX>fromX){
+        return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+      }
+      else{
+        return `M ${fromX} ${fromY} L ${fromX} ${fromY+70} L ${toX} ${toY+70} L ${toX} ${toY}`;
+      }
+    }
+    else if(toX>fromX){
+      if(toY>fromY){
+        return `M ${fromX} ${fromY} L ${Math.abs(toX+fromX)/2} ${fromY} L ${Math.abs(toX+fromX)/2} ${toY} L ${toX} ${toY}`;
+      }
+      else if(toY<fromY){
+        return `M ${fromX} ${fromY} L ${Math.abs(toX+fromX)/2} ${fromY} L ${Math.abs(toX+fromX)/2} ${toY} L ${toX} ${toY}`;
+      }
+    }
+    else if(toX<fromX){
+      if(toY>fromY){
+        return `M ${fromX} ${fromY} L ${fromX} ${Math.abs(toY+fromY)/2} L ${toX} ${Math.abs(toY+fromY)/2} L ${toX} ${toY}`;
+      }
+      else if(toY<fromY){
+        return `M ${fromX} ${fromY} L ${fromX} ${Math.abs(toY+fromY)/2} L ${toX} ${Math.abs(toY+fromY)/2} L ${toX} ${toY}`;
+      }
+    }
+  }, []);
+
+  // ADDED: Function to calculate label position for X-Y paths
+  const calculateXYLabelPosition = useCallback((fromX, fromY, toX, toY, pathType = 'auto') => {
+    const deltaX = Math.abs(toX - fromX);
+    const deltaY = Math.abs(toY - fromY);
+
+    let labelX, labelY;
+
+    switch (pathType) {
+      case 'right-down':
+        labelX = (fromX + toX) / 2;
+        labelY = fromY - 15; // Above horizontal line
+        break;
+      case 'down-right':
+        labelX = fromX + 15; // Right of vertical line
+        labelY = (fromY + toY) / 2;
+        break;
+      case 'auto':
+      default:
+        if (deltaX >= deltaY) {
+          // Horizontal first path
+          labelX = (fromX + toX) / 2;
+          labelY = fromY - 15;
+        } else {
+          // Vertical first path
+          labelX = fromX + 15;
+          labelY = (fromY + toY) / 2;
+        }
+        break;
+    }
+
+    return { x: labelX, y: labelY };
+  }, []);
+
   const handleClick = useCallback((e) => {
     if (!isDragging && !draggedElement) {
       const rect = viewportRef.current.getBoundingClientRect();
@@ -313,13 +374,12 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
 
                 const fromX = fromEl.position.x + 225;
                 const fromY = fromEl.position.y + 90;
+                const pathD = createXYConnectionPath(fromX, fromY, connecting.x2, connecting.y2);
 
                 return (
-                  <line
-                    x1={fromX}
-                    y1={fromY}
-                    x2={connecting.x2}
-                    y2={connecting.y2}
+                  <path
+                    d={pathD}
+                    fill="none"
                     stroke="#6b7280"
                     strokeWidth="2"
                     markerEnd="url(#arrowhead)"
@@ -339,16 +399,14 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                 const toX = toEl.position.x + 10;
                 const toY = toEl.position.y + 85;
 
-                const midX = (fromX + toX) / 2;
-                const midY = (fromY + toY) / 2;
+                const pathD = createXYConnectionPath(fromX, fromY, toX, toY, 'auto');
+                const labelPos = calculateXYLabelPosition(fromX, fromY, toX, toY, 'auto');
 
                 return (
                   <g key={idx}>
-                    <line
-                      x1={fromX}
-                      y1={fromY}
-                      x2={toX}
-                      y2={toY}
+                    <path
+                      d={pathD}
+                      fill="none"
                       stroke="#6b7280"
                       strokeWidth="2"
                       markerEnd="url(#arrowhead)"
@@ -357,8 +415,8 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                     {conn.label && (
                       <g>
                         <rect
-                          x={midX - (conn.label.length * 6)}
-                          y={midY - 12}
+                          x={labelPos.x - (conn.label.length * 6)}
+                          y={labelPos.y - 12}
                           width={conn.label.length * 12}
                           height={24}
                           fill="white"
@@ -372,8 +430,8 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                           }}
                         />
                         <text
-                          x={midX}
-                          y={midY + 4}
+                          x={labelPos.x}
+                          y={labelPos.y + 4}
                           textAnchor="middle"
                           fontSize="20"
                           fill="#374151"

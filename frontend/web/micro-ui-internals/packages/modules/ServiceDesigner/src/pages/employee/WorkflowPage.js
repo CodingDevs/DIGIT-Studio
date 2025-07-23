@@ -76,7 +76,7 @@ const Workflow = () => {
     }, 20000);
 
     const onLeftClick = (elementId, e) => {
-        if (connectionStart && connectionStart !== elementId) {
+        if (connectionStart) {
             setConnections((prev) => {
                 const exists = prev.some(
                     (conn) => conn.from === connectionStart && conn.to === elementId
@@ -188,7 +188,7 @@ const Workflow = () => {
             if (connectionStart && connectionStart !== elementId) {
                 setConnections((prev) => [
                     ...prev,
-                    { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
+                    { id: Date.now(), from: connectionStart, to: elementId, label: t("ACTION") , type: "action", desc: "" }
                 ]);
                 setConnectionStart(null);
             }
@@ -516,6 +516,9 @@ const Workflow = () => {
                 infoMessage={t("FORM_INFO")}
                 value={stateData.form}
             />) : null,
+            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
+                    <div >{t("STAGE_ACTIONS")}</div>
+            </div>,
             <StageActions label={t("ADD_COMMENTS")} type="switch" name="comments" desc={t("COMMENTS_DESC")} onClick={(data) => onDataChange(data)} value={stateData.comments}/>,
             <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="assign" desc={t("ASSIGN_DESC")} onClick={(e) => onDataChange(e)} value={stateData.assign}/>,
             <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="askfordoc" desc={t("DOC_DESC")} onClick={(e) => onDataChange(e)} value={stateData.askfordoc}/>,
@@ -660,17 +663,24 @@ const Workflow = () => {
                 state: isStart ? null : state.name.toUpperCase(),
                 actions: actions,
                 isStartState: isStart,
+                isStateUpdatable: true,
                 isTerminateState: isTerminate,
+                applicationStatus: null,
+                docUploadRequired: false
             };
         });
 
 
         const workflow = {
-            ACTIVE: "",
+            ACTIVE: [],
             states: states,
-            INACTIVE: "",
+            INACTIVE: [],
             business: 'business',
             businessService: 'business_service',
+            generateDemandAt: [],
+            businessServiceSla: 5184000000,
+            nextActionAfterPayment: "",
+            autoTransitionEnabledStates: []
         };
 
         return { workflow };
@@ -683,6 +693,7 @@ const Workflow = () => {
     const onClear =() =>{
         setCanvasElements([]);
         setConnections([]);
+        setSelectedElement(null);
         setConnectionStart(null);
         setConnecting(null);
     }
