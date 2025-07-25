@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"studio-pdf-helper-service/kafka/producer"
@@ -59,7 +60,7 @@ func (h *Handler) GenerateQRHandler(w http.ResponseWriter, r *http.Request) {
 		"lastModifiedTime": getInt64(audit, "lastModifiedTime"),
 	}
 
-	kafkaTopic := "studio.pdf.qr.mapping.create"
+	kafkaTopic := os.Getenv("SAVE_PDF_QR_GENERATOR")
 	payloadBytes, _ := json.Marshal(payload)
 
 	if err := h.KafkaProducer.Push(r.Context(), kafkaTopic, payloadBytes); err != nil {
