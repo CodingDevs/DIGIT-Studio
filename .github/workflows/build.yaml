@@ -16,6 +16,7 @@ on:
         type: choice
         options:
           - public-service
+          - studio-pdf-helper-service
         default: "audit-service"
 
 env:
