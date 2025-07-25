@@ -32,7 +32,7 @@ func InitDB() *sql.DB {
 	}
 
 	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=required&connect_timeout=10",
+		"postgres://%s:%s@%s:%s/%s?sslmode=require&connect_timeout=10",
 		user, password, host, port, dbname,
 	)
 
