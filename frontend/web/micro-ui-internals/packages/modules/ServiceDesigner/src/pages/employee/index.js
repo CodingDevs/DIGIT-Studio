@@ -7,6 +7,7 @@ import LandingPage from "./LandingPage";
 import Workflow from "./WorkflowPage";
 import { CreateChecklist } from "./checklist/CreateChecklist";
 import ChecklistHomePage from "./checklist/ChecklistHomePage";
+import Roles from "./roles";
 
 const SampleBreadCrumbs = ({ location }) => {
   const { t } = useTranslation();
@@ -39,6 +40,7 @@ const App = ({ path, stateCode, userType, tenants }) => {
         <PrivateRoute path={`${path}/Workflow`} component={() => <Workflow />} />
         <PrivateRoute path={`${path}/Checklist`} component={() => <ChecklistHomePage />} />
         <PrivateRoute path={`${path}/create-checklist`} component={() => <CreateChecklist />} />
+        <PrivateRoute path={`${path}/Roles`} component={() => <Roles />} />
         <PrivateRoute path={`${path}/update-checklist`} component={() => <CreateChecklist isUpdate={true} />} />
       </AppContainer>
     </Switch>

@@ -16,27 +16,26 @@ const Workflow = () => {
     const { t } = useTranslation();
     const tenantId = Digit.ULBService.getCurrentTenantId();
     const [selectedElement, setSelectedElement] = useState(null);
-    const [canvasElements, setCanvasElements] = useState([]);
+    const [canvasElements, setCanvasElements] = useState(JSON.parse(localStorage.getItem("canvasElements")) || []);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
     const [showToast, setShowToast] = useState(null);
     const [hasStart, setHasStart] = useState(false);
     const [hasEnd, setHasEnd] = useState(false);
     const [connectionStart, setConnectionStart] = useState(null);
-    const [connections, setConnections] = useState([]);
+    const [connections, setConnections] = useState(JSON.parse(localStorage.getItem("connections")) || []);
     const [connecting, setConnecting] = useState(null);
 
-    const master = { name: "roles" };
-    const { isLoading, data } = window?.Digit?.Hooks.useCustomMDMS(Digit?.ULBService?.getStateId(), "ACCESSCONTROL-ROLES", [master], {
-        select: undefined
-            ? createFunction(config?.mdmsConfig?.select)
-            : (data) => {
-                const optionsData = _.get(data, `${"ACCESSCONTROL-ROLES"}.${"roles"}`, []);
-                return optionsData
-                    .filter((opt) => (opt?.hasOwnProperty("active") ? opt.active : true))
-                    .map((opt) => ({ ...opt, name: `${undefined}_${Digit.Utils.locale.getTransformedLocale(opt.code)}` }));
+    const requestSearchCriteria = {
+        url: "/egov-mdms-service/v2/_search",
+        body: {
+            MdmsCriteria: {
+                tenantId: tenantId,
+                schemaCode: "studio.roles"
             },
-        enabled: (true) ? true : false,
-    }, [master]);
+        },
+    };
+    const { isLoading, data: roles } = Digit.Hooks.useCustomAPIHook(requestSearchCriteria);
+    const data= roles?.mdms;
 
     const requestCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -151,7 +150,7 @@ const Workflow = () => {
                     generatedoc={element.generatedoc}
                     sendnotif={element.sendnotif}
                     nodetype={element.nodetype}
-                    onLeftAction={onLeftClick}
+                    onLeftAction={false}
                     onRightAction={onRightClick}
                     onDeleteAction={DeleteClick}
                     onEditAction={EditClick}
@@ -174,7 +173,7 @@ const Workflow = () => {
                     sendnotif={element.sendnotif}
                     nodetype={element.nodetype}
                     onLeftAction={onLeftClick}
-                    onRightAction={onRightClick}
+                    onRightAction={element.nodetype=="end"? false: onRightClick}
                     onDeleteAction={DeleteClick}
                     onEditAction={EditClick}
                 />
@@ -373,6 +372,9 @@ const Workflow = () => {
                 <div className="typography heading-m" style={{ color: "#0B4B66" }}>
                     <div >{t("WORKFLOW_STATES")}</div>
                 </div>
+                <div className="typography heading-sl" style={{ color: "#0B4B66", marginLeft: "16px" }}>
+                    <div >{t("WORKFLOW_STATES_DESC")}</div>
+                </div>
             </div>,
             <StateComp
                 onStateClick={() => AddState("start")}
@@ -470,7 +472,7 @@ const Workflow = () => {
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
                     isSearchable: true,
-                    options: isLoading ? [] : data.map(({ code, name }) => ({ code, name })),
+                    options: isLoading ? [] : data?.map(({ data }) => ({ code: data.code, name: data.id })),
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -594,7 +596,7 @@ const Workflow = () => {
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
                     isSearchable: true,
-                    options: isLoading ? [] : data.map(({ code, name }) => ({ code, name })),
+                    options: isLoading ? [] : data?.map(({ data }) => ({ code: data.code, name: data.id })),
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -729,6 +731,11 @@ const Workflow = () => {
         window.addEventListener("mousemove", handleMouseMove);
         return () => window.removeEventListener("mousemove", handleMouseMove);
     }, [connectionStart]);
+
+    useEffect(()=>{
+        localStorage.setItem("connections", JSON.stringify(connections));
+        localStorage.setItem("canvasElements", JSON.stringify(canvasElements));
+    },[connections,canvasElements]);
 
     if (isLoading || moduleListLoading) {
         return <Loader />;
