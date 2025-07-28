@@ -5,6 +5,8 @@ import { default as EmployeeApp } from "./pages/employee";
 import ServiceDesignerCard from "./components/ServiceDesignerCard";
 import CreateQuestion from "./components/CreateQuestion";
 import CreateQuestionContext from "./components/CreateQuestionContext";
+export const TEMPLATE_BASE_CONFIG_MASTER = "FormConfigTemplate";
+export const CONSOLE_MDMS_MODULENAME = "HCM-ADMIN-CONSOLE";
 
 export const ServiceDesignerModule = ({ stateCode, userType, tenants }) => {
   const { path } = useRouteMatch();

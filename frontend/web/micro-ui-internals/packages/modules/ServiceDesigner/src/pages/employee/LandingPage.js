@@ -39,7 +39,7 @@ export const buildCardData = (drafts = [], published = [], t) => {
       {
         title: t("STUDIO_NEW_SERVICE_HEADER"),
         description: t("STUDIO_NEW_SERVICE_DESCRIPTION"),
-        link: "/employee",
+        link: "employee/servicedesigner/Service-Builder-Home?module=TESTUI&service=Service1",
         isCreateCard: true,
       },
       ...publishedCards,

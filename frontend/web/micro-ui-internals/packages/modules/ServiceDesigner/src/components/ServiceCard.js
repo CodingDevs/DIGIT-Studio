@@ -9,7 +9,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className 
 
   const handleClick = () => {
     if (link) {
-      history.push(link);
+      history.push(`/${window.contextPath}/${link}`);
     }
   };
 

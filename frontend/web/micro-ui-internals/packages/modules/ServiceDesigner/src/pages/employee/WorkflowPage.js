@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { SidePanel } from "@egovernments/digit-ui-components";
+import { SidePanel, PopUp, TextInput, Dropdown, FieldV1 } from "@egovernments/digit-ui-components";
 import { Card } from "@egovernments/digit-ui-react-components";
 import InfiniteCanvas from "../../components/Canvas";
 import { useTranslation } from "react-i18next";
-import { FieldV1 } from "@egovernments/digit-ui-components";
 import WorkflowNode from "../../components/WorkflowNode";
 import { Button } from "@egovernments/digit-ui-components";
 import { Toast } from "@egovernments/digit-ui-components";
@@ -28,6 +27,10 @@ const Workflow = () => {
     const [connectionStart, setConnectionStart] = useState(null);
     const [connections, setConnections] = useState(JSON.parse(localStorage.getItem("connections")) || []);
     const [connecting, setConnecting] = useState(null);
+    
+    // New state for service configuration popup
+    const [showServiceConfigPopup, setShowServiceConfigPopup] = useState(false);
+    const [serviceConfigData, setServiceConfigData] = useState(null);
 
     const requestSearchCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -54,6 +57,21 @@ const Workflow = () => {
     const checklistData = dataa?.mdms?.map((item) => ({
         code: item.data.name,
         name: item.data.name,
+    }));
+
+    const requestCriteriaForm = {
+        url: "/egov-mdms-service/v2/_search",
+        body: {
+            MdmsCriteria: {
+                tenantId: tenantId,
+                schemaCode: "Studio.Forms"
+            },
+        },
+    };
+    const { isLoading: FormsLoading, data: FormData } = Digit.Hooks.useCustomAPIHook(requestCriteriaForm);
+    const formOptions = FormData?.mdms?.map((item) => ({
+        code: item.data.formName,
+        name: item.data.formName,
     }));
 
     const [stateData, setStateData] = useState({
@@ -506,10 +524,7 @@ const Workflow = () => {
                     alignFieldPairVerically: true,
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
-                    options: [{
-                        code: "form1",
-                        name: "Form 1"
-                    }],
+                    options: FormsLoading ? [] : [...formOptions],
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -733,10 +748,391 @@ const Workflow = () => {
         return { workflow };
     }
 
-    const getWrorkflowData = () => {
-        console.log(JSON.stringify(transformWorkflowData(canvasElements, connections), null, 2));
-        console.log(JSON.stringify(documentConfig(connections, module), null, 2));
+    // Function to get form data from start state
+    const getFormDataFromStartState = () => {
+        const startState = canvasElements.find(state => state.nodetype === "start");
+        
+        if (!startState || !startState.form || startState.form.length === 0) {
+            return null;
+        }
+        
+        // Get the selected form name from start state
+        const selectedFormName = startState.form?.name;
+        
+        if (!selectedFormName) {
+            return null;
+        }
+        
+        // Find the form data from FormData
+        const selectedForm = FormData?.mdms?.find(form => form.data.formName === selectedFormName);
+        
+        return selectedForm?.data?.formConfig?.screens || null;
     };
+
+    // Function to fetch roles from API
+    const fetchRolesFromAPI = async () => {
+        try {
+            const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
+            const response = await Digit.CustomService.getResponse({
+                url: `/${mdms_context_path}/v2/_search`,
+                body: {
+                    MdmsCriteria: {
+                        tenantId: Digit.ULBService.getCurrentTenantId(),
+                        schemaCode: "studio.roles",
+                        isActive: true
+                    }
+                }
+            });
+            
+            if (response && response.mdms && response.mdms.length > 0) {
+                return response.mdms.map(role => ({
+                    code: role.data.code,
+                    name: role.data.description || role.data.code,
+                    access: role.data.additionalDetails?.access || {}
+                }));
+            }
+            return [];
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+            return [];
+        }
+    };
+
+    // Function to transform form configuration to fields format
+    const transformFormToFields = (formConfig) => {
+        
+        if (!formConfig) {
+            return [];
+        }
+        
+        const fields = [];
+        
+        formConfig.forEach((screen, screenIndex) => {
+            screen.cards?.forEach((card, cardIndex) => {
+                
+                // Get section heading from headerFields
+                const headerField = card.headerFields?.find(hf => hf.label === "SCREEN_HEADING");
+                const sectionName = headerField?.value || card.header || `Section ${cardIndex + 1}`;
+                
+                
+                // Skip pre-defined sections (ADDRESS DETAILS, APPLICANT DETAILS)
+                if (sectionName.toUpperCase().includes("ADDRESS DETAILS") || 
+                    sectionName.toUpperCase().includes("APPLICANT DETAILS")) {
+                    return;
+                }
+                
+                // Create properties array for this card
+                const properties = [];
+                
+                card.fields?.forEach((field, fieldIndex) => {
+                    
+                    // Skip fields without proper configuration
+                    if (!field || !field.type) {
+                        return;
+                    }
+                    
+                    const fieldConfig = {
+                        name: field.label.replaceAll(" ","") || `field_${screenIndex}_${cardIndex}_${fieldIndex}`,
+                        type: field.type === "textInput" ? "string" : 
+                              field.type === "datePicker" ? "date" : 
+                              field.type === "dropdown" ? "string" : 
+                              field.type === "text" ? "string" :
+                              field.type === "number" ? "integer" : 
+                              field.type === "mobileNumber" ? "string" : "string",
+                        label: field.label || `Field ${fieldIndex + 1}`,
+                        format: field.type === "textInput" ? "text" : 
+                                field.type === "datePicker" ? "date" : 
+                                field.type === "dropdown" ? "radioordropdown" : 
+                                field.type === "text" ? "text" :
+                                field.type === "number" ? "text" : 
+                                field.type === "mobileNumber" ? "mobileNumber" : "text",
+                        required: field.required || false,
+                        orderNumber: fieldIndex + 1,
+                        maxLength: field.maxLength || 128,
+                        minLength: field.minLength || 2,
+                        validation: field.validation || {},
+                        defaultValue: field.defaultValue || field.value || "",
+                        helpText: field.helpText || "",
+                        tooltip: field.tooltip || "",
+                        errorMessage: field.errorMessage || ""
+                    };
+                    
+                    // Handle dropdown options
+                    if (field.dropDownOptions && field.dropDownOptions.length > 0) {
+                        fieldConfig.values = field.dropDownOptions.map(option => option.name || option.code);
+                        fieldConfig.schema = `${roleModule.toUpperCase()}.${field.label?.replace(/\s+/g, '')}`;
+                        fieldConfig.reference = "mdms";
+                    }
+                    
+                    // Handle boundary data (city dropdown)
+                    if (field.isBoundaryData) {
+                        fieldConfig.values = [];
+                        fieldConfig.schema = `${roleModule.toUpperCase()}.${field.label?.replace(/\s+/g, '')}`;
+                        fieldConfig.reference = "mdms";
+                    }
+                    
+                    // Handle mobile number specific properties
+                    if (field.type === "mobileNumber") {
+                        fieldConfig.isdCodePrefix = field.isdCodePrefix || "+91";
+                    }
+                    
+                    properties.push(fieldConfig);
+                });
+                
+                // Create card object with properties
+                if (properties.length > 0) {
+                    const cardObject = {
+                        name: sectionName.replace(/\s+/g, ''),
+                        type: "object",
+                        label: sectionName,
+                        properties: properties
+                    };
+                    
+                    fields.push(cardObject);
+                }
+            });
+        });
+        
+        return fields;
+    };
+
+    // Function to collect all roles from workflow
+    const collectAllRoles = async () => {
+        const usedRoleCodes = new Set();
+        
+        // Add default roles
+        usedRoleCodes.add("CITIZEN");
+        usedRoleCodes.add("STUDIO_ADMIN");
+        
+        // Collect role codes from states
+        canvasElements.forEach(state => {
+            if (state.roles && Array.isArray(state.roles)) {
+                state.roles.forEach(role => {
+                    if (role.code) usedRoleCodes.add(role.code);
+                });
+            }
+        });
+        
+        // Collect role codes from connections/actions
+        connections.forEach(connection => {
+            if (connection.aroles && Array.isArray(connection.aroles)) {
+                connection.aroles.forEach(role => {
+                    if (role.code) usedRoleCodes.add(role.code);
+                });
+            }
+        });
+        
+        
+        // Fetch roles from API and filter only used ones
+        try {
+            const apiRoles = await fetchRolesFromAPI();
+            const usedRoles = apiRoles.filter(role => usedRoleCodes.has(role.code));
+            
+            // Create access mapping based on role permissions
+            const accessMapping = {
+                editor: [],
+                viewer: [],
+                creator: []
+            };
+            
+            usedRoles.forEach(role => {
+                const access = role.access || {};
+                
+                if (access.editor) {
+                    accessMapping.editor.push(role.code);
+                }
+                if (access.viewer) {
+                    accessMapping.viewer.push(role.code);
+                }
+                if (access.creater) { // Note: API has "creater" not "creator"
+                    accessMapping.creator.push(role.code);
+                }
+            });
+            
+            // Add default roles to appropriate access levels
+            accessMapping.editor.push("CITIZEN", "STUDIO_ADMIN");
+            accessMapping.viewer.push("CITIZEN", "STUDIO_ADMIN");
+            accessMapping.creator.push("CITIZEN", "STUDIO_ADMIN");
+            
+            return accessMapping;
+            
+        } catch (error) {
+            console.error("Error fetching roles from API:", error);
+            
+            // Fallback: return all used roles for all access levels
+            const allUsedRoles = Array.from(usedRoleCodes);
+            return {
+                editor: allUsedRoles,
+                viewer: allUsedRoles,
+                creator: allUsedRoles
+            };
+        }
+    };
+
+    // Function to check if specific sections exist in form
+    const checkFormSections = (formConfig) => {
+        if (!formConfig) return { hasAddressDetails: false, hasApplicantDetails: false };
+        
+        let hasAddressDetails = false;
+        let hasApplicantDetails = false;
+        
+        formConfig.forEach(screen => {
+            screen.cards?.forEach(card => {
+                const headerField = card.headerFields?.find(hf => hf.label === "SCREEN_HEADING");
+                const sectionName = headerField?.value || card.header || "";
+                
+                if (sectionName.toUpperCase().includes("ADDRESS DETAILS")) {
+                    hasAddressDetails = true;
+                }
+                if (sectionName.toUpperCase().includes("APPLICANT DETAILS")) {
+                    hasApplicantDetails = true;
+                }
+            });
+        });
+        
+        return { hasAddressDetails, hasApplicantDetails };
+    };
+
+    // Function to generate complete service configuration
+    const generateServiceConfiguration = async () => {
+        // Get existing console outputs
+        const workflowData = transformWorkflowData(canvasElements, connections);
+        const documentData = documentConfig(connections, module);
+        
+        // Get form data from start state
+        const formDataFromStartState = getFormDataFromStartState();
+        const formFields = transformFormToFields(formDataFromStartState);
+        
+        // Check for specific sections in form
+        const { hasAddressDetails, hasApplicantDetails } = checkFormSections(formDataFromStartState);
+        
+        // Transform roles to the format expected in service config
+        const accessMapping = await collectAllRoles();
+        
+        // Get module and service from URL parameters
+        const moduleName = roleModule.toLowerCase();
+        const serviceName = roleService.toLowerCase();
+        
+        const serviceConfig = {
+            module: moduleName,
+            service: serviceName,
+            enabled: ["citizen", "employee"],
+            workflow: workflowData.workflow,
+            documents: documentData,
+            fields: formFields,
+            access: {
+                roles: accessMapping,
+                actions: [
+                    {
+                        url: `${serviceName}-services/v1/create`
+                    }
+                ]
+            },
+            rules: {
+                validation: {
+                    type: "schema",
+                    service: serviceName,
+                    schemaCode: `${serviceName}.apply`,
+                    customFunction: ""
+                },
+                calculator: {
+                    type: "custom",
+                    service: serviceName,
+                    customFunction: ""
+                },
+                registry: {
+                    type: "api",
+                    service: serviceName
+                },
+                references: [
+                    {
+                        type: "initiate",
+                        service: serviceName
+                    }
+                ]
+            },
+            calculator: {
+                type: "custom",
+                billingSlabs: [
+                    {
+                        key: "applicationFee",
+                        value: 2000
+                    }
+                ]
+            },
+            idgen: [
+                {
+                    type: "application",
+                    format: `${serviceName}.application.number`,
+                    idname: `${serviceName}-service.application.${serviceName}.applicationapp.id`
+                }
+            ],
+            localization: {
+                modules: [`digit-${serviceName}`]
+            },
+            notification: {
+                sms: [
+                    {
+                        code: `DIGIT_STUDIO_${moduleName.toUpperCase()}_${serviceName.toUpperCase()}_APPLICATION`,
+                        states: ["SIGNED"],
+                        template: `Dear {PublicService.applicants[0].name} a ${serviceName.toUpperCase()} Application with application no {PublicService.applicationNo} is received`
+                    }
+                ],
+                email: [
+                    {
+                        code: `DIGITEMAIL_STUDIO_${moduleName.toUpperCase()}_${serviceName.toUpperCase()}_APPLICATION`,
+                        states: ["SIGNED"],
+                        template: `Dear {PublicService.applicants[0].name} a ${serviceName.toUpperCase()} Application with application no {PublicService.applicationNo} is received`
+                    }
+                ]
+            },
+            boundary: hasAddressDetails ? {
+                lowestLevel: "locality",
+                hierarchyType: "REVENUE"
+            } : {},
+            applicant: hasApplicantDetails ? {
+                types: ["individual", "organisation"],
+                config: {
+                    systemUser: true,
+                    systemRoles: ["CITIZEN"],
+                    systemUserType: "CITIZEN"
+                },
+                maximum: 3,
+                minimum: 1
+            } : {},
+            apiconfig: [
+                {
+                    host: "https://staging.digit.org",
+                    type: "register",
+                    method: "post",
+                    service: serviceName,
+                    endpoint: `/${serviceName}-services/v1/create`
+                },
+                {
+                    host: "https://staging.digit.org",
+                    type: "search",
+                    method: "post",
+                    service: serviceName,
+                    endpoint: `/${serviceName}-services/v1/search`
+                }
+            ]
+        };
+        
+        return serviceConfig;
+    };
+
+    const getWrorkflowData = async () => {
+        // Log the existing console outputs as before
+        
+        // Generate service configuration automatically
+        const serviceConfig = await generateServiceConfiguration();
+        setServiceConfigData(serviceConfig);
+        
+        // Show the popup with the generated configuration
+        setShowServiceConfigPopup(true);
+    };
+
+
 
     const onClear =() =>{
         setCanvasElements([]);
@@ -832,6 +1228,46 @@ const Workflow = () => {
                         setShowToast(null);
                     }}
                     isDleteBtn={showToast?.isDleteBtn}
+                />
+            )}
+            
+            {/* Service Configuration Popup */}
+            {showServiceConfigPopup && (
+                <PopUp
+                    header={t("SERVICE_CONFIGURATION")}
+                    headerBarMain={t("GENERATED_SERVICE_CONFIG")}
+                    actionCancelLabel={t("CLOSE")}
+                    actionCancelOnSubmit={() => setShowServiceConfigPopup(false)}
+                    actionSaveLabel={t("COPY_CONFIG")}
+                    actionSaveOnSubmit={() => {
+                        navigator.clipboard.writeText(JSON.stringify(serviceConfigData, null, 2));
+                        setShowToast({
+                            type: "success",
+                            label: "CONFIGURATION_COPIED_TO_CLIPBOARD"
+                        });
+                    }}
+                    onClose={() => setShowServiceConfigPopup(false)}
+                    children={[
+                        <div key="service-config-preview" style={{ 
+                            background: "#f8f9fa", 
+                            padding: "1rem", 
+                            borderRadius: "8px", 
+                            maxHeight: "70vh", 
+                            overflow: "auto",
+                            border: "1px solid #e9ecef"
+                        }}>
+                            <h4 style={{ marginBottom: "1rem", color: "#495057" }}>{t("COMPLETE_SERVICE_CONFIGURATION")}</h4>
+                            <pre style={{ 
+                                fontSize: "12px", 
+                                lineHeight: "1.4", 
+                                color: "#495057",
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word"
+                            }}>
+                                {JSON.stringify(serviceConfigData, null, 2)}
+                            </pre>
+                        </div>
+                    ]}
                 />
             )}
         </Card>

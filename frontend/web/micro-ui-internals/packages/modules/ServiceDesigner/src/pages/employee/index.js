@@ -8,6 +8,9 @@ import Workflow from "./WorkflowPage";
 import { CreateChecklist } from "./checklist/CreateChecklist";
 import ChecklistHomePage from "./checklist/ChecklistHomePage";
 import Roles from "./roles";
+import AppConfigurationTabLayer from "./formBuilder/AppConfigurationTabLayer";
+import FormHomePage from "./formBuilder/FormHomePage";
+import ServiceBuilderCard from "../../components/ServiceBuilderCard";
 
 const SampleBreadCrumbs = ({ location }) => {
   const { t } = useTranslation();
@@ -42,6 +45,9 @@ const App = ({ path, stateCode, userType, tenants }) => {
         <PrivateRoute path={`${path}/create-checklist`} component={() => <CreateChecklist />} />
         <PrivateRoute path={`${path}/Roles`} component={() => <Roles />} />
         <PrivateRoute path={`${path}/update-checklist`} component={() => <CreateChecklist isUpdate={true} />} />
+        <PrivateRoute path={`${path}/form-builder`} component={() => <AppConfigurationTabLayer />} />
+        <PrivateRoute path={`${path}/forms`} component={() => <FormHomePage />} />
+        <PrivateRoute path={`${path}/Service-Builder-Home`} component={() => <ServiceBuilderCard />} />
       </AppContainer>
     </Switch>
   );
