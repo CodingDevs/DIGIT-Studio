@@ -7,12 +7,14 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	gitcfg "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"gopkg.in/yaml.v3"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 type DevOpsConfigService struct {
@@ -100,7 +102,14 @@ func (s *DevOpsConfigService) commitAndPush(repo *git.Repository, message string
 		log.Println("No new changes to commit, but attempting to push in case previous push failed...")
 	} else {
 		log.Println("Changes detected, committing...")
-		_, err = w.Commit(message, &git.CommitOptions{})
+		commitOpts := &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  "debasishchakraborty-egovt",
+				Email: "debasish@egovernments.org",
+				When:  time.Now(),
+			},
+		}
+		_, err = w.Commit(message, commitOpts)
 		if err != nil {
 			return err
 		}
