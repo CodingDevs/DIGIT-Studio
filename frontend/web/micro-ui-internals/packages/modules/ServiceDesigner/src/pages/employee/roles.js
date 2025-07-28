@@ -9,6 +9,7 @@ import { FieldV1 } from "@egovernments/digit-ui-components";
 import AccessCard from "../../components/AccessCard";
 import { Button } from "@egovernments/digit-ui-components";
 import generateMdmsRolePayload from "../../config/rolecreateConfig";
+import { AlertCard } from "@egovernments/digit-ui-components";
 
 const Roles = () => {
     const { t } = useTranslation();
@@ -99,6 +100,7 @@ const Roles = () => {
                     const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role)), stateData.isNew);
                     if(response?.success){
                         setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
+                        setSelectedElement(false);
                     }
                     else{
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
@@ -109,6 +111,7 @@ const Roles = () => {
                 const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role)), stateData.isNew);
                 if(response?.success){
                         setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
+                        setSelectedElement(false);
                     }
                     else{
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
@@ -204,17 +207,12 @@ const Roles = () => {
     }
     return (
         <React.Fragment>
-            {!selectedElement && <Card className="state-card" style={{ margin: "0px" }}>
-                <div className="state-card-content">
-                    <div className="state-icon">
-                        {<CustomSVG.EditIcon height="30" width="30" />}
-                    </div>
-                    <div className="text-section">
-                        <h3 className={`state-title`} style={{ margin: "6px" }} >{t("GETTING_STARTED")}</h3>
-                        <p className={`state-description`} style={{ margin: "6px" }} >{t("GETTING_STARTED_DESC")}</p>
-                    </div>
-                </div>
-            </Card>
+            {!selectedElement && <AlertCard
+                style={{ margin: "24px 0px" }}
+                label={t("GETTING_STARTED")}
+                text={t("GETTING_STARTED_DESC")}
+                className={"uploadWidget-error-card"}
+            />
             }
             <Card style={{ flex: 1, height: "100%", mixHeight: "800px", padding: "24px", justifyContent: "space-between" }} className="Workflow-card">
                 <div>
