@@ -238,6 +238,13 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{},req mo
 			}
 			messages = append(messages, messag)        
 	}
+
+	if messagesJSON, err := json.Marshal(messages); err == nil {
+		log.Printf(`{"level":"info","event":"MessagesPrepared","messages":%s}`, messagesJSON)
+	} else {
+		log.Printf(`{"level":"error","event":"MessagesMarshalError","error":"%s"}`, err.Error())
+	}
+	
 	resp, err := l.SendLocalizationMessage(messages, req)
 	
 	return resp, err
