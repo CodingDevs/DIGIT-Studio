@@ -1,0 +1,36 @@
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { CustomSVG } from "@egovernments/digit-ui-components";
+
+const RoleComp = ({ role, desc, isNew = false, onRoleClick, data }) => {
+  const { t } = useTranslation();
+
+  if (isNew) {
+    return (
+      <div className="state-card new" style={{ width: "220px", height:"220px", margin: "9rpx", border: "2px dashed orange",display: "flex", justifyContent: "center" }} onClick={() => onRoleClick(role, desc, isNew, false, false, false)}>
+        <div className="state-card-content" style={{ justifyContent: "center", padding: "6px", flexDirection: "column", alignItems: "normal" }}>
+          <div className="state-icon">
+            <CustomSVG.AddIcon height="30" width="30" fill="#C84C0E"/>
+          </div>
+          <p className="state-title" style={{ justifyContent: "center", padding: "6px" }}>{role}</p>
+          <p className="state-description" style={{ display: "flex", justifyContent: "center", padding: "6px" }}>{desc}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="state-card" style={{ width: "220px", height:"220px", margin: "9px", display: "flex", justifyContent: "center" }} onClick={() => onRoleClick(role, desc, isNew, data?.additionalDetails?.access?.editor || false, data?.additionalDetails?.access?.viewer || false, data?.additionalDetails?.access?.creater || false)}>
+      <div className="state-card-content" style={{ justifyContent: "center", padding: "6px", flexDirection: "column", alignItems: "normal" }}>
+        <div className="state-icon">
+          <CustomSVG.EditIcon height="30" width="30" fill="#C84C0E"/>
+        </div>
+        <p className="state-title" style={{ justifyContent: "center", padding: "6px" }}>{role}</p>
+        <p className="state-description" style={{ display: "flex", justifyContent: "center", padding: "6px" }}>{desc}</p>
+      </div>
+    </div>
+  );
+};
+
+
+export default RoleComp;
