@@ -137,6 +137,20 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 	set := make(map[string]struct{})
 	fields := data["fields"].([]interface{})
+	set[""] = struct{}{}
+        set[""] = struct{}{}
+        set[""] = struct{}{}
+        field := []string{"NAME", "MOBILENUMBER", "GENDER", "EMAILID"}
+        for key := range field {
+                message := model.Message{
+                        Code: module + "_" + field[key],
+                        Message: field[key],
+                        Locale: locale,
+                        Module: localizationModule,
+                }
+                messages = append(messages, message)
+                set[message.Code] = struct{}{}
+        }
 
 	for key := range fields {
 		value := fields[key].(map[string]interface{})
