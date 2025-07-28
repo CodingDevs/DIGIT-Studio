@@ -213,42 +213,68 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 	log.Println(resp)
 	log.Println(err)
 }
-func (l *LocalizationService) SMSLocalization(data map[string]interface{},req model.ServiceRequest) (map[string]interface{}, error) {
+func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req model.ServiceRequest) (map[string]interface{}, error) {
 	localization := data["localization"].(map[string]interface{})
 	modules := localization["modules"].([]interface{})
 	module := modules[0].(string)
-	log.Println(modules)
+
+	if modulesJSON, err := json.Marshal(modules); err == nil {
+		log.Printf(`{"level":"info","event":"ModulesFetched","modules":%s}`, modulesJSON)
+	} else {
+		log.Printf(`{"level":"error","event":"ModulesMarshalError","error":"%s"}`, err.Error())
+	}
+
 	notification := data["notification"].(map[string]interface{})
 	sms := notification["sms"].([]interface{})
 	email := notification["email"].([]interface{})
+
 	var arr []interface{}
 	arr = append(arr, sms...)
 	arr = append(arr, email...)
+
 	var messages []model.Message
+	seenKeys := make(map[string]bool)
+
+	locale := os.Getenv("NOTIFICATION_LOCALE")
+
 	for _, val := range arr {
-			data := val.(map[string]interface{})
-			code := data["code"].(string)
-			message := data["template"].(string)
-			locale := os.Getenv("NOTIFICATION_LOCALE")
-			messag :=  model.Message{
-					Code: code,
-					Message: message,
-					Module: module,
-					Locale: locale,
-			}
-			messages = append(messages, messag)        
+		item := val.(map[string]interface{})
+		code := item["code"].(string)
+		message := item["template"].(string)
+
+		// Build composite key: locale|module|code
+		uniqueKey := fmt.Sprintf("%s|%s|%s", locale, module, code)
+		if seenKeys[uniqueKey] {
+			continue
+		}
+		seenKeys[uniqueKey] = true
+
+		msg := model.Message{
+			Code:    code,
+			Message: message,
+			Module:  module,
+			Locale:  locale,
+		}
+		messages = append(messages, msg)
 	}
 
+	// Log messages in JSON
 	if messagesJSON, err := json.Marshal(messages); err == nil {
 		log.Printf(`{"level":"info","event":"MessagesPrepared","messages":%s}`, messagesJSON)
 	} else {
 		log.Printf(`{"level":"error","event":"MessagesMarshalError","error":"%s"}`, err.Error())
 	}
-	
+
 	resp, err := l.SendLocalizationMessage(messages, req)
-	
+	if err != nil {
+		log.Printf(`{"level":"error","event":"SendLocalizationMessageFailed","error":"%s"}`, err.Error())
+	} else {
+		log.Printf(`{"level":"info","event":"SendLocalizationMessageSuccess"}`)
+	}
+
 	return resp, err
 }
+
 
 func(l *LocalizationService) Localization(data map[string]interface{}, req model.ServiceRequest) error{
 	var messages []model.Message
