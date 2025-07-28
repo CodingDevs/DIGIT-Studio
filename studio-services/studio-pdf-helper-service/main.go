@@ -39,7 +39,7 @@ func main() {
 		logger.Fatal("Failed to load environment variables", zap.Error(err))
 	}
 	// Initialize database connection
-	repository.InitDB()
+	DB :=repository.InitDB()
 
 	// Run DB migrations if enabled
 	if os.Getenv("FLYWAY_ENABLED") == "true" {
@@ -86,13 +86,14 @@ func main() {
 		})
 	}
 	kafkaProducer := producer.NewPdfHelperServiceProducer(writerFunc)
-	qRHandler := handlers.NewQRHandler(kafkaProducer, logger)
+	qRHandler := handlers.NewQRHandler(kafkaProducer, logger, DB)
 
 	router := mux.NewRouter()
 	// Set up routes
 	router.HandleFunc("/studio-pdf-helper/_data-config", configHandler.DataConfigHandler).Methods("POST")
 	router.HandleFunc("/studio-pdf-helper/_format-config", configHandler.FormatConfigHandler).Methods("POST")
 	router.HandleFunc("/studio-pdf-helper/_generateQR", qRHandler.GenerateQRHandler).Methods("POST")
+	router.HandleFunc("/studio-pdf-helper/_scanQR", qRHandler.ScanQR).Methods("GET")
 	port := getEnvWithDefault("PORT", "8080")
 
 	server := &http.Server{
