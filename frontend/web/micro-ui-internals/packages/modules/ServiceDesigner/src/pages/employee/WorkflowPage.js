@@ -15,6 +15,10 @@ import StageActions from "../../components/StageActions";
 const Workflow = () => {
     const { t } = useTranslation();
     const tenantId = Digit.ULBService.getCurrentTenantId();
+    const searchParams = new URLSearchParams(location.search);
+    const roleModule = searchParams.get("module") || "Studio";
+    const roleService = searchParams.get("service") || "Service";
+    const module = `${roleModule.toUpperCase()}${roleService.toUpperCase()}`;
     const [selectedElement, setSelectedElement] = useState(null);
     const [canvasElements, setCanvasElements] = useState(JSON.parse(localStorage.getItem("canvasElements")) || []);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
@@ -58,9 +62,6 @@ const Workflow = () => {
         roles: [],
         sla: 0,
         form: [],
-        comments: false,
-        assign: false,
-        askfordoc: false,
         checklist: [],
     });
 
@@ -68,6 +69,9 @@ const Workflow = () => {
         label: "",
         desc: "",
         aroles: [],
+        aaskfordoc: false,
+        aassign: false,
+        aaskfordoc: false
     });
 
     setTimeout(() => {
@@ -120,7 +124,7 @@ const Workflow = () => {
         });  
         if (selectedElement && selectedElement.id === id) {
             setSelectedElement(null);
-            setActionData({ label: "", desc: "", aroles: [] });
+            setActionData({ label: "", desc: "", aroles: [], aaskfordoc: false, aassign: false, acomments: false });
         }   
     }  
 
@@ -143,9 +147,6 @@ const Workflow = () => {
                     roles={element.roles}
                     sla={element.sla}
                     form={element.form}
-                    comments={element.comments}
-                    assign={element.assign}
-                    askfordoc={element.askfordoc}
                     checklist={element.checklist}
                     generatedoc={element.generatedoc}
                     sendnotif={element.sendnotif}
@@ -165,9 +166,6 @@ const Workflow = () => {
                     desc={element.desc}
                     roles={element.roles}
                     sla={element.sla}
-                    comments={element.comments}
-                    assign={element.assign}
-                    askfordoc={element.askfordoc}
                     checklist={element.checklist}
                     generatedoc={element.generatedoc}
                     sendnotif={element.sendnotif}
@@ -232,9 +230,6 @@ const Workflow = () => {
             roles: [],
             sla: 24,
             form: form, 
-            comments: false,
-            assign: false,
-            askfordoc: false,
             checklist: [],
             generatedoc:[],
             sendnotif:[],
@@ -288,6 +283,11 @@ const Workflow = () => {
                 ...prev,
                 aroles: e
             }));
+        } else if (Array.isArray(e)) {
+            setActionData(prev => ({
+                ...prev,
+                [e[0]]: e[1]
+            }));
         } else if (e?.target) {
             const { name, value } = e.target;
             setActionData(prev => ({
@@ -299,7 +299,7 @@ const Workflow = () => {
 
     const handleElementClick = (element) => {
         setSelectedElement(element);
-        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [], comments: element.comments, assign: element.assign, askfordoc: element.askfordoc, checklist: element.checklist });
+        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [], checklist: element.checklist });
     }
 
     const handleElementDrag = (element, newPosition) => {
@@ -323,9 +323,6 @@ const Workflow = () => {
                             roles: stateData.roles,
                             sla: stateData.sla,
                             form: stateData?.form,
-                            comments: stateData?.comments,
-                            assign: stateData?.assign,
-                            askfordoc: stateData?.askfordoc,
                             checklist: stateData?.checklist,
                         };
                         setSelectedElement(updatedElement);
@@ -351,6 +348,9 @@ const Workflow = () => {
                             label: actionData.label,
                             desc: actionData.desc,
                             aroles: actionData.aroles,
+                            aaskfordoc: actionData.aaskfordoc,
+                            aassign: actionData.aassign,
+                            acomments: actionData.acomments,
                         };
                         setSelectedElement(updatedElement);
                         return updatedElement;
@@ -521,9 +521,6 @@ const Workflow = () => {
             <div className="typography heading-m" style={{ color: "#0B4B66" }}>
                     <div >{t("STAGE_ACTIONS")}</div>
             </div>,
-            <StageActions label={t("ADD_COMMENTS")} type="switch" name="comments" desc={t("COMMENTS_DESC")} onClick={(data) => onDataChange(data)} value={stateData.comments}/>,
-            <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="assign" desc={t("ASSIGN_DESC")} onClick={(e) => onDataChange(e)} value={stateData.assign}/>,
-            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="askfordoc" desc={t("DOC_DESC")} onClick={(e) => onDataChange(e)} value={stateData.askfordoc}/>,
             <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
             <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
             <StageActions label={t("SEND_NOTIFICATION")} type="button" name="sendnotif" desc={t("NOFITICATION_DESC")}/>,
@@ -605,6 +602,12 @@ const Workflow = () => {
                 infoMessage={t("ACTION_ROLES_INFO")}
                 value={actionData.aroles}
             />,
+            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
+                <div >{t("STAGE_ACTIONS")}</div>
+            </div>,
+            <StageActions label={t("ADD_COMMENTS")} type="switch" name="acomments" desc={t("COMMENTS_DESC")} onClick={(data) => onActionDataChange(data)} value={actionData.acomments} />,
+            <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="aassign" desc={t("ASSIGN_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aassign} />,
+            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="aaskfordoc" desc={t("DOC_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aaskfordoc} />,
             <Button
                 variation="primary"
                 label={t("UPDATE_ACTION")}
@@ -626,7 +629,49 @@ const Workflow = () => {
 
     const onconnectionClick = (conn, e) => {
         setSelectedElement(conn);
-        setActionData({ label: conn.label, desc: conn.desc, aroles: conn.aroles });
+        setActionData({ label: conn.label, desc: conn.desc, aroles: conn.aroles, aaskfordoc: conn.aaskfordoc, aassign: conn.aassign, acomments: conn.acomments });
+    }
+
+    function documentConfig(connections, module) {
+        const actions = connections.map(connection => {
+            const actionName = connection.label;
+
+            const showAssignee = connection.aassign || false;
+
+            const showComments = connection.acomments || false;
+
+            let documents = [];
+
+            return {
+                "action": actionName,
+                "assignee": {
+                    "show": showAssignee,
+                    "isMandatory": false
+                },
+                "comments": {
+                    "show": showComments,
+                    "isMandatory": false
+                },
+                "documents": documents
+            };
+        });
+
+        return [{
+            "module": module,
+            "actions": actions,
+            "bannerLabel": "OBPS_BANNER",
+            "maxSizeInMB": 5,
+            "allowedFileTypes": [
+                "pdf",
+                "doc", 
+                "docx", 
+                "xlsx", 
+                "xls", 
+                "jpeg", 
+                "jpg", 
+                "png"
+            ]
+        }]
     }
 
     const transformWorkflowData = (statesData, connectionsData) => {
@@ -651,7 +696,7 @@ const Workflow = () => {
             const actions = outgoingConnections.map(conn => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 return {
-                    roles: state.roles?.map(role => role.code),
+                    roles: conn.aroles?.map(role => role.code),
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase() : 'UNKNOWN'
                 };
@@ -690,6 +735,7 @@ const Workflow = () => {
 
     const getWrorkflowData = () => {
         console.log(JSON.stringify(transformWorkflowData(canvasElements, connections), null, 2));
+        console.log(JSON.stringify(documentConfig(connections, module), null, 2));
     };
 
     const onClear =() =>{

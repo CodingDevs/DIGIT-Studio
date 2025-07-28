@@ -10,9 +10,6 @@ const WorkflowNode = ({
   nodetype,
   roles = [],
   sla,
-  comments,
-  assign,
-  askfordoc,
   checklist,
   generatedoc,
   sendnotif,
@@ -89,44 +86,8 @@ const WorkflowNode = ({
     );
   };
 
-  // Function to render conditional icons based on prop values
-  const renderConditionalIcons = () => {
-    const icons = [];
-    
-    if (assign) {
-      icons.push(
-        <div key="assign" className="conditional-icon" title="Assignment Required">
-          <CustomSVG.EditIcon />
-        </div>
-      );
-    }
-    
-    if (askfordoc) {
-      icons.push(
-        <div key="askfordoc" className="conditional-icon" title="Document Required">
-          <CustomSVG.EditIcon />
-        </div>
-      );
-    }
-    
-    if (comments) {
-      icons.push(
-        <div key="comments" className="conditional-icon" title="Comments Required">
-          <CustomSVG.EditIcon />
-        </div>
-      );
-    }
-    
-    return icons;
-  };
-
   return (
     <div className="card-container">
-      {(assign || askfordoc || comments) && (
-        <div className="conditional-icons-container">
-          {renderConditionalIcons()}
-        </div>
-      )}
       {/* Top right buttons - Edit and Remove */}
       <div className="top-actions">
         {/* Edit Button */}

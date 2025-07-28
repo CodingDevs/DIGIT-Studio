@@ -7,7 +7,7 @@ const RoleComp = ({ role, desc, isNew = false, onRoleClick, data }) => {
 
   if (isNew) {
     return (
-      <div className="state-card new" style={{ width: "220px", height:"220px", margin: "9rpx", border: "2px dashed orange",display: "flex", justifyContent: "center" }} onClick={() => onRoleClick(role, desc, isNew, false, false, false)}>
+      <div className="state-card new" style={{ width: "220px", height:"220px", margin: "9rpx", border: "2px dashed #C84C0E",display: "flex", justifyContent: "center" }} onClick={() => onRoleClick(role, desc, isNew, false, false, false)}>
         <div className="state-card-content" style={{ justifyContent: "center", padding: "6px", flexDirection: "column", alignItems: "normal" }}>
           <div className="state-icon">
             <CustomSVG.AddIcon height="30" width="30" fill="#C84C0E"/>
