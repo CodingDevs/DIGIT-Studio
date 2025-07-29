@@ -13,6 +13,8 @@ const ChecklistHomePage = () => {
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const [selectedTab, setSelectedTab] = useState("MY_CHECKLIST");
   const [checklistData, setChecklistData] = useState([]);
+  const {module, service} = Digit.Hooks.useQueryParams();
+
 
   const requestCriteria = {
     url: "/egov-mdms-service/v2/_search",
@@ -28,7 +30,7 @@ const ChecklistHomePage = () => {
   useEffect(() => {
     if(data)
     {
-      const formatted = data?.mdms?.map((item, index) => ({
+      const formatted = data?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === module.toUpperCase() && ob?.data?.service.toUpperCase() === service.toUpperCase())?.map((item, index) => ({
                 id: item.id || index,
                 name: item.data?.name,
                 description: item?.data?.description || "-",
@@ -65,7 +67,7 @@ const ChecklistHomePage = () => {
               //iconFill=""
               label={t(`STUDIO_CREATE_NEW_CHECKLIST_SUB_HEADER`)}
               onClick={() =>
-                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist`)
+                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist?module=${module}&service=${service}`)
               }
               size="medium"
               style={{width: "100%", height: "5rem"}}
@@ -145,7 +147,7 @@ const ChecklistHomePage = () => {
                   <div>
                     <button
                       style={{ color: "#c84c0e", fontSize: "14px", width:"4rem" }}
-                      onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/update-checklist?checklistName=${item.name}`)}
+                      onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/update-checklist?checklistName=${item.name}&module=${module}&service=${service}`)}
                     >
                       {t("STUDIO_EDIT")}
                     </button>

@@ -644,7 +644,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         setShowLocalisationPopup(false)
         setShowToast({ label: isUpdate ? "CHECKLIST_UPDATED_SUCCESSFULLY" : "CHECKLIST_CREATED_SUCCESSFULLY", isError: "false" });
         setTimeout(() => {
-          history.push(`/${window.contextPath}/employee/servicedesigner/checklist`);
+          history.push(`/${window.contextPath}/employee/servicedesigner/checklist?module=${checklistModule}&service=${checklistService}`);
       }, 3000);
       } else {
         setShowToast({ label: "CHECKLIST_CREATED_FAILED", isError: "true" });
@@ -666,7 +666,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
   }, [showToast])
 
   const onSecondayActionClick = () => {
-    history.push(`/${window.contextPath}/employee/servicedesigner/checklist`);
+    history.push(`/${window.contextPath}/employee/servicedesigner/checklist?module=${checklistModule}&service=${checklistService}`);
   };
 
   // const fieldPairs = [

@@ -853,7 +853,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
                 transitionTime: 5000
               });
               setTimeout(() => {
-                history.push(`/${window.contextPath}/employee/servicedesigner/forms`);
+                history.push(`/${window.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`);
             }, 3000);
             } else {
               // If editMode is true but existingFormData is not available, 
@@ -894,7 +894,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
                     transitionTime: 5000
                   });
                   setTimeout(() => {
-                    history.push(`/${window.contextPath}/employee/servicedesigner/forms`);
+                    history.push(`/${window.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`);
                 }, 3000);
                 } else {
                   throw new Error("Form not found for update");
@@ -918,7 +918,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
               transitionTime: 5000
             });
             setTimeout(() => {
-              history.push(`/${window.contextPath}/employee/servicedesigner/forms`);
+              history.push(`/${window.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`);
           }, 3000);
           }
           

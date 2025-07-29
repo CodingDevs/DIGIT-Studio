@@ -29,7 +29,7 @@ const FormHomePage = () => {
   useEffect(() => {
     if(data)
     {
-      const formatted = data?.mdms?.map((item, index) => ({
+      const formatted = data?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === module.toUpperCase() && ob?.data?.service.toUpperCase() === service.toUpperCase()).map((item, index) => ({
                 id: item.id || index,
                 name: item.data?.formName,
                 description: item?.data?.formDescription || "-",
@@ -66,7 +66,7 @@ const FormHomePage = () => {
               //iconFill=""
               label={t(`STUDIO_CREATE_NEW_FORMS_SUB_HEADER`)}
               onClick={() =>
-                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${module}&Service=${service}`)
+                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${module}&service=${service}`)
               }
               size="medium"
               style={{width: "100%", height: "5rem"}}

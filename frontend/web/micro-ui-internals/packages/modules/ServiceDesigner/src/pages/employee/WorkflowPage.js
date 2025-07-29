@@ -31,6 +31,7 @@ const Workflow = () => {
     // New state for service configuration popup
     const [showServiceConfigPopup, setShowServiceConfigPopup] = useState(false);
     const [serviceConfigData, setServiceConfigData] = useState(null);
+    const [isGeneratingConfig, setIsGeneratingConfig] = useState(false);
 
     const requestSearchCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -54,7 +55,7 @@ const Workflow = () => {
         },
     };
     const { isLoading: moduleListLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
-    const checklistData = dataa?.mdms?.map((item) => ({
+    const checklistData = dataa?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === roleModule.toUpperCase() && ob?.data?.service.toUpperCase() === roleService.toUpperCase())?.map((item) => ({
         code: item.data.name,
         name: item.data.name,
     }));
@@ -69,7 +70,7 @@ const Workflow = () => {
         },
     };
     const { isLoading: FormsLoading, data: FormData } = Digit.Hooks.useCustomAPIHook(requestCriteriaForm);
-    const formOptions = FormData?.mdms?.map((item) => ({
+    const formOptions = FormData?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === roleModule.toUpperCase() && ob?.data?.service.toUpperCase() === roleService.toUpperCase())?.map((item) => ({
         code: item.data.formName,
         name: item.data.formName,
     }));
@@ -422,10 +423,11 @@ const Workflow = () => {
             <QuickStart />,
             <Button
                 variation="secondary"
-                label={t("GET_WORKFLOW")}
+                label={isGeneratingConfig ? t("GENERATING_CONFIG") : t("GET_WORKFLOW")}
                 type="button"
                 className="secondary-button"
                 style={{ width: "100%" }}
+                disabled={isGeneratingConfig}
                 onClick={(e) => getWrorkflowData(e)}
             />
         ],
@@ -1122,14 +1124,26 @@ const Workflow = () => {
     };
 
     const getWrorkflowData = async () => {
-        // Log the existing console outputs as before
-        
-        // Generate service configuration automatically
-        const serviceConfig = await generateServiceConfiguration();
-        setServiceConfigData(serviceConfig);
-        
-        // Show the popup with the generated configuration
-        setShowServiceConfigPopup(true);
+        try {
+            // Show loader
+            setIsGeneratingConfig(true);
+            
+            // Generate service configuration automatically
+            const serviceConfig = await generateServiceConfiguration();
+            setServiceConfigData(serviceConfig);
+            
+            // Show the popup with the generated configuration
+            setShowServiceConfigPopup(true);
+        } catch (error) {
+            console.error("Error generating service configuration:", error);
+            setShowToast({
+                type: "error",
+                label: "SERVICE_CONFIG_GENERATION_FAILED"
+            });
+        } finally {
+            // Hide loader
+            setIsGeneratingConfig(false);
+        }
     };
 
 
@@ -1248,25 +1262,40 @@ const Workflow = () => {
                     }}
                     onClose={() => setShowServiceConfigPopup(false)}
                     children={[
-                        <div key="service-config-preview" style={{ 
-                            background: "#f8f9fa", 
-                            padding: "1rem", 
-                            borderRadius: "8px", 
-                            maxHeight: "70vh", 
-                            overflow: "auto",
-                            border: "1px solid #e9ecef"
-                        }}>
-                            <h4 style={{ marginBottom: "1rem", color: "#495057" }}>{t("COMPLETE_SERVICE_CONFIGURATION")}</h4>
-                            <pre style={{ 
-                                fontSize: "12px", 
-                                lineHeight: "1.4", 
-                                color: "#495057",
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word"
+                        isGeneratingConfig ? (
+                            <div key="service-config-loader" style={{ 
+                                display: "flex", 
+                                justifyContent: "center", 
+                                alignItems: "center", 
+                                padding: "3rem",
+                                flexDirection: "column"
                             }}>
-                                {JSON.stringify(serviceConfigData, null, 2)}
-                            </pre>
-                        </div>
+                                <Loader />
+                                <div style={{ marginTop: "1rem", color: "#666" }}>
+                                    {t("GENERATING_SERVICE_CONFIGURATION")}...
+                                </div>
+                            </div>
+                        ) : (
+                            <div key="service-config-preview" style={{ 
+                                background: "#f8f9fa", 
+                                padding: "1rem", 
+                                borderRadius: "8px", 
+                                maxHeight: "70vh", 
+                                overflow: "auto",
+                                border: "1px solid #e9ecef"
+                            }}>
+                                <h4 style={{ marginBottom: "1rem", color: "#495057" }}>{t("COMPLETE_SERVICE_CONFIGURATION")}</h4>
+                                <pre style={{ 
+                                    fontSize: "12px", 
+                                    lineHeight: "1.4", 
+                                    color: "#495057",
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word"
+                                }}>
+                                    {JSON.stringify(serviceConfigData, null, 2)}
+                                </pre>
+                            </div>
+                        )
                     ]}
                 />
             )}

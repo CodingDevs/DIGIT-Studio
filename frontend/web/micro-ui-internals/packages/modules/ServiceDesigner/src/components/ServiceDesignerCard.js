@@ -18,18 +18,18 @@ const ServiceDesignerCard = () => {
         label: t("SERVICE_DESIGNER_LANDING"),
         link: `/${window?.contextPath}/employee/servicedesigner/LandingPage`,
       },
-      {
-        label: t("SERVICE_DESIGNER_WORKFLOW"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Workflow`,
-      },
-      {
-        label: t("SERVICE_DESIGNER_CHECKLIST"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Checklist`,
-      },
-      {
-        label: t("SERVICE_DESIGNER_ROLES"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Roles`,
-      },
+      // {
+      //   label: t("SERVICE_DESIGNER_WORKFLOW"),
+      //   link: `/${window?.contextPath}/employee/servicedesigner/Workflow`,
+      // },
+      // {
+      //   label: t("SERVICE_DESIGNER_CHECKLIST"),
+      //   link: `/${window?.contextPath}/employee/servicedesigner/Checklist`,
+      // },
+      // {
+      //   label: t("SERVICE_DESIGNER_ROLES"),
+      //   link: `/${window?.contextPath}/employee/servicedesigner/Roles`,
+      // },
     ],
   };
 
