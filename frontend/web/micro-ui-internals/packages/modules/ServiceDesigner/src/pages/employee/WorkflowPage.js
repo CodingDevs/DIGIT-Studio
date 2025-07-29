@@ -17,7 +17,7 @@ const Workflow = () => {
     const searchParams = new URLSearchParams(location.search);
     const roleModule = searchParams.get("module") || "Studio";
     const roleService = searchParams.get("service") || "Service";
-    const module = `${roleModule.toUpperCase()}${roleService.toUpperCase()}`;
+    const servicemodule = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
     const [selectedElement, setSelectedElement] = useState(null);
     const [canvasElements, setCanvasElements] = useState(JSON.parse(localStorage.getItem("canvasElements")) || []);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
@@ -42,7 +42,7 @@ const Workflow = () => {
         },
     };
     const { isLoading, data: roles } = Digit.Hooks.useCustomAPIHook(requestSearchCriteria);
-    const data= roles?.mdms;
+    const data= roles?.mdms?.filter(role => role?.data?.category === servicemodule);
 
     const requestCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -738,7 +738,7 @@ const Workflow = () => {
             states: states,
             INACTIVE: [],
             business: 'business',
-            businessService: 'business_service',
+            businessService: `${roleModule}.${roleService}`,
             generateDemandAt: [],
             businessServiceSla: 5184000000,
             nextActionAfterPayment: "",
@@ -997,7 +997,7 @@ const Workflow = () => {
     const generateServiceConfiguration = async () => {
         // Get existing console outputs
         const workflowData = transformWorkflowData(canvasElements, connections);
-        const documentData = documentConfig(connections, module);
+        const documentData = documentConfig(connections, `${roleModule}${roleService}`);
         
         // Get form data from start state
         const formDataFromStartState = getFormDataFromStartState();

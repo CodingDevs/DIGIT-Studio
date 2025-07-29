@@ -368,3 +368,12 @@
   outline: none;
   color: #1d4ed8;
 }
+
+.section-divider-wrapper {
+  gap: 0rem;
+  grid-gap: 0rem;
+}
+
+.access-checkbox {
+  margin-bottom: 0px;
+}
