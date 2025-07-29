@@ -3,12 +3,14 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
 
-const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className }) => {
+const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className, onClick }) => {
   const history = useHistory();
   const { t } = useTranslation();
 
   const handleClick = () => {
-    if (link) {
+    if (onClick) {
+      onClick();
+    } else if (link) {
       history.push(`/${window.contextPath}/${link}`);
     }
   };

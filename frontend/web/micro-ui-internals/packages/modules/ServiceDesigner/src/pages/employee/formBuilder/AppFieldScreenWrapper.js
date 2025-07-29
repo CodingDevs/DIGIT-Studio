@@ -273,7 +273,7 @@ function AppFieldScreenWrapper() {
                 helpText={useCustomT(field.helpText)}
                 infoText={useCustomT(field.infoText)}
                 innerLabel={useCustomT(field.innerLabel)}
-                rest={field.rest}
+                rest={field}
                 index={i}
                 fieldIndex={i}
                 cardIndex={cardObj}

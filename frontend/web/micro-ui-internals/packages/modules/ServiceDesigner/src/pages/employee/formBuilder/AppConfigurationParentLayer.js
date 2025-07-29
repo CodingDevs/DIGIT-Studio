@@ -348,13 +348,13 @@ const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, i
       <Header className="app-config-header">
         <div className="app-config-header-group" style={{ display: "flex", alignItems: "center" }}>
           {t(`APP_CONFIG_HEADING_LABEL`)}
-          <Tag
+          {/* <Tag
             stroke={true}
             showIcon={false}
             label={`${t("APPCONFIG_VERSION")} - ${parentState?.actualTemplate?.version}`}
             style={{ background: "#EFF8FF", height: "fit-content" }}
             className={"version-tag"}
-          />
+          /> */}
         </div>
       </Header>
       <TextBlock body="" caption={t("CMP_DRAWER_WHAT_IS_APP_CONFIG_SCREEN")} header="" captionClassName="camp-drawer-caption" subHeader="" />

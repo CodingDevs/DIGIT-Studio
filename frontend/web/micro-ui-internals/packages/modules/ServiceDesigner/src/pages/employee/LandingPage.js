@@ -8,8 +8,9 @@ import {
   CardHeader,
 } from "@egovernments/digit-ui-react-components";
 import ServiceCard from "../../components/ServiceCard";
-import { Toggle, CustomSVG, Loader, Tab } from "@egovernments/digit-ui-components";
+import { Toggle, CustomSVG, Loader, Tab, PopUp, TextInput, Button } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
+import { useHistory } from "react-router-dom";
 
 export const buildCardData = (drafts = [], published = [], t) => {
   const publishedCards = published.map((item) => ({
@@ -18,9 +19,12 @@ export const buildCardData = (drafts = [], published = [], t) => {
     link: "/employee",
   }));
 
+  console.log(drafts,"draftsss");
   const draftCards = drafts.map((item) => ({
     title: item.uniqueIdentifier || "Unnamed Draft Service",
     description: "Service group still in draft mode",
+    link: `employee/servicedesigner/Service-Builder-Home?module=${item?.data?.module}&service=${item?.data?.service}&edit=true`,
+    createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
   }));
 
   const templates = [
@@ -39,8 +43,8 @@ export const buildCardData = (drafts = [], published = [], t) => {
       {
         title: t("STUDIO_NEW_SERVICE_HEADER"),
         description: t("STUDIO_NEW_SERVICE_DESCRIPTION"),
-        link: "employee/servicedesigner/Service-Builder-Home?module=TESTUI&service=Service1",
         isCreateCard: true,
+        onClick: true, // Custom flag to indicate this card needs custom click handling
       },
       ...publishedCards,
     ],
@@ -72,12 +76,18 @@ export const extractDraftsAndPublished = (mdmsData = [], serviceData = []) => {
 
 const LandingPage = () => {
   const { t } = useTranslation();
+  const history = useHistory();
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const [isLoading, setIsLoading] = useState(true);
   const [mdmsData, setMdmsData] = useState([]);
   const [publicServices, setPublicServices] = useState([]);
   const [cardData, setCardData] = useState({});
   const [showAllCards, setShowAllCards] = useState(false);
+  const [showCreatePopup, setShowCreatePopup] = useState(false);
+  const [moduleName, setModuleName] = useState("");
+  const [serviceName, setServiceName] = useState("");
+  localStorage.removeItem("canvasElements")
+  localStorage.removeItem("connections")
 
   const toggleConfig = LandingPageConfig.find(
     (item) => item.type === "ToggleGroup"
@@ -90,6 +100,19 @@ const LandingPage = () => {
   const visibleRows = 2;
   const maxCardsToShow = cardsPerRow * visibleRows;
 
+  const handleProceedToServiceBuilder = () => {
+    if (!moduleName.trim() || !serviceName.trim()) {
+      return;
+    }
+    
+    const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(moduleName.trim())}&service=${encodeURIComponent(serviceName.trim())}`;
+    history.push(`/${window.contextPath}/${url}`);
+  };
+
+  const handleCreateCardClick = () => {
+    setShowCreatePopup(true);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -99,7 +122,7 @@ const LandingPage = () => {
             {
               MdmsCriteria: {
                 tenantId: tenantId,
-                schemaCode: "Studio.ServiceConfiguration",
+                schemaCode: "Studio.ServiceConfigurationDrafts",
                 limit: 10,
                 offset: 0,
               },
@@ -236,8 +259,9 @@ const LandingPage = () => {
                             }
                             cardHeader={card.title || (card.isCreateCard && "Add New")}
                             cardBody={card.isCreateCard ? "" : card.description}
-                            createdDate={card.isCreateCard ? null : "1/01/2023"}
-                            link={card.link}
+                            createdDate={card.isCreateCard ? null : card.createdDate || "01/01/2025"}
+                            link={card.onClick ? null : card.link}
+                            onClick={card.onClick ? handleCreateCardClick : undefined}
                             className={card.isCreateCard ? "create-card" : ""}
                         />
                     ))
@@ -269,6 +293,87 @@ const LandingPage = () => {
             return null;
         }
       })}
+      
+      {/* Create Service Group Popup */}
+      {showCreatePopup && (
+        <PopUp
+          header={t("CREATE_SERVICE_GROUP")}
+          headerBarMain={t("ENTER_SERVICE_DETAILS")}
+          actionCancelLabel={t("CANCEL")}
+          actionCancelOnSubmit={() => setShowCreatePopup(false)}
+          onClose={() => setShowCreatePopup(false)}
+          children={[
+            <div key="create-service-form" style={{ 
+              padding: "1rem", 
+              background: "#f8f9fa", 
+              borderRadius: "8px",
+              border: "1px solid #e9ecef"
+            }}>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  marginBottom: "1rem",
+                  gap: "1rem"
+                }}>
+                  <label style={{ 
+                    minWidth: "120px",
+                    fontWeight: "500",
+                    color: "#333"
+                  }}>
+                    {t("MODULE_NAME")}:
+                  </label>
+                  <TextInput
+                    value={moduleName}
+                    onChange={(e) => setModuleName(e.target.value)}
+                    //placeholder={t("ENTER_MODULE_NAME")}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center",
+                  gap: "1rem"
+                }}>
+                  <label style={{ 
+                    minWidth: "120px",
+                    fontWeight: "500",
+                    color: "#333"
+                  }}>
+                    {t("SERVICE_NAME")}:
+                  </label>
+                  <TextInput
+                    value={serviceName}
+                    onChange={(e) => setServiceName(e.target.value)}
+                    //placeholder={t("ENTER_SERVICE_NAME")}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "flex-end", 
+                gap: "0.5rem",
+                paddingTop: "1rem",
+                borderTop: "1px solid #e9ecef"
+              }}>
+                <Button
+                  variation="secondary"
+                  label={t("CANCEL")}
+                  onClick={() => setShowCreatePopup(false)}
+                />
+                <Button
+                  variation="primary"
+                  label={t("PROCEED")}
+                  onClick={handleProceedToServiceBuilder}
+                  disabled={!moduleName.trim() || !serviceName.trim()}
+                />
+              </div>
+            </div>
+          ]}
+        />
+      )}
     </Card>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { SidePanel, PopUp, TextInput, Dropdown, FieldV1 } from "@egovernments/digit-ui-components";
+import { SidePanel, PopUp, TextInput, Dropdown, FieldV1, TextArea } from "@egovernments/digit-ui-components";
 import { Card } from "@egovernments/digit-ui-react-components";
 import InfiniteCanvas from "../../components/Canvas";
 import { useTranslation } from "react-i18next";
@@ -10,9 +10,12 @@ import StateComp from "../../components/StateComponent";
 import { Loader } from "@egovernments/digit-ui-react-components";
 import QuickStart from "../../components/QuickStart";
 import StageActions from "../../components/StageActions";
+import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
+import { useHistory } from "react-router-dom";
 
 const Workflow = () => {
     const { t } = useTranslation();
+    const history = useHistory();
     const tenantId = Digit.ULBService.getCurrentTenantId();
     const searchParams = new URLSearchParams(location.search);
     const roleModule = searchParams.get("module") || "Studio";
@@ -32,6 +35,16 @@ const Workflow = () => {
     const [showServiceConfigPopup, setShowServiceConfigPopup] = useState(false);
     const [serviceConfigData, setServiceConfigData] = useState(null);
     const [isGeneratingConfig, setIsGeneratingConfig] = useState(false);
+    const [editableServiceConfig, setEditableServiceConfig] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+    const [existingServiceConfigId, setExistingServiceConfigId] = useState(null);
+    
+    // Check if we're in edit mode
+    const isEditMode = searchParams.get("edit") === "true";
+    
+    // Service configuration API hooks
+    const { saveServiceConfig, updateServiceConfig, fetchServiceConfig } = useServiceConfigAPI();
+    const { data: existingServiceConfig } = fetchServiceConfig(roleModule, roleService);
 
     const requestSearchCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -96,6 +109,29 @@ const Workflow = () => {
     setTimeout(() => {
         setShowToast(null);
     }, 20000);
+
+    // Handle edit mode initialization
+    useEffect(() => {
+        if (isEditMode && existingServiceConfig) {
+            setExistingServiceConfigId(existingServiceConfig.id);
+            
+            // Load the workflow data from existing service config
+            if (existingServiceConfig.data) {
+                const configData = existingServiceConfig.data;
+                
+                // Load canvas elements and connections directly from workflow
+                if (configData.workflow && configData.workflow.canvasElements) {
+                    setCanvasElements(configData.workflow.canvasElements);
+                    localStorage.setItem("canvasElements", JSON.stringify(configData.workflow.canvasElements));
+                }
+                
+                if (configData.workflow && configData.workflow.connections) {
+                    setConnections(configData.workflow.connections);
+                    localStorage.setItem("connections", JSON.stringify(configData.workflow.connections));
+                }
+            }
+        }
+    }, [isEditMode, existingServiceConfig]);
 
     const onLeftClick = (elementId, e) => {
         if (connectionStart) {
@@ -421,15 +457,15 @@ const Workflow = () => {
                 <div>{t("HOW_TO_CONNECT")}</div>
             </div>,
             <QuickStart />,
-            <Button
-                variation="secondary"
-                label={isGeneratingConfig ? t("GENERATING_CONFIG") : t("GET_WORKFLOW")}
-                type="button"
-                className="secondary-button"
-                style={{ width: "100%" }}
-                disabled={isGeneratingConfig}
-                onClick={(e) => getWrorkflowData(e)}
-            />
+                                <Button
+                        variation="secondary"
+                        label={isGeneratingConfig ? t("GENERATING_CONFIG") : (isEditMode ? t("UPDATE_SERVICE_CONFIG") : t("GET_SERVICE_CONFIG"))}
+                        type="button"
+                        className="secondary-button"
+                        style={{ width: "100%" }}
+                        disabled={isGeneratingConfig}
+                        onClick={(e) => getWrorkflowData(e)}
+                    />
         ],
     ];
 
@@ -660,7 +696,7 @@ const Workflow = () => {
             let documents = [];
 
             return {
-                "action": actionName,
+                "action": actionName.toUpperCase().replace(/\s+/g, '_'),
                 "assignee": {
                     "show": showAssignee,
                     "isMandatory": false
@@ -722,6 +758,21 @@ const Workflow = () => {
             const isStart = isStartState(state.id, connectionsData);
             const isTerminate = isTerminateState(state.id, connectionsData);
 
+            // Prepare additional details for forms and checklists
+            const additionalDetails = {};
+            if (state.form && state.form.length > 0) {
+                additionalDetails.form = {
+                    name: state.form.name,
+                    code: state.form.code
+                };
+            }
+            if (state.checklist && state.checklist.length > 0) {
+                additionalDetails.checklist = {
+                    name: state.checklist.name,
+                    code: state.checklist.code
+                };
+            }
+
             return {
                 sla: convertSlaToMs(state.sla),
                 state: isStart ? null : state.name.toUpperCase(),
@@ -730,7 +781,9 @@ const Workflow = () => {
                 isStateUpdatable: true,
                 isTerminateState: isTerminate,
                 applicationStatus: null,
-                docUploadRequired: false
+                docUploadRequired: false,
+
+                //additionalDetails: stateData
             };
         });
 
@@ -744,7 +797,9 @@ const Workflow = () => {
             generateDemandAt: [],
             businessServiceSla: 5184000000,
             nextActionAfterPayment: "",
-            autoTransitionEnabledStates: []
+            autoTransitionEnabledStates: [],
+            canvasElements:statesData,
+            connections:connectionsData
         };
 
         return { workflow };
@@ -1016,8 +1071,8 @@ const Workflow = () => {
         const serviceName = roleService.toLowerCase();
         
         const serviceConfig = {
-            module: moduleName,
-            service: serviceName,
+            module: roleModule,
+            service: roleService,
             enabled: ["citizen", "employee"],
             workflow: workflowData.workflow,
             documents: documentData,
@@ -1119,7 +1174,6 @@ const Workflow = () => {
                 }
             ]
         };
-        
         return serviceConfig;
     };
 
@@ -1131,6 +1185,7 @@ const Workflow = () => {
             // Generate service configuration automatically
             const serviceConfig = await generateServiceConfiguration();
             setServiceConfigData(serviceConfig);
+            setEditableServiceConfig(JSON.stringify(serviceConfig, null, 2));
             
             // Show the popup with the generated configuration
             setShowServiceConfigPopup(true);
@@ -1145,6 +1200,61 @@ const Workflow = () => {
             setIsGeneratingConfig(false);
         }
     };
+
+    const handleSaveServiceConfig = async () => {
+        try {
+            setIsSaving(true);
+            
+            let parsedConfig;
+            try {
+                parsedConfig = JSON.parse(editableServiceConfig);
+            } catch (error) {
+                setShowToast({
+                    type: "error",
+                    label: "INVALID_JSON_FORMAT"
+                });
+                return;
+            }
+
+
+            if (existingServiceConfigId) {
+                // Update existing service config
+                await updateServiceConfig.mutateAsync({
+                    serviceConfigData: parsedConfig,
+                    existingConfig: existingServiceConfig
+                });
+                setShowToast({
+                    type: "success",
+                    label: "SERVICE_CONFIG_UPDATED_SUCCESSFULLY"
+                });
+                setTimeout(() => {
+                    history.push(`/${window.contextPath}/employee/servicedesigner/LandingPage`);
+                }, 3000);
+            } else {
+                // Create new service config
+                await saveServiceConfig.mutateAsync(parsedConfig);
+                setShowToast({
+                    type: "success",
+                    label: "SERVICE_CONFIG_SAVED_SUCCESSFULLY"
+                });
+                setTimeout(() => {
+                    history.push(`/${window.contextPath}/employee/servicedesigner/LandingPage`);
+                }, 3000);
+            }
+            
+            setShowServiceConfigPopup(false);
+        } catch (error) {
+            console.error("Error saving service configuration:", error);
+            setShowToast({
+                type: "error",
+                label: "SERVICE_CONFIG_SAVE_FAILED"
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+
 
 
 
@@ -1249,17 +1359,9 @@ const Workflow = () => {
             {showServiceConfigPopup && (
                 <PopUp
                     header={t("SERVICE_CONFIGURATION")}
-                    headerBarMain={t("GENERATED_SERVICE_CONFIG")}
+                    headerBarMain={t("EDITABLE_SERVICE_CONFIG")}
                     actionCancelLabel={t("CLOSE")}
                     actionCancelOnSubmit={() => setShowServiceConfigPopup(false)}
-                    actionSaveLabel={t("COPY_CONFIG")}
-                    actionSaveOnSubmit={() => {
-                        navigator.clipboard.writeText(JSON.stringify(serviceConfigData, null, 2));
-                        setShowToast({
-                            type: "success",
-                            label: "CONFIGURATION_COPIED_TO_CLIPBOARD"
-                        });
-                    }}
                     onClose={() => setShowServiceConfigPopup(false)}
                     children={[
                         isGeneratingConfig ? (
@@ -1284,16 +1386,58 @@ const Workflow = () => {
                                 overflow: "auto",
                                 border: "1px solid #e9ecef"
                             }}>
-                                <h4 style={{ marginBottom: "1rem", color: "#495057" }}>{t("COMPLETE_SERVICE_CONFIGURATION")}</h4>
-                                <pre style={{ 
-                                    fontSize: "12px", 
-                                    lineHeight: "1.4", 
-                                    color: "#495057",
-                                    whiteSpace: "pre-wrap",
-                                    wordBreak: "break-word"
+                                <div style={{ 
+                                    display: "flex", 
+                                    justifyContent: "space-between", 
+                                    alignItems: "center", 
+                                    marginBottom: "1rem" 
                                 }}>
-                                    {JSON.stringify(serviceConfigData, null, 2)}
-                                </pre>
+                                    <h4 style={{ color: "#495057", margin: 0 }}>
+                                        {t("EDITABLE_SERVICE_CONFIGURATION")}
+                                    </h4>
+                                    <div style={{ color: "#666", fontSize: "12px" }}>
+                                        Config Length: {editableServiceConfig.length} characters
+                                    </div>
+                                </div>
+                                
+                                <textarea
+                                    value={editableServiceConfig}
+                                    onChange={(e) => setEditableServiceConfig(e.target.value)}
+                                    style={{
+                                        fontFamily: "monospace",
+                                        fontSize: "12px",
+                                        lineHeight: "1.4",
+                                        minHeight: "50vh",
+                                        width: "100%",
+                                        backgroundColor: "#fff",
+                                        border: "1px solid #ced4da",
+                                        borderRadius: "4px",
+                                        padding: "0.5rem",
+                                        resize: "vertical",
+                                        marginBottom: "1rem"
+                                    }}
+                                    placeholder="Edit service configuration JSON..."
+                                />
+                                
+                                <div style={{ 
+                                    display: "flex", 
+                                    justifyContent: "flex-end", 
+                                    gap: "0.5rem",
+                                    paddingTop: "1rem",
+                                    borderTop: "1px solid #e9ecef"
+                                }}>
+                                    <Button
+                                        variation="secondary"
+                                        label={t("CLOSE")}
+                                        onClick={() => setShowServiceConfigPopup(false)}
+                                    />
+                                    <Button
+                                        variation="primary"
+                                        label={isSaving ? t("SAVING") : t("SAVE")}
+                                        onClick={handleSaveServiceConfig}
+                                        disabled={isSaving}
+                                    />
+                                </div>
                             </div>
                         )
                     ]}

@@ -3,7 +3,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 const ServiceBuilderCard = () => {
-    const {module, service} = Digit.Hooks.useQueryParams();
+    const {module, service, edit} = Digit.Hooks.useQueryParams();
 
  
   const { t } = useTranslation();
@@ -18,19 +18,19 @@ const ServiceBuilderCard = () => {
     links: [
       {
             label: t("SERVICE_DESIGNER_FORMS"),
-            link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`,
+            link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
       },
       {
         label: t("SERVICE_DESIGNER_CHECKLIST"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Checklist?module=${module}&service=${service}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Checklist?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
       },
       {
         label: t("SERVICE_DESIGNER_ROLES"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Roles?module=${module}&service=${service}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Roles?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
       },
       {
         label: t("SERVICE_DESIGNER_WORKFLOW"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Workflow?module=${module}&service=${service}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Workflow?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
       }
     ],
   };
