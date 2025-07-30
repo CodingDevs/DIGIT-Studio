@@ -31,7 +31,11 @@ const ServiceBuilderCard = () => {
       {
         label: t("SERVICE_DESIGNER_WORKFLOW"),
         link: `/${window?.contextPath}/employee/servicedesigner/Workflow?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
-      }
+      },
+      {
+        label: t("SERVICE_DESIGNER_NOTIFICATIONS"),
+        link: `/${window?.contextPath}/employee/servicedesigner/notifications?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+      },
     ],
   };
 

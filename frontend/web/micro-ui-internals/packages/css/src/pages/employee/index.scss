@@ -915,3 +915,13 @@
 .access-checkbox {
   margin-bottom: 0px;
 }
+
+.notif-card-body{
+  padding: 1.5rem;
+}
+
+@media (min-aspect-ratio: 3 / 4) {
+    .digit-infobanner-wrap {
+        max-width: 100%;
+    }
+}

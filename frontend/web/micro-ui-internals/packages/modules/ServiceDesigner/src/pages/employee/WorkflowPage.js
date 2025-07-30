@@ -11,6 +11,8 @@ import { Loader } from "@egovernments/digit-ui-react-components";
 import QuickStart from "../../components/QuickStart";
 import StageActions from "../../components/StageActions";
 import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
+import generateMdmsRolePayload from "../../config/rolecreateConfig";
+import AccessCard from "../../components/AccessCard";
 import { useHistory } from "react-router-dom";
 
 const Workflow = () => {
@@ -38,6 +40,8 @@ const Workflow = () => {
     const [editableServiceConfig, setEditableServiceConfig] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [existingServiceConfigId, setExistingServiceConfigId] = useState(null);
+    const [rolePopup, setRolePopup]=useState(false);
+    const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
     
     // Check if we're in edit mode
     const isEditMode = searchParams.get("edit") === "true";
@@ -88,6 +92,18 @@ const Workflow = () => {
         name: item.data.formName,
     }));
 
+    const requestConfigCriteria = {
+        url: "/egov-mdms-service/v2/_search",
+        body: {
+            MdmsCriteria: {
+                tenantId: tenantId,
+                schemaCode: "studio.notification"
+            },
+        },
+    };
+    const { isLoading: isConfigLoad, data: config } = Digit.Hooks.useCustomAPIHook(requestConfigCriteria);
+    const notif=config?.mdms.filter(item =>item.data?.additionalDetails?.category === servicemodule);
+
     const [stateData, setStateData] = useState({
         name: "",
         desc: "",
@@ -95,6 +111,8 @@ const Workflow = () => {
         sla: 0,
         form: [],
         checklist: [],
+        sendnotif:[],
+        generatedoc:[],
     });
 
     const [actionData, setActionData] = useState({
@@ -104,6 +122,14 @@ const Workflow = () => {
         aaskfordoc: false,
         aassign: false,
         aaskfordoc: false
+    });
+
+    const [roleData, setRoleData] = useState({
+        name: "",
+        desc: "",
+        viewer: false,
+        editor: false,
+        creater: false,
     });
 
     setTimeout(() => {
@@ -145,7 +171,7 @@ const Workflow = () => {
                 }
                 return [
                     ...prev,
-                    { id: Date.now(), from: connectionStart, to: elementId, label: "Action", type: "action", desc: "" }
+                    { id: Date.now(), from: connectionStart, to: elementId, label: t("ACTION"), type: "action", desc: "" }
                 ];
             });
             setConnectionStart(null);
@@ -187,6 +213,79 @@ const Workflow = () => {
         const element = canvasElements.find(el => el.id === id);
         if (element) {
             handleElementClick(element);
+        }
+    }
+
+    const onRoleChange = (e) => {
+        if (Array.isArray(e)) {
+            setRoleData(prev => ({
+                ...prev,
+                [e[0]]: e[1].target.checked
+            }));
+        }
+        else if (e?.target) {
+            const { name, value } = e.target;
+            setRoleData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+
+    const createMdmsRole = async (req) => {
+        try {
+            const response = await Digit.CustomService.getResponse({
+                url:`/${MDMS_CONTEXT_PATH}/v2/_create/studio.roles`,
+                body: {
+                    ...req
+                },
+            });
+            return { success: true, data: response };
+        } catch (error) {
+            const errorCode = error?.response?.data?.Errors?.[0]?.code || "Unknown error";
+            const errorDescription = error?.response?.data?.Errors?.[0]?.description || "An error occurred";
+            return { success: false, error: { code: errorCode, description: errorDescription } };
+        }
+    };
+
+     const createRole = async (e) => {
+        if (roleData.name != "" && (roleData.creater || roleData.editor || roleData.viewer)) {
+                if (roles?.mdms?.filter(role => role?.data?.category === servicemodule)?.some(role => role?.data?.code.toUpperCase() === roleData.name.toUpperCase())) {
+                    setShowToast({ key: true, type: "error", label: t("ROLE_NAME_EXISTS") });
+                }
+                else {
+                    const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), servicemodule, roleData, roles?.mdms?.filter(role => role?.data?.category === servicemodule && role?.data?.code.toUpperCase() === roleData.name.toUpperCase())?.map(role => role), true));
+                    if(response?.success){
+                        setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }
+                    else{
+                        setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }
+                }
+        }
+        else {
+            if (roleData.name == "") {
+                setShowToast({ key: true, type: "error", label: t("ROLE_NAME_IS_REQUIRED") });
+            }
+            else {
+                setShowToast({ key: true, type: "error", label: t("ATLEAST_ONE_IS_SELECTED") });
+            }
         }
     }
 
@@ -354,7 +453,7 @@ const Workflow = () => {
 
     const handleElementClick = (element) => {
         setSelectedElement(element);
-        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [], checklist: element.checklist });
+        setStateData({ name: element.name, desc: element.desc, roles: element.roles, sla: element.sla, form: element.form || [], checklist: element.checklist, aaskfordoc: element.aaskfordoc, sendnotif: element.sendnotif  });
     }
 
     const handleElementDrag = (element, newPosition) => {
@@ -379,6 +478,7 @@ const Workflow = () => {
                             sla: stateData.sla,
                             form: stateData?.form,
                             checklist: stateData?.checklist,
+                            sendnotif: stateData?.sendnotif,
                         };
                         setSelectedElement(updatedElement);
                         return updatedElement;
@@ -537,6 +637,17 @@ const Workflow = () => {
                 infoMessage={t("ROLES_INFO")}
                 value={stateData.roles}
             />,
+            <span
+                onClick={(e) => setRolePopup(true)}
+                style={{
+                    color: "#C84C0E",
+                    cursor: "pointer",
+                    fontWeight: "500",
+                    textAlign: "right"
+                }}
+            >
+                {t("ADD_NEW_ROLE")}
+            </span>,
             <FieldV1
                 error={stateData.sla < 1 ? t("PLEASE_ENTER_VALID_SLA_IN_HOURS(MIN 1)") : ""}
                 label="SLA_TIMER(HOURS)"
@@ -576,7 +687,7 @@ const Workflow = () => {
             </div>,
             <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
             <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
-            <StageActions label={t("SEND_NOTIFICATION")} type="button" name="sendnotif" desc={t("NOFITICATION_DESC")}/>,
+            <StageActions label={t("SEND_NOTIFICATION")} type="dropdown" name="sendnotif" options={notif?.map(({ data }) => ({code: data?.title, name: data?.title}))} desc={t("NOFITICATION_DESC")} onClick={(e) => onDataChange(e)} value={stateData.sendnotif}/>,
             <Button
                 variation="primary"
                 label={t("UPDATE_PROPERTIES")}
@@ -1050,6 +1161,25 @@ const Workflow = () => {
         return { hasAddressDetails, hasApplicantDetails };
     };
 
+    const generateGroupedTemplates = (notifications) => {
+        const grouped = {
+            sms: [],
+            email: [],
+            push:[],
+        };
+        notifications.forEach((item) => {
+            const type = item.data?.additionalDetails?.type;
+            if (!type || !grouped[type]) return;
+            const template = {
+                code: item.data?.title || "",
+                states: item.data?.workflow?.map((w) => w.name) || [],
+                template: item.data?.messageBody || "",
+            };
+            grouped[type].push(template);
+        });
+        return grouped;
+    };
+
     // Function to generate complete service configuration
     const generateServiceConfiguration = async () => {
         // Get existing console outputs
@@ -1127,22 +1257,7 @@ const Workflow = () => {
             localization: {
                 modules: [`digit-${serviceName}`]
             },
-            notification: {
-                sms: [
-                    {
-                        code: `DIGIT_STUDIO_${moduleName.toUpperCase()}_${serviceName.toUpperCase()}_APPLICATION`,
-                        states: ["SIGNED"],
-                        template: `Dear {PublicService.applicants[0].name} a ${serviceName.toUpperCase()} Application with application no {PublicService.applicationNo} is received`
-                    }
-                ],
-                email: [
-                    {
-                        code: `DIGITEMAIL_STUDIO_${moduleName.toUpperCase()}_${serviceName.toUpperCase()}_APPLICATION`,
-                        states: ["SIGNED"],
-                        template: `Dear {PublicService.applicants[0].name} a ${serviceName.toUpperCase()} Application with application no {PublicService.applicationNo} is received`
-                    }
-                ]
-            },
+            notification: generateGroupedTemplates(notif),
             boundary: hasAddressDetails ? {
                 lowestLevel: "locality",
                 hierarchyType: "REVENUE"
@@ -1303,7 +1418,7 @@ const Workflow = () => {
         localStorage.setItem("canvasElements", JSON.stringify(canvasElements));
     },[connections,canvasElements]);
 
-    if (isLoading || moduleListLoading) {
+    if (isLoading || moduleListLoading || isConfigLoad) {
         return <Loader />;
     }
     return (
@@ -1352,6 +1467,7 @@ const Workflow = () => {
                         setShowToast(null);
                     }}
                     isDleteBtn={showToast?.isDleteBtn}
+                    style={{ zIndex: 9999 }}
                 />
             )}
             
@@ -1442,6 +1558,150 @@ const Workflow = () => {
                         )
                     ]}
                 />
+            )}
+
+            {/* Role Popup */}
+            {rolePopup && (
+                <PopUp
+                    type={"default"}
+                    heading={t("CREATE_NEW_ROLE")}
+                    children={[]}
+                    style={{ width: "40rem" }}
+                    onOverlayClick={() => {
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    onClose={() => {
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    footerChildren={[
+                        <Button
+                            type={"button"}
+                            size={"large"}
+                            variation={"secondary"}
+                            label={t("CREATE_ROLE")}
+                            onClick={(e) => {createRole(e)}}
+                        />
+                    ]}
+                    sortFooterChildren={true}
+                >
+                    <FieldV1
+                        error={roleData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
+                        label={t("ROLE_NAME")}
+                        onChange={(e) => onRoleChange(e)}
+                        populators={{
+                            name: "name",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
+                        }}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        required
+                        type="text"
+                        value={roleData.name}
+                    />
+                    <FieldV1
+                        label={t("ROLE_DESC")}
+                        onChange={(e) => onRoleChange(e)}
+                        populators={{
+                            name: "desc",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
+                        }}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        type="text"
+                        value={roleData.desc}
+                    />
+                    <AccessCard data={roleData} onChange={onRoleChange} />
+                </PopUp>
+            )}
+            
+            {/* Role Popup */}
+            {rolePopup && (
+                <PopUp
+                    type={"default"}
+                    heading={t("CREATE_NEW_ROLE")}
+                    children={[]}
+                    style={{ width: "40rem" }}
+                    onOverlayClick={() => {
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    onClose={() => {
+                        setRoleData({
+                            name: "",
+                            desc: "",
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    footerChildren={[
+                        <Button
+                            type={"button"}
+                            size={"large"}
+                            variation={"secondary"}
+                            label={t("CREATE_ROLE")}
+                            onClick={(e) => {createRole(e)}}
+                        />
+                    ]}
+                    sortFooterChildren={true}
+                >
+                    <FieldV1
+                        error={roleData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
+                        label={t("ROLE_NAME")}
+                        onChange={(e) => onRoleChange(e)}
+                        populators={{
+                            name: "name",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
+                        }}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        required
+                        type="text"
+                        value={roleData.name}
+                    />
+                    <FieldV1
+                        label={t("ROLE_DESC")}
+                        onChange={(e) => onRoleChange(e)}
+                        populators={{
+                            name: "desc",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
+                        }}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        type="text"
+                        value={roleData.desc}
+                    />
+                    <AccessCard data={roleData} onChange={onRoleChange} />
+                </PopUp>
             )}
         </Card>
     );

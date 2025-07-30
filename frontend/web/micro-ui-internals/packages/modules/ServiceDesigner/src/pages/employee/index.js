@@ -11,6 +11,8 @@ import Roles from "./roles";
 import AppConfigurationTabLayer from "./formBuilder/AppConfigurationTabLayer";
 import FormHomePage from "./formBuilder/FormHomePage";
 import ServiceBuilderCard from "../../components/ServiceBuilderCard";
+import Notification from "../employee/Notification/Notification";
+import CreateNotification from "../employee/Notification/CreateNotification";
 
 const SampleBreadCrumbs = ({ location }) => {
   const { t } = useTranslation();
@@ -102,6 +104,8 @@ const App = ({ path, stateCode, userType, tenants }) => {
         <PrivateRoute path={`${path}/form-builder`} component={() => <AppConfigurationTabLayer />} />
         <PrivateRoute path={`${path}/forms`} component={() => <FormHomePage />} />
         <PrivateRoute path={`${path}/Service-Builder-Home`} component={() => <ServiceBuilderCard />} />
+        <PrivateRoute path={`${path}/notifications`} component={() => <Notification />} />
+        <PrivateRoute path={`${path}/create-notification`} component={() => <CreateNotification />} />
       </AppContainer>
     </Switch>
   );

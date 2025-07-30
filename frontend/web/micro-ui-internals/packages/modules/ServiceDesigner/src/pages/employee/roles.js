@@ -3,7 +3,7 @@ import { Card } from "@egovernments/digit-ui-react-components";
 import { Loader, Toast } from "@egovernments/digit-ui-components";
 import RoleComp from "../../components/rolesComponent";
 import { useTranslation } from "react-i18next";
-import { CustomSVG } from "@egovernments/digit-ui-components";
+import { PopUp } from "@egovernments/digit-ui-components";
 import { SidePanel } from "@egovernments/digit-ui-components";
 import { FieldV1 } from "@egovernments/digit-ui-components";
 import AccessCard from "../../components/AccessCard";
@@ -24,11 +24,12 @@ const Roles = () => {
         name: "",
         desc: "",
         isNew: false,
-        editor: true,
+        editor: false,
         viewer: false,
         creater: false
     });
     const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
+    const [rolePopup, setRolePopup]=useState(false);
 
     const requestCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -41,17 +42,6 @@ const Roles = () => {
     };
     const { isLoading: moduleListLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
     const roleCodes = dataa?.mdms?.filter(role => role?.data?.category === roleCategory)?.map(role => role?.data);
-
-    const heading = [
-        {
-            head: t("NEW_HEAD"),
-            desc: t("NEW_HEAD_DESC"),
-        },
-        {
-            head: t("EDIT_HEAD"),
-            desc: t("EDIT_HEAD_DESC"),
-        }
-    ]
 
     const onDataChange = (e) => {
         if (Array.isArray(e)) {
@@ -70,8 +60,21 @@ const Roles = () => {
     };
 
     const onClick = (name, desc, isNew, editor, viewer, creater) => {
-        setSelectedElement(true);
-        setStateData({ name, desc, isNew, editor, viewer, creater });
+        if(isNew){
+            setRolePopup(true);
+            setStateData({
+                name: "",
+                desc: "",
+                isNew: true,
+                editor: false,
+                viewer: false,
+                creater: false
+            });
+        }
+        else{
+            setSelectedElement(true);
+            setStateData({ name, desc, isNew, editor, viewer, creater });
+        }
     }
 
     const createMdmsRole = async (req, isUpdate) => {
@@ -97,18 +100,36 @@ const Roles = () => {
                     setShowToast({ key: true, type: "error", label: t("ROLE_NAME_EXISTS") });
                 }
                 else {
-                    const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role)), stateData.isNew);
+                    const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
                     if(response?.success){
                         setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
+                        setStateData({
+                            name: "",
+                            desc: "",
+                            isNew: false,
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
                         setSelectedElement(false);
                     }
                     else{
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
+                        setStateData({
+                            name: "",
+                            desc: "",
+                            isNew: false,
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
                     }
                 }
             }
             else {
-                const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role)), stateData.isNew);
+                const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
                 if(response?.success){
                         setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
                         setSelectedElement(false);
@@ -135,21 +156,13 @@ const Roles = () => {
             name: "",
             desc: "",
             isNew: false,
-            editor: true,
+            editor: false,
             viewer: false,
             creater: false
         });
     }
 
     const Node_Properties_Section = [
-        [
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>{stateData?.isNew ? heading[0].head : heading[1].head}</div>
-            </div>,
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>{stateData?.isNew ? heading[0].desc : heading[1].desc}</div>
-            </div>
-        ],
         [
             <FieldV1
                 error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
@@ -185,19 +198,11 @@ const Roles = () => {
             <AccessCard data={stateData} onChange={onDataChange} />,
             <Button
                 variation="primary"
-                label={t("CREATE_ROLE")}
+                label={t("EDIT_ROLE")}
                 type="button"
                 className="primary-button"
                 style={{ width: "100%" }}
                 onClick={(e) => createRole(e)}
-            />,
-            <Button
-                variation="secondary"
-                label={t("CANCEL")}
-                type="button"
-                className="secondary-button"
-                style={{ width: "100%" }}
-                onClick={(e) => cancel(e)}
             />
         ]
     ]
@@ -214,6 +219,7 @@ const Roles = () => {
                 className={"uploadWidget-error-card"}
             />
             }
+            <div style={{ display: "flex" }}>
             <Card style={{ flex: 1, height: "100%", mixHeight: "800px", padding: "24px", justifyContent: "space-between" }} className="Workflow-card">
                 <div>
                     <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", padding: "24px" }}>
@@ -223,30 +229,115 @@ const Roles = () => {
                         )}
                     </div>
                 </div>
-                {selectedElement && <Card className="Workflow-card" style={{ justifyContent: "space-between" }}>
+            </Card>
+            {selectedElement && <div className="Workflow-card" style={{ justifyContent: "space-between", margin: "0px 24px" }}>
                     <SidePanel
                         type="static"
                         position="left"
                         isDraggable={true}
                         sections={Node_Properties_Section}
                         addClose={true}
+                        onClose={cancel}
+                        header={[
+                            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
+                                <div >{t("EDIT_HEADING")}</div>
+                            </div>,
+                            <div className="typography heading-s" style={{ color: "#0B4B66", marginLeft: "16px" }}>
+                                <div >{t("EDIT_HEADING_DESC")}</div>
+                            </div>
+                        ]}
                         isOverlay={false}
                         hideScrollIcon={true}
                         hideArrow={false}
                         className="slider-container"
                     />
-                </Card>}
-                {showToast && (
-                    <Toast
-                        type={showToast?.type}
-                        label={t(showToast?.label)}
-                        onClose={() => {
-                            setShowToast(null);
+            </div>}
+            
+            </div>
+            {/*Create role Popup */}
+            {rolePopup && (
+                <PopUp
+                    type={"default"}
+                    heading={t("CREATE_NEW_ROLE")}
+                    children={[]}
+                    style={{ width: "40rem" }}
+                    onOverlayClick={() => {
+                        setStateData({
+                            name: "",
+                            desc: "",
+                            isNew: true,
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    onClose={() => {
+                        setStateData({
+                            name: "",
+                            desc: "",
+                            isNew: true,
+                            viewer: false,
+                            editor: false,
+                            creater: false,
+                        });
+                        setRolePopup(false);
+                    }}
+                    footerChildren={[
+                        <Button
+                            type={"button"}
+                            size={"large"}
+                            variation={"secondary"}
+                            label={t("CREATE_ROLE")}
+                            onClick={(e) => { createRole(e) }}
+                        />
+                    ]}
+                    sortFooterChildren={true}
+                >
+                    <FieldV1
+                        error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
+                        label={t("ROLE_NAME")}
+                        onChange={(e) => onDataChange(e)}
+                        populators={{
+                            name: "name",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
                         }}
-                        isDleteBtn={showToast?.isDleteBtn}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        required
+                        type="text"
+                        value={stateData.name}
                     />
-                )}
-            </Card>
+                    <FieldV1
+                        label={t("ROLE_DESC")}
+                        onChange={(e) => onDataChange(e)}
+                        populators={{
+                            name: "desc",
+                            alignFieldPairVerically: true,
+                            fieldPairClassName: "workflow-field-pair",
+                        }}
+                        props={{
+                            fieldStyle: { width: "100%" }
+                        }}
+                        type="text"
+                        value={stateData.desc}
+                    />
+                    <AccessCard data={stateData} onChange={onDataChange} />
+                </PopUp>
+            )}
+            {showToast && (
+                <Toast
+                    type={showToast?.type}
+                    label={t(showToast?.label)}
+                    onClose={() => {
+                        setShowToast(null);
+                    }}
+                    isDleteBtn={showToast?.isDleteBtn}
+                    style={{ zIndex: 9999 }}
+                />
+            )}
         </React.Fragment>
     );
 };
