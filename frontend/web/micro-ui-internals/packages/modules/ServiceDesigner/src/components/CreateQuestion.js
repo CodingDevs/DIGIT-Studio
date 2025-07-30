@@ -148,7 +148,10 @@ const FieldSelector = ({ type, name, value, onChange, placeholder = "", t, field
 
 
 
-  switch (type?.code) {
+  // Handle both object and string types
+  const typeCode = typeof type === 'string' ? type : type?.code;
+  
+  switch (typeCode) {
     case "SingleValueList":
       return (
         <MultipleChoice
@@ -230,6 +233,10 @@ const FieldSelector = ({ type, name, value, onChange, placeholder = "", t, field
         />
       );
       break;
+    case "Text":
+      // Text type is now handled in the main component with a separate placeholder input
+      return null;
+      break;
     default:
       return null;
       break;
@@ -261,11 +268,15 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
   const dataType = useMemo(() => {
     if (!mdmsData) return [
       { code: "SingleValueList" },
-      { code: "MultiValueList" }
+      { code: "MultiValueList" },
+      { code: "Text" }
     ];
-    return mdmsData.mdms?.map(role => ({
+    const apiTypes = mdmsData.mdms?.map(role => ({
       code: role?.data?.code
     })) || [];
+    // Add Text option if not already present
+    const hasText = apiTypes.some(type => type.code === "Text");
+    return hasText ? apiTypes : [...apiTypes, { code: "Text" }];
   }, [mdmsData]); // Only recompute when mdmsData changes
 
   const regexOption = [
@@ -343,17 +354,48 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
   };
 
   const handleUpdateField = (data, target, index, id) => {
-    dispatchQuestionData({
-      type: "UPDATE_QUESTION",
-      payload: {
-        data: data,
-        target: target,
-        index: index,
-        id: id,
-        parent: parent,
-        level: level,
-      },
-    });
+    // If changing to Text type, automatically set regex to null
+    if (target === "type" && (data?.code === "Text" || data === "Text")) {
+      // First update the type
+      dispatchQuestionData({
+        type: "UPDATE_QUESTION",
+        payload: {
+          data: data,
+          target: target,
+          index: index,
+          id: id,
+          parent: parent,
+          level: level,
+        },
+      });
+      
+      // Then set regex to null
+      setTimeout(() => {
+        dispatchQuestionData({
+          type: "UPDATE_QUESTION",
+          payload: {
+            data: null,
+            target: "regex",
+            index: index,
+            id: id,
+            parent: parent,
+            level: level,
+          },
+        });
+      }, 100);
+    } else {
+      dispatchQuestionData({
+        type: "UPDATE_QUESTION",
+        payload: {
+          data: data,
+          target: target,
+          index: index,
+          id: id,
+          parent: parent,
+          level: level,
+        },
+      });
+    }
   };
 
   const handleRequiredField = (id) => {
@@ -469,27 +511,27 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
                             t={t}
                             option={dataType}
                             optionKey={"code"}
-                            selected={field?.type || ""}
+                            selected={field?.type || null}
                             select={(value) => {
                               handleUpdateField(value, "type", field.key, field.id);
                             }}
                             placeholder="Type"
                           />}
                         </div>
-                        {field?.isRegex && (
+                        {field?.isRegex && (field?.type?.code !== "Text" && field?.type !== "Text") && (
                           <Dropdown
                             style={{ width: "70%" }}
                             t={t}
                             option={regexOption}
                             optionKey={"code"}
-                            selected={field?.regex || ""}
+                            selected={field?.regex || null}
                             select={(value) => {
                               handleUpdateField(value, "regex", field.key, field.id);
                             }}
                             placeholder="Choose Regex"
                           />
                         )}
-                        {(field?.type?.code === "SingleValueList" || field?.type?.code === "MultiValueList" || field?.type?.code === "Dropdown") && (
+                        {(field?.type?.code === "SingleValueList" || field?.type?.code === "MultiValueList" || field?.type?.code === "Dropdown" || field?.type === "SingleValueList" || field?.type === "MultiValueList" || field?.type === "Dropdown") && (
                           <FieldSelector
                             t={t}
                             type={field?.type}
@@ -510,8 +552,21 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
                             questionNumber={questionNumber}
                           />
                         )}
+                        {(field?.type?.code === "Text" || field?.type === "Text") && (
+                          <div style={{ marginTop: "1rem" }}>
+                            <TextInput
+                              nonEditable={false}
+                              type={"text"}
+                              name="placeholder"
+                              value={field?.value || ""}
+                              onChange={(event) => handleUpdateField(event.target.value, "value", field?.key, field.id)}
+                              placeholder="Enter placeholder text (e.g., abc)"
+                              label="Placeholder Text"
+                            />
+                          </div>
+                        )}
                         {
-                          (field?.type?.code === "Short Answer") && (
+                          (field?.type?.code === "Short Answer" || field?.type === "Short Answer") && (
                             <FieldV1
                               nonEditable={dis}
                               // disabled={dis}
@@ -528,7 +583,7 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
                             />
                           )
                         }
-                        {!dis && field.dependency && (
+                        {!dis && (field.dependency || field?.hasDependency) && (
                           <CreateQuestion
                             onSelect={onSelect}
                             className="subSection"

@@ -189,7 +189,7 @@ const DropdownOption = ({
             name="title"
             ref={optionInputRef}
             // value={field?.title || ""}
-            value={t(title)}
+            value={title || ""}
             onChange={(ev) => updateOption({ value: ev.target.value, id: index })}
             placeholder={"Dropdown section"}
           />

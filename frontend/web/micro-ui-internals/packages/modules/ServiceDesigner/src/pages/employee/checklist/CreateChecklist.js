@@ -155,13 +155,81 @@ useEffect(() => {
     setShowToast(null);
   };
 
+  const validateChecklist = (formData) => {
+    const errors = [];
+    
+    // Validate checklist title
+    if (!checklistName || !checklistName.trim()) {
+      errors.push(t("CHECKLIST_NAME_ERROR"));
+    }
+    
+    // Validate questions exist
+    const questions = formData?.createQuestion?.questionData || [];
+    const activeQuestions = questions.filter(q => q.isActive && q.title && q.title.trim());
+    
+    if (activeQuestions.length === 0) {
+      errors.push(t("CHECKLIST_QUESTION_ERROR"));
+    }
+    
+    // Validate duplicate checklist name
+    const checkDuplicateName = async () => {
+      try {
+        const res = await Digit.CustomService.getResponse({
+          url: `/${mdms_context_path}/v2/_search`,
+          params: { tenantId: tenantId },
+          body: {
+            MdmsCriteria: {
+              tenantId: tenantId,
+              schemaCode: `Studio.Checklists`,
+              filters: { 
+                name: checklistName,
+                module: checklistModule,
+                service: checklistService
+              },
+              isActive: true,
+            },
+          },
+        });
+        
+        if (res?.mdms && res.mdms.length > 0) {
+          // If updating, exclude current checklist from duplicate check
+          if (isUpdate && initialChecklistData && res.mdms[0].id === initialChecklistData.id) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error checking duplicate name:", error);
+        return false;
+      }
+    };
+    
+    return { errors, checkDuplicateName };
+  };
+
   useEffect(() => {
     if (showToast) {
       setTimeout(closeToast, 5000);
     }
   }, [showToast]);
 
-  const popShow = () => {
+  const popShow = async () => {
+    // Validate before showing preview
+    const { errors, checkDuplicateName } = validateChecklist({ createQuestion: { questionData: tempFormData } });
+    
+    if (errors.length > 0) {
+      setShowToast({ label: errors.join(" "), isError: true });
+      return;
+    }
+    
+    // Check for duplicate name
+    const isDuplicate = await checkDuplicateName();
+    if (isDuplicate) {
+      setShowToast({ label: t("CHECKLIST_ALREADY_EXISTS"), isError: true });
+      return;
+    }
+    
     const pr = organizeQuestions(tempFormData);
     setPreviewData(pr);
     setShowPopUp(true);
@@ -446,6 +514,23 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
       labelsArray.push("NOT_SELECTED");
     }
 
+    // Handle Text type specifically
+    let additionalFields = {
+      schema: "serviceDefinition",
+      version: 1,
+      fields: [
+        {
+          key: crypto.randomUUID(),
+          value: item
+        }
+      ]
+    };
+
+    // Add placeholder for Text type
+    if (String(item?.type?.code) === "Text") {
+      additionalFields.placeholder = item?.value || ""; // Use the value field as placeholder, empty string if no value
+    }
+
     const questionObject = {
       id: item.id,
       tenantId: tenantId,
@@ -454,18 +539,9 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
       values: labelsArray,
       required: item?.isRequired,
       isActive: item?.isActive,
-      reGex: item?.isRegex ? item?.regex?.regex : null,
+      reGex: String(item?.type?.code) === "Text" ? null : (item?.isRegex ? item?.regex?.regex : null),
       order: item?.key,
-      additionalFields: {
-        schema: "serviceDefinition",
-        version: 1,
-        fields: [
-          {
-            key: crypto.randomUUID(),  // Using crypto.randomUUID() for a unique key
-            value: item
-          }
-        ]
-      }
+      additionalFields: additionalFields
     };
 
     return questionObject;
@@ -508,6 +584,11 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
       if (question.type.code === "Short Answer") {
         question.type.code = "String";
         delete question.options;
+      }
+      // Keep Text type as "Text" for proper API structure
+      if (question.type.code === "Text") {
+        // Don't change the type code, keep it as "Text"
+        // Don't delete options, let the createQuestionObject handle it
       }
     });
 
@@ -594,6 +675,21 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
 
 
   const onSubmit = async (formData, flag = 0, preview = null, translations) => {
+    // Validate before submitting
+    const dataToValidate = flag === 1 ? preview : formData?.createQuestion?.questionData;
+    const { errors, checkDuplicateName } = validateChecklist({ createQuestion: { questionData: dataToValidate } });
+    
+    if (errors.length > 0) {
+      setShowToast({ label: errors[0], isError: true });
+      return;
+    }
+    
+    // Check for duplicate name
+    const isDuplicate = await checkDuplicateName();
+    if (isDuplicate) {
+      setShowToast({ label: "Checklist name already exists in this service group. Please use a unique name.", isError: true });
+      return;
+    }
     let payload;
     if (flag === 1) {
       payload = payloadData(preview);
@@ -623,7 +719,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
       for (const [localeCode, entries] of Object.entries(groupedByLocale)) {
         const result = await localisationMutateAsync(entries);
         if (!result.success) {
-          setShowToast({ label: "LOCALIZATION_FAILED_PLEASE_TRY_AGAIN", isError: "true" });
+          setShowToast({ label: "LOCALIZATION_FAILED_PLEASE_TRY_AGAIN", isError: true });
           return;
         }
       }
@@ -642,17 +738,17 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         //   secondaryActionLink: `/${window?.contextPath}/employee/campaign/view-details?campaignNumber=${campaignNumber}&tenantId=${tenantId}`,
         // });
         setShowLocalisationPopup(false)
-        setShowToast({ label: isUpdate ? "CHECKLIST_UPDATED_SUCCESSFULLY" : "CHECKLIST_CREATED_SUCCESSFULLY", isError: "false" });
+        setShowToast({ label: isUpdate ? "CHECKLIST_UPDATED_SUCCESSFULLY" : "CHECKLIST_CREATED_SUCCESSFULLY", isError: false });
         setTimeout(() => {
           history.push(`/${window.contextPath}/employee/servicedesigner/checklist?module=${checklistModule}&service=${checklistService}`);
       }, 3000);
       } else {
-        setShowToast({ label: "CHECKLIST_CREATED_FAILED", isError: "true" });
+        setShowToast({ label: "CHECKLIST_CREATED_FAILED", isError: true });
       }
     } catch (error) {
       setShowToast({
         label: error.response?.data?.message || "CHECKLIST_CREATED_FAILED",
-        isError: "true"
+        isError: true
       });
     } finally {
       setSubmitting(false);
@@ -814,7 +910,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
 
           {showToast && (
             <Toast
-              varient={showToast?.isError ? "error" : "success"}
+              type={showToast?.isError ? "error" : "success"}
               // error={showToast?.isError}
               label={t(showToast?.label)}
               isDleteBtn={"true"}
