@@ -124,14 +124,14 @@ const WorkflowNode = ({
         )}
 
         <div className="state-card-content">
-          <div className="text-section">
+          <div className="text-section state-desc">
             <h3 className="state-title">
               <div className="state-icon">
                 {icon || <CustomSVG.EditIcon />}
               </div>
               {State}
             </h3>
-            <p className="state-description">{desc}</p>
+            <p className="state-description state-desc">{desc}</p>
             {renderRoles()}
           </div>
         </div>
@@ -142,7 +142,9 @@ const WorkflowNode = ({
             className="action-button right-action"
             onClick={(e) => handleRightClick(elementId, e)}
             title={rightButtonTooltip}
+            style={{padding:"0px"}}
           >
+            <CustomSVG.AddIcon height="15" width="15" fill="white" />
           </button>
         )}
       </div>

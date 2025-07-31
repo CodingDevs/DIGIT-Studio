@@ -814,3 +814,16 @@
         max-width: 100%;
     }
 }
+
+.digit-employeeCard-input{
+  border-radius: 4px;
+}
+
+.state-desc{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.digit-label-field-pair{
+  margin: 6px;
+}

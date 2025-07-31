@@ -35,12 +35,18 @@ const CreateNotification = () => {
   };
   const { isLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
 
-  const [stateData, setStateData] = useState({
+  const [stateData, setStateData] = useState(isUpdate ? {
     title: data?.title,
     messageBody: data?.messageBody,
     subject: data?.subject,
     workflow: data?.workflow,
-  })
+  }:{
+    title: t(data?.title),
+    messageBody: t(data?.messageBody),
+    subject: t(data?.subject),
+    workflow: data?.workflow,
+  }
+);
 
   const onDataChange = (e) => {
     if (e?.target) {
@@ -160,32 +166,6 @@ const CreateNotification = () => {
     <Card>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <CardHeader>{data?.header ? t(data.header) : t("EDIT") + " " + data?.title}</CardHeader>
-        <div style={{ display: "flex" }}>
-          <Button
-            variation="secondary"
-            label={t("SAVE")}
-            type="button"
-            className="secondary-button"
-            style={{ margin: "0 8px", borderRadius: "6px" }}
-            onClick={(e) => onSubmit(e)}
-          />
-          <Button
-            variation="secondary"
-            label={t("PREVIEW")}
-            type="button"
-            className="secondary-button"
-            style={{ margin: "0 8px", borderRadius: "6px" }}
-            onClick={(e) => console.log("preview")}
-          />
-          <Button
-            variation="secondary"
-            label={t("LINK_WORKFLOW")}
-            type="button"
-            className="secondary-button"
-            style={{ margin: "0 8px", borderRadius: "6px" }}
-            onClick={(e) => console.log("workflow")}
-          />
-        </div>
       </div>
       <FieldV1
         label={t("NOTIFICATION_TITLE")}
@@ -294,6 +274,24 @@ const CreateNotification = () => {
         infoMessage={t("WORKFLOW_INFO")}
         value={stateData.workflow}
       />
+      <div style={{ display: "flex", width: "100%" }}>
+          <Button
+            variation="primary"
+            label={t("SAVE")}
+            type="button"
+            className="secondary-button"
+            style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
+            onClick={(e) => onSubmit(e)}
+          />
+          <Button
+            variation="secondary"
+            label={t("PREVIEW")}
+            type="button"
+            className="secondary-button"
+            style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
+            onClick={(e) => console.log("preview")}
+          />
+        </div>
       {showToast && (
         <Toast
           type={showToast?.type}

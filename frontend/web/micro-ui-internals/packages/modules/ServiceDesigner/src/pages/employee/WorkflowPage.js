@@ -41,6 +41,7 @@ const Workflow = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [existingServiceConfigId, setExistingServiceConfigId] = useState(null);
     const [rolePopup, setRolePopup]=useState(false);
+    const [loadSamplePopup,setLoadSamplePopup]=useState(false);
     const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
     
     // Check if we're in edit mode
@@ -580,8 +581,8 @@ const Workflow = () => {
 
     const Node_Properties_Section = [
         [
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>{t("PROPERTIES")}</div>
+            <div className="typography heading-m" style={{ color: "#0B4B66", marginLeft: "0px" }}>
+                <div>{t("STATE_PROPERTIES")}</div>
             </div>,
         ],
         [
@@ -614,7 +615,7 @@ const Workflow = () => {
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
-                type="text"
+                type="textarea"
                 infoMessage={t("DESC_INFO")}
                 value={stateData.desc}
             />,
@@ -682,12 +683,9 @@ const Workflow = () => {
                 infoMessage={t("FORM_INFO")}
                 value={stateData.form}
             />) : null,
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                    <div >{t("STAGE_ACTIONS")}</div>
-            </div>,
             <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
-            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
             <StageActions label={t("SEND_NOTIFICATION")} type="dropdown" name="sendnotif" options={notif?.map(({ data }) => ({code: data?.title, name: data?.title}))} desc={t("NOFITICATION_DESC")} onClick={(e) => onDataChange(e)} value={stateData.sendnotif}/>,
+            <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
             <Button
                 variation="primary"
                 label={t("UPDATE_PROPERTIES")}
@@ -709,8 +707,8 @@ const Workflow = () => {
 
     const Action_Properties_Section = [
         [
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div>{t("PROPERTIES")}</div>
+            <div className="typography heading-m" style={{ color: "#0B4B66", marginLeft: "0px" }}>
+                <div>{t("ACTION_PROPERTIES")}</div>
             </div>,
         ],
         [
@@ -743,7 +741,7 @@ const Workflow = () => {
                 props={{
                     fieldStyle: { width: "100%" }
                 }}
-                type="text"
+                type="textarea"
                 value={actionData.desc}
                 infoMessage={t("ACTION_DESC_INFO")}
             />,
@@ -766,9 +764,6 @@ const Workflow = () => {
                 infoMessage={t("ACTION_ROLES_INFO")}
                 value={actionData.aroles}
             />,
-            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
-                <div >{t("STAGE_ACTIONS")}</div>
-            </div>,
             <StageActions label={t("ADD_COMMENTS")} type="switch" name="acomments" desc={t("COMMENTS_DESC")} onClick={(data) => onActionDataChange(data)} value={actionData.acomments} />,
             <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="aassign" desc={t("ASSIGN_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aassign} />,
             <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="aaskfordoc" desc={t("DOC_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aaskfordoc} />,
@@ -1369,9 +1364,9 @@ const Workflow = () => {
         }
     };
 
-
-
-
+    const onLoadSample =() =>{
+        setLoadSamplePopup(true);
+    }
 
     const onClear =() =>{
         setCanvasElements([]);
@@ -1422,8 +1417,8 @@ const Workflow = () => {
         return <Loader />;
     }
     return (
-        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4' }} className="Workflow-card">
-            <Card className="Workflow-card">
+        <Card style={{ flex: 1, marginRight: "1rem", border: '0.063rem solid #d6d5d4',height: "830px" }} className="Workflow-card">
+            <Card className="Workflow-card" style={{height: "830px"}}>
                 <SidePanel
                     type="static"
                     position="left"
@@ -1445,6 +1440,7 @@ const Workflow = () => {
                 canvasPoints={CanvasClick}
                 onConnectionLabelClick={(conn, e) => onconnectionClick(conn, e)}
                 onClear={onClear}
+                onLoadSample={onLoadSample}
             />
             { selectedElement && <Card className="Workflow-card">
                 <SidePanel
@@ -1632,75 +1628,18 @@ const Workflow = () => {
                 </PopUp>
             )}
             
-            {/* Role Popup */}
-            {rolePopup && (
+            {/* loadSample Popup */}
+            {loadSamplePopup && (
                 <PopUp
                     type={"default"}
-                    heading={t("CREATE_NEW_ROLE")}
+                    heading={t("LOAD_SAMPLE_HEADER")}
                     children={[]}
                     style={{ width: "40rem" }}
-                    onOverlayClick={() => {
-                        setRoleData({
-                            name: "",
-                            desc: "",
-                            viewer: false,
-                            editor: false,
-                            creater: false,
-                        });
-                        setRolePopup(false);
-                    }}
-                    onClose={() => {
-                        setRoleData({
-                            name: "",
-                            desc: "",
-                            viewer: false,
-                            editor: false,
-                            creater: false,
-                        });
-                        setRolePopup(false);
-                    }}
-                    footerChildren={[
-                        <Button
-                            type={"button"}
-                            size={"large"}
-                            variation={"secondary"}
-                            label={t("CREATE_ROLE")}
-                            onClick={(e) => {createRole(e)}}
-                        />
-                    ]}
+                    onOverlayClick={() => { setLoadSamplePopup(false); }}
+                    onClose={() => { setLoadSamplePopup(false); }}
+                    footerChildren={{}}
                     sortFooterChildren={true}
                 >
-                    <FieldV1
-                        error={roleData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
-                        label={t("ROLE_NAME")}
-                        onChange={(e) => onRoleChange(e)}
-                        populators={{
-                            name: "name",
-                            alignFieldPairVerically: true,
-                            fieldPairClassName: "workflow-field-pair",
-                        }}
-                        props={{
-                            fieldStyle: { width: "100%" }
-                        }}
-                        required
-                        type="text"
-                        value={roleData.name}
-                    />
-                    <FieldV1
-                        label={t("ROLE_DESC")}
-                        onChange={(e) => onRoleChange(e)}
-                        populators={{
-                            name: "desc",
-                            alignFieldPairVerically: true,
-                            fieldPairClassName: "workflow-field-pair",
-                        }}
-                        props={{
-                            fieldStyle: { width: "100%" }
-                        }}
-                        type="text"
-                        value={roleData.desc}
-                    />
-                    <AccessCard data={roleData} onChange={onRoleChange} />
                 </PopUp>
             )}
         </Card>

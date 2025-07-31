@@ -20,8 +20,8 @@ const NotificationCard = ({ title, desc, index, onClick, data }) => {
           padding: "3px",
           margin: "6px 0px"
         }} />
-        <h3 className="service-title">{title}</h3>
-        <p className="service-description">{desc}</p>
+        <h3 className="service-title">{t(title)}</h3>
+        <p className="service-description">{t(desc)}</p>
       </div>
     </div>
   );

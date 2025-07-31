@@ -70,9 +70,9 @@ const Notification = () => {
     }
     return (
         <React.Fragment>
+            <CardHeader styles={{ fontSize: "xx-large", fontWeight: "bold", paddingTop: "24px", marginBottom: "0px" }}>{t("NOTIFICATION_HEADER")}</CardHeader>
+            <CardText>{t("NOTIFICATION_HEADER_DESCRIPTION")}</CardText>
             <Card>
-                <CardHeader>{t("NOTIFICATION_HEADER")}</CardHeader>
-                <CardText>{t("NOTIFICATION_HEADER_DESCRIPTION")}</CardText>
                 <div style={{ display: "flex" }}>
                     {NotifCardConfig.map((item, index) => (
                         <NotificationCard title={item.title} desc={item.desc} index={item.key} onClick={onCardClick} data={null} />
@@ -84,7 +84,7 @@ const Notification = () => {
                     name="toggleOptions"
                     numberOfToggleItems={3}
                     onSelect={(e) => setSelectedToggle(e)}
-                    style={{ maxWidth: "23.5rem" }}
+                    style={{ maxWidth: "23.5rem", marginTop: "10px" }}
                     options={toggleOptions}
                     optionsKey="name"
                     selectedOption={selectedToggle}

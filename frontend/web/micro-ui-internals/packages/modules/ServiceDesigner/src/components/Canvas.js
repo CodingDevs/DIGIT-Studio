@@ -5,7 +5,7 @@ import QuickStart from "./QuickStart";
 import { useTranslation } from "react-i18next";
 import { CustomSVG } from "@egovernments/digit-ui-components";
 
-const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick, onClear }) => {
+const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connections, connecting, canvasPoints, onConnectionLabelClick, onClear, onLoadSample }) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
@@ -21,28 +21,76 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
 
   // ADDED: Function to create X-Y only connection paths
   const createXYConnectionPath = useCallback((fromX, fromY, toX, toY) => {
-    if(toY==fromY){
-      if(toX>fromX){
+    const cornerRadius = 20;
+    const midX = (fromX + toX) / 2;
+    const midY = (fromY + toY) / 2;
+    if(toY === fromY) {
+      if(toX > fromX) {
         return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+      } else {
+        const detourY = Math.min(fromY, toY) - 70;
+        return `M ${fromX} ${fromY} 
+                L ${fromX} ${detourY + cornerRadius} 
+                Q ${fromX} ${detourY} ${fromX - cornerRadius} ${detourY} 
+                L ${toX + cornerRadius} ${detourY} 
+                Q ${toX} ${detourY} ${toX} ${detourY + cornerRadius} 
+                L ${toX} ${toY}`;
       }
-      else{
-        return `M ${fromX} ${fromY} L ${fromX} ${fromY+70} L ${toX} ${toY+70} L ${toX} ${toY}`;
+    } else if (toX > fromX) {
+      // Check if we have enough space for curves
+      const yDiff = Math.abs(toY - fromY);
+      const effectiveRadius = Math.min(cornerRadius, yDiff / 2.5);
+      
+      if (effectiveRadius < 3) {
+        // Use single smooth curve when space is very tight
+        const controlY = (fromY + toY) / 2 + (toY > fromY ? -20 : 20);
+        return `M ${fromX} ${fromY} Q ${midX} ${controlY} ${toX} ${toY}`;
       }
-    }
-    else if(toX>fromX){
-      if(toY>fromY){
-        return `M ${fromX} ${fromY} L ${Math.abs(toX+fromX)/2} ${fromY} L ${Math.abs(toX+fromX)/2} ${toY} L ${toX} ${toY}`;
+      
+      if (toY > fromY) {
+        // Down-right case
+        return `M ${fromX} ${fromY} 
+                L ${midX - effectiveRadius} ${fromY} 
+                Q ${midX} ${fromY} ${midX} ${fromY + effectiveRadius} 
+                L ${midX} ${toY - effectiveRadius} 
+                Q ${midX} ${toY} ${midX + effectiveRadius} ${toY} 
+                L ${toX} ${toY}`;
+      } else {
+        // Up-right case
+        return `M ${fromX} ${fromY} 
+                L ${midX - effectiveRadius} ${fromY} 
+                Q ${midX} ${fromY} ${midX} ${fromY - effectiveRadius} 
+                L ${midX} ${toY + effectiveRadius} 
+                Q ${midX} ${toY} ${midX + effectiveRadius} ${toY} 
+                L ${toX} ${toY}`;
       }
-      else if(toY<fromY){
-        return `M ${fromX} ${fromY} L ${Math.abs(toX+fromX)/2} ${fromY} L ${Math.abs(toX+fromX)/2} ${toY} L ${toX} ${toY}`;
+    } else {
+
+      const xDiff = Math.abs(toX - fromX);
+      const yDiff = Math.abs(toY - fromY);
+      const effectiveRadiusX = Math.min(cornerRadius, xDiff / 2.5);
+      const effectiveRadiusY = Math.min(cornerRadius, yDiff / 2.5);
+      const effectiveRadius = Math.min(effectiveRadiusX, effectiveRadiusY);
+      
+      if (effectiveRadius < 3) {
+        const controlX = (fromX + toX) / 2 - 30;
+        return `M ${fromX} ${fromY} Q ${controlX} ${midY} ${toX} ${toY}`;
       }
-    }
-    else if(toX<fromX){
-      if(toY>fromY){
-        return `M ${fromX} ${fromY} L ${fromX} ${Math.abs(toY+fromY)/2} L ${toX} ${Math.abs(toY+fromY)/2} L ${toX} ${toY}`;
-      }
-      else if(toY<fromY){
-        return `M ${fromX} ${fromY} L ${fromX} ${Math.abs(toY+fromY)/2} L ${toX} ${Math.abs(toY+fromY)/2} L ${toX} ${toY}`;
+      
+      if (toY > fromY) {
+        return `M ${fromX} ${fromY} 
+                L ${fromX} ${midY - effectiveRadius} 
+                Q ${fromX} ${midY} ${fromX - effectiveRadius} ${midY} 
+                L ${toX + effectiveRadius} ${midY} 
+                Q ${toX} ${midY} ${toX} ${midY + effectiveRadius} 
+                L ${toX} ${toY}`;
+      } else {
+        return `M ${fromX} ${fromY} 
+                L ${fromX} ${midY + effectiveRadius} 
+                Q ${fromX} ${midY} ${fromX - effectiveRadius} ${midY} 
+                L ${toX + effectiveRadius} ${midY} 
+                Q ${toX} ${midY} ${toX} ${midY - effectiveRadius} 
+                L ${toX} ${toY}`;
       }
     }
   }, []);
@@ -325,7 +373,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
           type="button"
           className="secondary-button"
           style={{ margin: "0 8px", borderRadius: "6px" }}
-          onClick={zoomToFit}
+          onClick={onLoadSample}
           size={"small"}
         />
       </div>
