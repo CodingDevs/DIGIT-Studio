@@ -34,7 +34,7 @@ const StageActions = ({ label, type, desc, options, name, onClick, value }) => {
                     props={{
                         fieldStyle: { width: "100%" }
                     }}
-                    type="dropdown"
+                    type="multiselectdropdown"
                     value={value}
                 />
             ) : type === "button" ? (

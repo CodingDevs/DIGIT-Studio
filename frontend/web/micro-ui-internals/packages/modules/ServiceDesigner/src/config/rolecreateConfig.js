@@ -1,7 +1,7 @@
-const generateMdmsRolePayload = (tenantId, id, category, stateData, data) => {
+const generateMdmsRolePayload = (tenantId, id, category, stateData, data, isNew) => {
     const existingdata = data[0]; 
     let payload = {};
-    if (!stateData.isNew) {
+    if (!isNew) {
         payload = {
             Mdms: {
                 ...existingdata,
