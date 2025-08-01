@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState, Fragment } from "react";
-import { Loader, Tag, TextBlock, Toast } from "@egovernments/digit-ui-components";
+import { CustomSVG, Loader, Tag, TextBlock, Toast } from "@egovernments/digit-ui-components";
 import { Header } from "@egovernments/digit-ui-react-components";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
@@ -37,7 +37,7 @@ const dispatcher = (state, action) => {
 
 const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
 
-const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, isPreviousTabAvailable, tabStateDispatch, tabState }) => {
+const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, isPreviousTabAvailable, tabStateDispatch, tabState, formName, formDescription, onFormNameChange, onFormDescriptionChange }) => {
   const tenantId = Digit.ULBService.getCurrentTenantId();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -346,25 +346,38 @@ const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, i
   return (
     <div>
       <Header className="app-config-header">
-        <div className="app-config-header-group" style={{ display: "flex", alignItems: "center" }}>
-          {t(`APP_CONFIG_HEADING_LABEL`)}
-          {/* <Tag
-            stroke={true}
-            showIcon={false}
-            label={`${t("APPCONFIG_VERSION")} - ${parentState?.actualTemplate?.version}`}
-            style={{ background: "#EFF8FF", height: "fit-content" }}
-            className={"version-tag"}
-          /> */}
-        </div>
+        <TextBlock header={formName || t(`APP_CONFIG_HEADING_LABEL`)} />
+        <button
+          onClick={() => {
+            // Dispatch custom event to open form name popup
+            if (window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('openFormNamePopup'));
+            }
+          }}
+          title={t("EDIT_FORM_NAME")}
+          className="node-buttons"
+        >
+          <CustomSVG.EditIcon />
+        </button>
+          
+        {/* <Tag
+          stroke={true}
+          showIcon={false}
+          label={`${t("APPCONFIG_VERSION")} - ${parentState?.actualTemplate?.version}`}
+          style={{ background: "#EFF8FF", height: "fit-content" }}
+          className={"version-tag"}
+        /> */}
       </Header>
-      <TextBlock body="" caption={t("CMP_DRAWER_WHAT_IS_APP_CONFIG_SCREEN")} header="" captionClassName="camp-drawer-caption" subHeader="" />
+      {formDescription && (
+        <TextBlock body="" caption={formDescription} header="" captionClassName="camp-drawer-caption" subHeader="" />
+      )}
       <div style={{ display: "flex" }}>
         <div>
           <div
             style={{
               display: "flex",
               alignItems: "flex-end",
-              marginLeft: "5rem",
+              marginLeft: "1.5rem",
               gap: "5rem",
             }}
           >
@@ -378,6 +391,10 @@ const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, i
               AppConfigMdmsData={AppConfigMdmsData}
               localeModule={localeModule}
               pageTag={`${t("CMN_PAGE")} ${currentStep} / ${stepper?.length}`}
+              formName={formName}
+              formDescription={formDescription}
+              onFormNameChange={onFormNameChange}
+              onFormDescriptionChange={onFormDescriptionChange}
             />
           </div>
         </div>

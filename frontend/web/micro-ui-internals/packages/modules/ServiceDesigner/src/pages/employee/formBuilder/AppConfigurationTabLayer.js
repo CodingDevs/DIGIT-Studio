@@ -106,6 +106,10 @@ const AppConfigurationTabLayer = () => {
   const [currentScreen, setCurrentScreen] = useState({});
   const [tabState, tabStateDispatch] = useReducer(tabDispatcher, {});
   const [showPopUp, setShowPopUp] = useState(null);
+  
+  // State for form name and description
+  const [formName, setFormName] = useState(searchParams.get("formName") || "");
+  const [formDescription, setFormDescription] = useState(searchParams.get("formDescription") || "");
 
   const data = 
   useEffect(() => {
@@ -162,10 +166,14 @@ const AppConfigurationTabLayer = () => {
           <AppConfigurationParentRedesign
             tabState={tabState}
             formData={tabState?.activeTabConfig}
-            tabStateDispatch={tabStateDispatch}
-            isNextTabAvailable={numberTabs.findIndex((tab) => tab.active) < numberTabs?.length - 1}
-            isPreviousTabAvailable={numberTabs.findIndex((tab) => tab.active) > 0}
-          />
+                               tabStateDispatch={tabStateDispatch}
+                   isNextTabAvailable={numberTabs.findIndex((tab) => tab.active) < numberTabs?.length - 1}
+                   isPreviousTabAvailable={numberTabs.findIndex((tab) => tab.active) > 0}
+                   formName={formName}
+                   formDescription={formDescription}
+                   onFormNameChange={setFormName}
+                   onFormDescriptionChange={setFormDescription}
+                 />
         </>
       )}
     </div>

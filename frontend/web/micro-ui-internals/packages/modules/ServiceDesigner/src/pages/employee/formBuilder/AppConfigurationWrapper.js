@@ -496,7 +496,7 @@ const reducer = (state = initialState, action, updateLocalization) => {
 
 const MODULE_CONSTANTS = "Studio";
 
-function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
+function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName, formDescription, onFormNameChange, onFormDescriptionChange }) {
   const { locState, addMissingKey, updateLocalization, onSubmit, back, showBack, parentDispatch } = useAppLocalisationContext();
   const [state, dispatch] = useReducer((state, action) => reducer(state, action, updateLocalization), initialState);
   const tenantId = Digit.ULBService.getCurrentTenantId();
@@ -515,6 +515,8 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
   const [showToast, setShowToast] = useState(null);
   const [nextButtonDisable, setNextButtonDisable] = useState(null);
   const enabledModules = Digit?.SessionStorage.get("initData")?.languages || [];
+  const [validationErrors, setValidationErrors] = useState({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Form configuration API hook
   const { saveFormConfig, updateFormConfig, fetchFormConfigByName } = useFormConfigAPI();
@@ -522,13 +524,13 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
   // Get module and service from URL parameters
   const module = searchParams.get("module");
   const service = searchParams.get("service");
-  const formName = searchParams.get("formName") || "";
-  const formDescription = ""; // Start with empty description
   const editMode = searchParams.get("editMode") === "true"; // Check for edit mode
 
   // State for form name and description (will be updated from side panel)
-  const [currentFormName, setCurrentFormName] = useState(formName);
-  const [currentFormDescription, setCurrentFormDescription] = useState(formDescription);
+  const [currentFormName, setCurrentFormName] = useState(formName || "");
+  const [currentFormDescription, setCurrentFormDescription] = useState(formDescription || "");
+  const [showFormNamePopup, setShowFormNamePopup] = useState(!currentFormName && !editMode); // Show popup if no form name and not in edit mode
+  const [showSectionPopup, setShowSectionPopup] = useState(false);
 
   // Fetch existing form data if in edit mode (using formName as unique identifier)
   const { data: existingFormData, isLoading: isLoadingExistingForm } = fetchFormConfigByName(formName);
@@ -565,6 +567,88 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
   };
   const fetchLoc = (key) => {
     return locState?.find((i) => i.code === key)?.[currentLocale];
+  };
+
+  // Validation function for form builder
+  const validateForm = () => {
+    const errors = {};
+
+    // 1. Verify if form name not entered
+    if (!currentFormName || !currentFormName.trim()) {
+      errors.formName = t("FORM_NAME_REQUIRED");
+    }
+
+    // 2. Verify field added but no type selected
+    const fields = state?.screenData?.[0]?.cards?.[0]?.fields || [];
+    const fieldsWithoutType = fields.filter(field => !field.type);
+    if (fieldsWithoutType.length > 0) {
+      errors.fieldType = t("FIELD_TYPE_REQUIRED");
+    }
+
+    // 3. Verify if two fields with same name
+    const fieldNames = fields.map(field => field.label).filter(Boolean);
+    const duplicateNames = fieldNames.filter((name, index) => fieldNames.indexOf(name) !== index);
+    if (duplicateNames.length > 0) {
+      errors.duplicateNames = t("DUPLICATE_FIELD_NAMES");
+    }
+
+    // 4. Check for required metadata missing
+    const fieldsWithMissingMetadata = fields.filter(field => {
+      if (!field.label || !field.type) return true;
+      return false;
+    });
+    if (fieldsWithMissingMetadata.length > 0) {
+      errors.missingMetadata = t("MISSING_REQUIRED_INFORMATION");
+    }
+
+    return errors;
+  };
+
+  // Function to check for unsaved changes
+  const checkForUnsavedChanges = () => {
+    // This is a simplified check - you might want to implement more sophisticated change tracking
+    return hasUnsavedChanges;
+  };
+
+  // Function to handle window beforeunload event
+  const handleBeforeUnload = (e) => {
+    if (checkForUnsavedChanges()) {
+      e.preventDefault();
+      e.returnValue = t("STUDIO_UNSAVED_CHANGES_WARNING");
+      return t("STUDIO_UNSAVED_CHANGES_WARNING");
+    }
+  };
+
+  // Add event listener for window beforeunload
+  useEffect(() => {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  // Add event listener for opening form name popup
+  useEffect(() => {
+    const handleOpenFormNamePopup = () => {
+      setShowFormNamePopup(true);
+    };
+
+    window.addEventListener('openFormNamePopup', handleOpenFormNamePopup);
+    return () => {
+      window.removeEventListener('openFormNamePopup', handleOpenFormNamePopup);
+    };
+  }, []);
+
+  // Track changes to mark unsaved changes
+  useEffect(() => {
+    if (state?.screenData) {
+      setHasUnsavedChanges(true);
+    }
+  }, [state?.screenData]);
+
+  // Clear unsaved changes when form is successfully saved
+  const clearUnsavedChanges = () => {
+    setHasUnsavedChanges(false);
   };
 
   useEffect(() => {
@@ -776,20 +860,23 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
   };
   const handleSubmit = async (finalSubmit) => {
     
-    // Comment out validation since it uses fetchLoc which might cause localization key issues
-    // if (state?.screenData?.[0]?.type === "object") {
-    //   //skipping template screen validation
-    //   const errorCheck = validateFromState(
-    //     state?.screenData?.[0]?.cards?.[0],
-    //     state?.MASTER_DATA?.FieldPropertiesPanelConfig,
-    //     locState,
-    //     currentLocale
-    //   );
-    //   if (errorCheck) {
-    //     setShowToast({ key: "error", label: errorCheck?.value ? errorCheck?.value : errorCheck });
-    //     return;
-    //   }
-    // }
+    // Validate form before proceeding
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setValidationErrors(validationErrors);
+      
+      // Show toast with first error
+      const firstError = Object.values(validationErrors)[0];
+      setShowToast({ 
+        key: "error", 
+        label: firstError,
+        transitionTime: 5000
+      });
+      return;
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({});
     
     // Comment out localization processing - use plain text values directly
     // const localeArrays = createLocaleArrays();
@@ -847,6 +934,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
                 auditDetails: existingFormData.auditDetails
               };
               result = await updateFormConfig.mutateAsync(updatePayload);
+              clearUnsavedChanges();
               setShowToast({ 
                 key: "success", 
                 label: "FORM_UPDATED_SUCCESSFULLY",
@@ -888,6 +976,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
                     auditDetails: foundForm.auditDetails
                   };
                   result = await updateFormConfig.mutateAsync(updatePayload);
+                  clearUnsavedChanges();
                   setShowToast({ 
                     key: "success", 
                     label: "FORM_UPDATED_SUCCESSFULLY",
@@ -912,6 +1001,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
           } else {
             // Create new form
             result = await saveFormConfig.mutateAsync(mdmsFormData);
+            clearUnsavedChanges();
             setShowToast({ 
               key: "success", 
               label: "FORM_SAVED_SUCCESSFULLY",
@@ -926,7 +1016,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
           console.error("Error saving/updating form to MDMS:", mdmsError);
           setShowToast({ 
             key: "error", 
-            label: editMode ? "FORM_UPDATE_FAILED" : "FORM_SAVE_FAILED",
+            label: t("MDMS_CREATE_BACKEND_ERROR"),
             transitionTime: 5000
           });
         }
@@ -958,18 +1048,45 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
       currentFormName,
       setCurrentFormName,
       currentFormDescription,
-              setCurrentFormDescription,
-        selectedPreviewSection,
-        setSelectedPreviewSection
+      setCurrentFormDescription,
+      selectedPreviewSection,
+      setSelectedPreviewSection,
+      validationErrors,
+      setValidationErrors,
+      hasUnsavedChanges,
+      setHasUnsavedChanges
     }}>
       {loading && <Loader page={true} variant={"OverlayLoader"} loaderText={t("SAVING_CONFIG_IN_SERVER")} />}
-      <AppPreview 
-        data={state?.screenData?.[0]} 
-        selectedField={state?.drawerField} 
-        t={useCustomT}
-        selectedSection={selectedPreviewSection}
-        onSectionChange={(sectionIndex) => setSelectedPreviewSection(sectionIndex)}
-      />
+      
+      <div style={{ marginRight: "1.5rem", position: "relative" }}>
+        {/* Add Section Button - Top Right */}
+        <Button
+          type={"button"}
+          size={"medium"}
+          variation={"primary"}
+          label={t("ADD_SECTION")}
+          onClick={() => {
+            setShowSectionPopup(true);
+          }}
+          style={{ 
+            position: "absolute", 
+            top: "-0.5rem", 
+            right: "0.5rem",
+            zIndex: 10,
+            fontSize: "0.875rem",
+            padding: "0.5rem 1rem",
+            fontWeight: "500"
+          }}
+        />
+        
+        <AppPreview 
+          data={state?.screenData?.[0]} 
+          selectedField={state?.drawerField} 
+          t={useCustomT}
+          selectedSection={selectedPreviewSection}
+          onSectionChange={(sectionIndex) => setSelectedPreviewSection(sectionIndex)}
+        />
+      </div>
       {/* <div className="appConfig-flex-action">
         <Button
           className="app-configure-action-button"
@@ -1023,7 +1140,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
           ]}
           header={[
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div className="typography heading-m" style={{ color: "#0B4B66" }}>
+              <div className="typography heading-m">
                 {t("FIELD_CONFIGURATION")}
               </div>
               {editMode && (
@@ -1121,23 +1238,6 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
           children={[
             <FieldV1
               required={true}
-              type={"text"}
-              label={`${t("ADD_FIELD_LABEL")}`}
-              value={addFieldData?.label || ""}
-              config={{
-                step: "",
-              }}
-              onChange={(event) => {
-                setAddFieldData((prev) => ({
-                  ...prev,
-                  label: event.target.value,
-                }));
-              }}
-              populators={{ fieldPairClassName: "" }}
-              error={showError?.label ? t(showError?.label) : null}
-            />,
-            <FieldV1
-              required={true}
               label={`${t("ADD_FIELD_TYPE")}`}
               type={"dropdown"}
               value={addFieldData?.type}
@@ -1162,6 +1262,23 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
                 optionsKey: "type",
               }}
               error={showError?.dropdown ? t(showError?.dropdown) : null}
+            />,
+            <FieldV1
+              required={true}
+              type={"text"}
+              label={`${t("ADD_FIELD_LABEL")}`}
+              value={addFieldData?.label || ""}
+              config={{
+                step: "",
+              }}
+              onChange={(event) => {
+                setAddFieldData((prev) => ({
+                  ...prev,
+                  label: event.target.value,
+                }));
+              }}
+              populators={{ fieldPairClassName: "" }}
+              error={showError?.label ? t(showError?.label) : null}
             />,
           ]}
           onOverlayClick={() => {
@@ -1227,6 +1344,308 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag }) {
           label={t(showToast?.label)}
           transitionTime={showToast.transitionTime}
           onClose={closeToast}
+        />
+      )}
+      
+      {/* Section Popup */}
+      {showSectionPopup && (
+        <PopUp
+          type={"default"}
+          heading={t("ADD_SECTION")}
+          children={[
+            <div style={{ padding: "1rem 0" }}>
+              {/* Custom Section Button */}
+              <div style={{ 
+                marginBottom: "1rem",
+                padding: "1rem",
+                border: "1px solid #e9ecef",
+                borderRadius: "8px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backgroundColor: "#fff"
+              }}
+              onClick={() => {
+                const newSectionIndex = state?.screenData?.[0]?.cards?.length || 0;
+                dispatch({
+                  type: "ADD_SECTION",
+                  payload: {
+                    currentScreen: state?.screenData?.[0],
+                    sectionName: "New Section",
+                    sectionDescription: "Description for the new section",
+                  },
+                });
+                setSelectedPreviewSection(newSectionIndex);
+                setShowSectionPopup(false);
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#f8f9fa";
+                e.target.style.borderColor = "black";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#fff";
+                e.target.style.borderColor = "#e9ecef";
+              }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div className="typography heading-s" style={{ marginBottom: "0.25rem", color: "black" }}>
+                      {t("CUSTOM_SECTION")}
+                    </div>
+                    <div className="typography body-s" style={{ color: "#666" }}>
+                      {t("CREATE_NEW_SECTION")}
+                    </div>
+                  </div>
+                  {/* <div style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "#c84c0e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: "600" }}>+</span>
+                  </div> */}
+                </div>
+              </div>
+
+              {/* Address Template Button */}
+              <div style={{ 
+                marginBottom: "1rem",
+                padding: "1rem",
+                border: "1px solid #e9ecef",
+                borderRadius: "8px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backgroundColor: "#fff"
+              }}
+              onClick={() => {
+                dispatch({
+                  type: "TOGGLE_ADDRESS_DETAILS",
+                  payload: {
+                    enabled: true,
+                    currentScreen: state?.screenData?.[0],
+                    boundaryData: [],
+                  },
+                });
+                setShowSectionPopup(false);
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#f8f9fa";
+                e.target.style.borderColor = "black";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#fff";
+                e.target.style.borderColor = "#e9ecef";
+              }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div className="typography heading-s" style={{ marginBottom: "0.25rem" }}>
+                      {t("ADDRESS_SECTION")}
+                    </div>
+                    <div className="typography body-s" style={{ color: "#666" }}>
+                      {t("ADD_ADDRESS_FIELDS")}
+                    </div>
+                  </div>
+                  {/* <div style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "#c84c0e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: "600" }}>📍</span>
+                  </div> */}
+                </div>
+              </div>
+
+              {/* Applicant Template Button */}
+              <div style={{ 
+                marginBottom: "1rem",
+                padding: "1rem",
+                border: "1px solid #e9ecef",
+                borderRadius: "8px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backgroundColor: "#fff"
+              }}
+              onClick={() => {
+                dispatch({
+                  type: "TOGGLE_APPLICANT_DETAILS",
+                  payload: {
+                    enabled: true,
+                    currentScreen: state?.screenData?.[0],
+                  },
+                });
+                setShowSectionPopup(false);
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "#f8f9fa";
+                e.target.style.borderColor = "black";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "#fff";
+                e.target.style.borderColor = "#e9ecef";
+              }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div className="typography heading-s" style={{ marginBottom: "0.25rem", color: "black" }}>
+                      {t("APPLICANT_SECTION")}
+                    </div>
+                    <div className="typography body-s" style={{ color: "#666" }}>
+                      {t("APPLICANTS_DETAILS_DESC")}
+                    </div>
+                  </div>
+                  {/* <div style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "#c84c0e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: "600" }}>👤</span>
+                  </div> */}
+                </div>
+              </div>
+
+              {/* Document Template Button (Disabled) */}
+              <div style={{ 
+                marginBottom: "1rem",
+                padding: "1rem",
+                border: "1px solid #e9ecef",
+                borderRadius: "8px",
+                cursor: "not-allowed",
+                transition: "all 0.2s ease",
+                backgroundColor: "#f8f9fa",
+                opacity: "0.6"
+              }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div className="typography heading-s" style={{ marginBottom: "0.25rem", color: "#999" }}>
+                      {t("DOCUMENT_SECTION")}
+                    </div>
+                    <div className="typography body-s" style={{ color: "#999" }}>
+                      {t("DOCUMENT_DESC")}
+                    </div>
+                  </div>
+                  <div style={{ 
+                    width: "24px", 
+                    height: "24px", 
+                    borderRadius: "50%", 
+                    backgroundColor: "#ccc",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: "600" }}>📄</span>
+                  </div>
+                </div>
+              </div>
+            </div>,
+          ]}
+          onOverlayClick={() => {
+            setShowSectionPopup(false);
+          }}
+          onClose={() => {
+            setShowSectionPopup(false);
+          }}
+          equalWidthButtons={"false"}
+          footerChildren={[
+            <Button
+              type={"button"}
+              size={"large"}
+              variation={"secondary"}
+              label={t("CANCEL")}
+              onClick={() => {
+                setShowSectionPopup(false);
+              }}
+            />,
+          ]}
+        />
+      )}
+      
+      {/* Form Name Popup */}
+      {showFormNamePopup && (
+        <PopUp
+          type={"default"}
+          heading={t("CREATE_NEW_FORM")}
+          children={[
+            <div style={{ padding: "1rem 0" }}>
+              <FieldV1
+                required={true}
+                type={"text"}
+                label={t("FORM_NAME")}
+                value={currentFormName}
+                config={{
+                  step: "",
+                }}
+                onChange={(event) => {
+                  setCurrentFormName(event.target.value);
+                  // Call parent's onChange function
+                  if (onFormNameChange) {
+                    onFormNameChange(event.target.value);
+                  }
+                }}
+                populators={{ fieldPairClassName: "" }}
+                error={validationErrors.formName ? t(validationErrors.formName) : null}
+              />
+              <FieldV1
+                type={"textarea"}
+                label={t("FORM_DESCRIPTION")}
+                value={currentFormDescription}
+                config={{
+                  step: "",
+                }}
+                onChange={(event) => {
+                  setCurrentFormDescription(event.target.value);
+                  // Call parent's onChange function
+                  if (onFormDescriptionChange) {
+                    onFormDescriptionChange(event.target.value);
+                  }
+                }}
+                populators={{ fieldPairClassName: "" }}
+              />
+            </div>,
+          ]}
+          onOverlayClick={() => {
+            setShowFormNamePopup(false);
+          }}
+          onClose={() => {
+            setShowFormNamePopup(false);
+          }}
+          equalWidthButtons={"false"}
+          footerChildren={[
+            <Button
+              type={"button"}
+              size={"large"}
+              variation={"secondary"}
+              label={t("CANCEL")}
+              onClick={() => {
+                setShowFormNamePopup(false);
+              }}
+            />,
+            <Button
+              type={"button"}
+              size={"large"}
+              variation={"primary"}
+              label={t("CREATE_FORM")}
+              onClick={() => {
+                if (currentFormName?.trim()) {
+                  setShowFormNamePopup(false);
+                  setValidationErrors({}); // Clear any existing validation errors
+                } else {
+                  setValidationErrors({ formName: "FORM_NAME_REQUIRED" });
+                }
+              }}
+            />,
+          ]}
         />
       )}
       <Footer

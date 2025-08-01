@@ -14,6 +14,8 @@ import {
   Tooltip,
   TooltipWrapper,
   Switch,
+  TextArea,
+  AlertCard,
 } from "@egovernments/digit-ui-components";
 import AppFieldComposer from "./AppFieldComposer";
 import _ from "lodash";
@@ -21,7 +23,7 @@ import { useCustomT } from "./useCustomT";
 import DraggableField from "./DraggableField";
 import { useAppLocalisationContext } from "./AppLocalisationWrapper";
 import { InfoOutline } from "@egovernments/digit-ui-svg-components";
-import { DustbinIcon } from "@egovernments/digit-ui-react-components";
+import { CardSectionHeader, DustbinIcon } from "@egovernments/digit-ui-react-components";
 import ConsoleTooltip from "../../../components/ConsoleToolTip";
 import { useBoundaryData } from "../../../hooks/useBoundaryData";
 
@@ -35,7 +37,10 @@ function AppFieldScreenWrapper() {
     currentFormDescription,
     setCurrentFormDescription,
     selectedPreviewSection,
-    setSelectedPreviewSection
+    setSelectedPreviewSection,
+    validationErrors,
+    setValidationErrors,
+    setHasUnsavedChanges
   } = useAppConfigContext();
   const { locState, updateLocalization } = useAppLocalisationContext();
   const searchParams = new URLSearchParams(location.search);
@@ -72,266 +77,316 @@ function AppFieldScreenWrapper() {
   
   return (
     <React.Fragment>
-      {/* Form Name and Description Section */}
-      <div style={{ marginBottom: 24, padding: 16, background: "#f8f9fa", borderRadius: 8, border: "1px solid #e9ecef" }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontWeight: 600, color: "#495057" }}>{t("FORM_NAME")}</span>
-            <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_FORM_NAME")}/>
-          </div>
-          <TextInput
-            name="formName"
-            value={currentFormName}
-            placeholder="Enter form name (e.g., Property Registration Form)"
-            onChange={(event) => {
-              setCurrentFormName(event.target.value);
-              // Update URL parameter
-              const newUrl = new URL(window.location);
-              newUrl.searchParams.set("formName", event.target.value);
-              window.history.replaceState({}, "", newUrl);
-            }}
-            style={{ marginBottom: 12 }}
-          />
-        </div>
-        
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontWeight: 600, color: "#495057" }}>{t("FORM_DESCRIPTION")}</span>
-            <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_FORM_DESCRIPTION")}/>
-          </div>
-          <TextInput
-            name="formDescription"
-            value={currentFormDescription}
-            placeholder="Enter form description (e.g., Form for registering property details)"
-            onChange={(event) => {
-              setCurrentFormDescription(event.target.value);
-            }}
-          />
-        </div>
-      </div>
-      
-
-      
       {!currentCard?.cards || currentCard.cards.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px", color: "#6c757d" }}>
           No sections available. Add a section to get started.
         </div>
       ) : (
-        currentCard?.cards?.map((cardObj, index) => {
-        const { fields, headerFields } = cardObj;
-        // Find heading and description fields
-        const headingField = headerFields?.find((f) => f.label === "SCREEN_HEADING");
-        const descriptionField = headerFields?.find((f) => f.label === "SCREEN_DESCRIPTION");
-        
-        // Only show the selected section
-        if (selectedPreviewSection !== index) {
-          return null;
-        }
-        
-        // Ensure we have a valid section to show
-        if (!cardObj) {
-          return null;
-        }
-        
-        // Hide auto-generated sections (Applicant Details and Address Details) from side panel
-        const isApplicantSection = cardObj.fields?.some(field => field.jsonPath === "ApplicantName");
-        const isAddressSection = cardObj.fields?.some(field => field.jsonPath === "AddressPincode");
-        
-        if (isApplicantSection || isAddressSection) {
-          return null;
-        }
-        
-        // Count custom sections (excluding auto-generated ones)
-        const customSections = currentCard?.cards?.filter(card => {
-          const isApplicant = card.fields?.some(field => field.jsonPath === "ApplicantName");
-          const isAddress = card.fields?.some(field => field.jsonPath === "AddressPincode");
-          return !isApplicant && !isAddress;
-        });
-        const customSectionsCount = customSections?.length || 0;
-        
-        return (
-          <div key={index} className="app-config-section-block" style={{ border: "1px solid #eee", borderRadius: 8, marginBottom: 16, padding: 16, position: 'relative' }}>
-            {/* Dustbin icon in top right corner - only show when more than 1 custom section */}
-            {customSectionsCount > 1 && (
-              <button
-                style={{ 
-                  position: 'absolute', 
-                  top: 8, 
-                  right: 8, 
-                  background: 'none', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  padding: 4,
-                  zIndex: 10
-                }}
-                title={t('DELETE_SECTION')}
-                onClick={() => {
-                  dispatch({
-                    type: 'DELETE_SECTION',
-                    payload: {
-                      currentScreen: currentCard,
-                      sectionIndex: index,
-                    },
-                  });
-                }}
-              >
-                <DustbinIcon width={20} height={20} fill="#d32f2f" />
-              </button>
-            )}
+        <React.Fragment>
+          {/* Sticky Section Header */}
+          <div style={{ 
+            position: "sticky", 
+            top: "-16px", 
+            backgroundColor: "#fff", 
+            zIndex: 10, 
+            //borderBottom: "1px solid #e9ecef",
+            //marginBottom: "1.5rem"
+          }}>
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "space-between",
+              marginBottom: "1rem"
+            }}>
+              {/* <h3 style={{ 
+                fontSize: "1.25rem", 
+                fontWeight: "600", 
+                //color: "#0B4B66", 
+                margin: 0,
+                fontFamily: "Roboto"
+              }}>
+                
+              </h3> */}
+              <div className="typography heading-m" style={{marginLeft:"0px"}}>{currentCard?.cards?.[selectedPreviewSection]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${selectedPreviewSection + 1}`}</div>
+              {/* Count custom sections (excluding auto-generated ones) */}
+              {(() => {
+                const customSections = currentCard?.cards?.filter(card => {
+                  const isApplicant = card.fields?.some(field => field.jsonPath === "ApplicantName");
+                  const isAddress = card.fields?.some(field => field.jsonPath === "AddressPincode");
+                  return !isApplicant && !isAddress;
+                });
+                const customSectionsCount = customSections?.length || 0;
+                
+                // Only show delete button if more than 1 custom section
+                if (customSectionsCount > 1) {
+                  return (
+                    <button
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        padding: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title={t('DELETE_SECTION')}
+                      onClick={() => {
+                        dispatch({
+                          type: 'DELETE_SECTION',
+                          payload: {
+                            currentScreen: currentCard,
+                            sectionIndex: selectedPreviewSection,
+                          },
+                        });
+                      }}
+                    >
+                      <DustbinIcon width={20} height={20} fill="#d32f2f" />
+                    </button>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+            </div>
+            <Divider style={{ marginBottom: "1.5rem" }} />
             
-            <div className="app-config-section-header" style={{ marginBottom: 12 }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontWeight: 100 }}>{t("SECTION_HEADING")}</span>
-                  <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_SECTION_HEADING")}/>
-                </div>
-                <TextInput
-                  name="sectionHeading"
-                  value={typeof headingField?.value === 'string' ? headingField.value : `Section ${index + 1}`}
-                  placeholder={t("Enter section heading")}
-                  onChange={(event) => {
-                    dispatch({
-                      type: "UPDATE_HEADER_FIELD",
-                      payload: {
-                        currentField: cardObj,
-                        currentScreen: currentCard,
-                        field: headingField,
-                        value: event.target.value,
-                      },
-                    });
-                  }}
-                  style={{ marginTop: 4, marginBottom: 8 }}
-                />
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-                  <span style={{ fontWeight: 100 }}>{t("SECTION_DESCRIPTION")}</span>
-                  <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_SECTION_DESCRIPTION")}/>
-                </div>
-                <TextInput
-                  name="sectionDescription"
-                  value={typeof descriptionField?.value === 'string' ? descriptionField.value : `Description for Section ${index + 1}`}
-                  placeholder={t("Enter section description")}
-                  onChange={(event) => {
-                    dispatch({
-                      type: "UPDATE_HEADER_FIELD",
-                      payload: {
-                        currentField: cardObj,
-                        currentScreen: currentCard,
-                        field: descriptionField,
-                        value: event.target.value,
-                      },
-                    });
-                  }}
-                  style={{ marginTop: 4, marginBottom: 12 }}
-                />
+            {/* Section Navigation */}
+            {/* <div style={{ 
+              display: "flex", 
+              gap: "0.5rem", 
+              flexWrap: "wrap"
+            }}>
+              {currentCard?.cards?.map((cardObj, index) => {
+                // Include all sections in navigation, including template sections
+                // const isApplicantSection = cardObj.fields?.some(field => field.jsonPath === "ApplicantName");
+                // const isAddressSection = cardObj.fields?.some(field => field.jsonPath === "AddressPincode");
+                
+                // if (isApplicantSection || isAddressSection) {
+                //   return null;
+                // }
+                
+                const headingField = cardObj.headerFields?.find((f) => f.label === "SCREEN_HEADING");
+                const sectionName = headingField?.value || `Section ${index + 1}`;
+                
+                return (
+                  <button
+                    key={index}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      border: selectedPreviewSection === index ? "2px solid #0B4B66" : "1px solid #e9ecef",
+                      borderRadius: "6px",
+                      backgroundColor: selectedPreviewSection === index ? "#EFF8FF" : "#fff",
+                      color: selectedPreviewSection === index ? "#0B4B66" : "#666",
+                      cursor: "pointer",
+                      fontSize: "0.875rem",
+                      fontWeight: selectedPreviewSection === index ? "600" : "400",
+                      transition: "all 0.2s ease"
+                    }}
+                    onClick={() => setSelectedPreviewSection(index)}
+                  >
+                    {sectionName}
+                  </button>
+                );
+              })}
+            </div>
+           */}
+          {/* Section Content */}
+          {currentCard?.cards?.map((cardObj, index) => {
+            const { fields, headerFields } = cardObj;
+            // Find heading and description fields
+            const headingField = headerFields?.find((f) => f.label === "SCREEN_HEADING");
+            const descriptionField = headerFields?.find((f) => f.label === "SCREEN_DESCRIPTION");
+            
+            // Only show the selected section
+            if (selectedPreviewSection !== index) {
+              return null;
+            }
+            
+            // Ensure we have a valid section to show
+            if (!cardObj) {
+              return null;
+            }
+            
+            // Hide auto-generated sections (Applicant Details and Address Details) from side panel
+            const isApplicantSection = cardObj.fields?.some(field => field.jsonPath === "ApplicantName");
+            const isAddressSection = cardObj.fields?.some(field => field.jsonPath === "AddressPincode");
+            
+            // Check if this is a template section
+            const isTemplateSection = isApplicantSection || isAddressSection;
+            
+            // Don't hide template sections anymore, show them with a message
+            // if (isApplicantSection || isAddressSection) {
+            //   return null;
+            // }
+            
+            return (
+              <div key={index}>
+                {/* Template Section Message */}
+                {isTemplateSection ? (
+                    <AlertCard label={t("STUDIO_INFO")} text={t("TEMPLATE_SECTION_INFO")} />
+                ) : (
+                  <>
+                    {/* Section Heading and Description */}
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                        <span className="typography heading-s">{t("SECTION_HEADING")}</span>
+                        <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_SECTION_HEADING")}/>
+                      </div>
+                      <TextInput
+                        name="sectionHeading"
+                        value={typeof headingField?.value === 'string' ? headingField.value : `Section ${index + 1}`}
+                        placeholder={t("Enter section heading")}
+                        onChange={(event) => {
+                          dispatch({
+                            type: "UPDATE_HEADER_FIELD",
+                            payload: {
+                              currentField: cardObj,
+                              currentScreen: currentCard,
+                              field: headingField,
+                              value: event.target.value,
+                            },
+                          });
+                        }}
+                        style={{ marginBottom: "1rem" }}
+                      />
+                      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                        <span  className="typography heading-s">{t("SECTION_DESCRIPTION")}</span>
+                        <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_SECTION_DESCRIPTION")}/>
+                      </div>
+                      <TextArea
+                        name="sectionDescription"
+                        value={typeof descriptionField?.value === 'string' ? descriptionField.value : `Description for Section ${index + 1}`}
+                        placeholder={t("Enter section description")}
+                        onChange={(event) => {
+                          dispatch({
+                            type: "UPDATE_HEADER_FIELD",
+                            payload: {
+                              currentField: cardObj,
+                              currentScreen: currentCard,
+                              field: descriptionField,
+                              value: event.target.value,
+                            },
+                          });
+                        }}
+                        style={{ marginBottom: "1.5rem" }}
+                        rows={3}
+                      />
+                    </div>
+
+                    <Divider style={{ marginBottom: "1rem" }} />
+                    
+                    {/* Fields Section */}
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div style={{ 
+                        display: "flex", 
+                        //alignItems: "center", 
+                        gap: 8, 
+                        marginBottom: "1rem",
+                        paddingBottom: "0.5rem",
+                        //borderBottom: "1px solid #e9ecef"
+                      }}>
+                        <span className="typography heading-s">{t("APPCONFIG_SUBHEAD_FIELDS")}</span>
+                        <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_APPCONFIG_SUBHEAD_FIELDS")} />
+                      </div>
+                      
+                      {fields?.map((field, i, c) => (
+                        <DraggableField
+                          key={field.jsonPath || i}
+                          type={field.type}
+                          label={field.label}
+                          active={field.active}
+                          required={field.required}
+                          isDelete={field.deleteFlag === false ? false : true}
+                          dropDownOptions={field.dropDownOptions}
+                          onDelete={() => {
+                            dispatch({
+                              type: "DELETE_FIELD",
+                              payload: {
+                                currentScreen: currentCard,
+                                currentCard: cardObj,
+                                currentField: c[i],
+                              },
+                            });
+                          }}
+                          onHide={() => {
+                            dispatch({
+                              type: "HIDE_FIELD",
+                              payload: {
+                                currentScreen: currentCard,
+                                currentCard: cardObj,
+                                currentField: c[i],
+                              },
+                            });
+                          }}
+                          onSelectField={() => {
+                            // Clear validation errors when user interacts with fields
+                            if (Object.keys(validationErrors).length > 0) {
+                              setValidationErrors({});
+                            }
+                            setHasUnsavedChanges(true);
+                            dispatch({
+                              type: "SELECT_DRAWER_FIELD",
+                              payload: {
+                                currentScreen: currentCard,
+                                currentCard: cardObj,
+                                drawerField: c[i],
+                              },
+                            });
+                          }}
+                          config={c[i]}
+                          Mandatory={field.Mandatory}
+                          helpText={useCustomT(field.helpText)}
+                          infoText={useCustomT(field.infoText)}
+                          innerLabel={useCustomT(field.innerLabel)}
+                          rest={field}
+                          index={i}
+                          fieldIndex={i}
+                          cardIndex={cardObj}
+                          indexOfCard={index}
+                          moveField={moveField}
+                          fields={c}
+                        />
+                      ))}
+                      
+                      {currentCard?.type !== "template" && currentCard?.config?.enableFieldAddition && (
+                        <Button
+                          className={"app-config-drawer-button"}
+                          type={"button"}
+                          size={"medium"}
+                          icon={"AddIcon"}
+                          variation={"teritiary"}
+                          label={t("ADD_FIELD")}
+                          style={{ marginTop: 12 }}
+                          onClick={() => {
+                            // Clear validation errors when adding new fields
+                            if (Object.keys(validationErrors).length > 0) {
+                              setValidationErrors({});
+                            }
+                            setHasUnsavedChanges(true);
+                            openAddFieldPopup({
+                              currentScreen: currentCard,
+                              currentCard: cardObj,
+                            });
+                            return;
+                          }}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-            <div className="app-config-drawer-subheader" style={{ marginTop: 12 }}>
-              <div>{t("APPCONFIG_SUBHEAD_FIELDS")}</div>
-              <ConsoleTooltip className="app-config-tooltip" toolTipContent={t("TIP_APPCONFIG_SUBHEAD_FIELDS")} />
-            </div>
-            {fields?.map((field, i, c) => (
-              <DraggableField
-                key={field.jsonPath || i}
-                type={field.type}
-                label={field.label}
-                active={field.active}
-                required={field.required}
-                isDelete={field.deleteFlag === false ? false : true}
-                dropDownOptions={field.dropDownOptions}
-                onDelete={() => {
-                  dispatch({
-                    type: "DELETE_FIELD",
-                    payload: {
-                      currentScreen: currentCard,
-                      currentCard: cardObj,
-                      currentField: c[i],
-                    },
-                  });
-                }}
-                onHide={() => {
-                  dispatch({
-                    type: "HIDE_FIELD",
-                    payload: {
-                      currentScreen: currentCard,
-                      currentCard: cardObj,
-                      currentField: c[i],
-                    },
-                  });
-                }}
-                onSelectField={() => {
-                  dispatch({
-                    type: "SELECT_DRAWER_FIELD",
-                    payload: {
-                      currentScreen: currentCard,
-                      currentCard: cardObj,
-                      drawerField: c[i],
-                    },
-                  });
-                }}
-                config={c[i]}
-                Mandatory={field.Mandatory}
-                helpText={useCustomT(field.helpText)}
-                infoText={useCustomT(field.infoText)}
-                innerLabel={useCustomT(field.innerLabel)}
-                rest={field}
-                index={i}
-                fieldIndex={i}
-                cardIndex={cardObj}
-                indexOfCard={index}
-                moveField={moveField}
-                fields={c}
-              />
-            ))}
-            {currentCard?.type !== "template" && currentCard?.config?.enableFieldAddition && (
-              <Button
-                className={"app-config-drawer-button"}
-                type={"button"}
-                size={"medium"}
-                icon={"AddIcon"}
-                variation={"teritiary"}
-                label={t("ADD_FIELD")}
-                style={{ marginTop: 12 }}
-                onClick={() => {
-                  openAddFieldPopup({
-                    currentScreen: currentCard,
-                    currentCard: cardObj,
-                  });
-                  return;
-                }}
-              />
-            )}
-          </div>
-        );
-      })
+            );
+          })}
+        </React.Fragment>
       )}
-      <Button
-        className={"app-config-add-section"}
-        type={"button"}
-        size={"large"}
-        variation={"secondary"}
-        label={t("ADD_SECTION")}
-        onClick={() => {
-          const newSectionIndex = currentCard?.cards?.length || 0;
-          dispatch({
-            type: "ADD_SECTION",
-            payload: {
-              currentScreen: currentCard,
-            },
-          });
-          // Auto-switch to the new section
-          setSelectedPreviewSection(newSectionIndex);
-          return;
-        }}
-        style={{ marginTop: 8, marginBottom: 8 }}
-      />
       
       {/* <Divider style={{ margin: "24px 0" }} /> */}
       
       {/* Toggle Cards */}
-      <div style={{ marginBottom: 24 }}>
+      {/* <div style={{ marginBottom: 24 }}>
         <h3 style={{ marginBottom: 16, color: "#495057", fontSize: "1.1rem" }}>Section Options</h3>
         
-        {/* Applicant Details Toggle */}
         <Card style={{ marginBottom: 16, padding: 16, border: "1px solid #e9ecef" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -373,7 +428,6 @@ function AppFieldScreenWrapper() {
           </div>
         </Card>
         
-        {/* Address Details Toggle */}
         <Card style={{ marginBottom: 16, padding: 16, border: "1px solid #e9ecef" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -416,7 +470,6 @@ function AppFieldScreenWrapper() {
           </div>
         </Card>
         
-        {/* Documents Toggle */}
         <Card style={{ marginBottom: 16, padding: 16, border: "1px solid #e9ecef" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -429,7 +482,7 @@ function AppFieldScreenWrapper() {
             />
           </div>
         </Card>
-      </div>
+      </div> */}
       {/* <Divider className="app-config-drawer-action-divider" /> */}
       {/* {currentCard?.type !== "template" && (
         <>

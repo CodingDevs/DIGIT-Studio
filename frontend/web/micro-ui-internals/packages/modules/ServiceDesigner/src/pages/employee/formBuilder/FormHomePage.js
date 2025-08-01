@@ -3,9 +3,11 @@ import {
   Card,
   CardSectionHeader,
 } from "@egovernments/digit-ui-react-components";
-import { Button, Loader, Toggle } from "@egovernments/digit-ui-components";
+import { Button, Loader, TextBlock, Toggle } from "@egovernments/digit-ui-components";
 import { useHistory } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import DataTable from "react-data-table-component";
+import { tableCustomStyle } from "../../../utils/tableStyles";
 
 const FormHomePage = () => {
   const history = useHistory();
@@ -45,14 +47,56 @@ const FormHomePage = () => {
     { name: "My Forms", code: "MY_FORMS", i18nKey: t("STUDIO_MY_FORMS") },
   ];
 
+  // DataTable columns configuration
+  const columns = [
+    {
+      name: t("STUDIO_SNO"),
+      selector: (row, index) => index + 1,
+      width: "80px",
+      sortable: false,
+    },
+    {
+      name: t("STUDIO_FORMS_NAME"),
+      selector: (row) => row.name,
+      cell: (row) => (
+        <div>
+          <div style={{ fontWeight: "400" }}>{row.name}</div>
+          <div style={{ fontSize: "12px", color: "#555" }}>
+            {row.description}
+          </div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      name: t("STUDIO_CREATED_DATE"),
+      selector: (row) => row.createdDate,
+      sortable: true,
+    },
+    {
+      name: t("STUDIO_CREATED_ACTIONS"),
+      cell: (row) => (
+        <button
+          style={{ color: "#c84c0e", fontSize: "14px", width: "4rem" }}
+          onClick={() => window.location.href = `/${window.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${row?.item?.data?.module}&service=${row?.item?.data?.service}&formName=${row?.name}&editMode=true`}
+        >
+          {t("STUDIO_EDIT")}
+        </button>
+      ),
+      sortable: false,
+    },
+  ];
+
+
+
   if(moduleListLoading){
     return <Loader />
   }
 
   return (
     <React.Fragment>
+      <TextBlock header={t("STUDIO_CREATE_NEW_FORMS_HEADER")}/>
       <Card style={{ padding: "2rem" }}>
-        <CardSectionHeader>{t("STUDIO_CREATE_NEW_FORMS")}</CardSectionHeader>
         <div
           style={{
             display: "flex",
@@ -69,22 +113,23 @@ const FormHomePage = () => {
                 (window.location.href = `/${window?.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${module}&service=${service}`)
               }
               size="medium"
-              style={{width: "100%", height: "5rem"}}
+              style={{width: "100%", height: "5rem", border:"1px dashed #c84c0e", backgroundColor:"#fff", color:"#c84c0e", fontWeight:"500"}}
               title=""
               variation="secondary"
             />
         </div>
       </Card>
-      <Card style={{paddingLeft:"2rem"}}>
+      <Card style={{padding:"2rem"}}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginTop: "2rem",
-            marginBottom: "1rem",
+            //marginTop: "2rem",
+            //marginBottom: "1rem",
             alignItems: "center",
           }}
         >
+          <span style={{display:"none"}}>
           <Toggle
             name="tabs"
             numberOfToggleItems={tabOptions.length}
@@ -94,63 +139,27 @@ const FormHomePage = () => {
             onSelect={(val) => setSelectedTab(val)}
             type="toggle"
           />
+          </span>
+          <CardSectionHeader style={{marginBottom:"0px",marginTop:"0px"}}>{t("MY_FORMS")}</CardSectionHeader>
         </div>
 
         {moduleListLoading ? (
           <div style={{ padding: "1rem" }}>Loading...</div>
         ) : selectedTab === "MY_FORMS" ? (
           formData.length > 0 ? (
-            <div className="checklist-table" style={{ marginTop: "1rem" }}>
-              <div
-                className="checklist-table-header"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "50px 0.75fr 150px 150px 100px",
-                  fontWeight: "200",
-                  backgroundColor: "#f0f0f0",
-                  padding: "20px",
-                  borderRadius: "4px",
-                }}
-              >
-                <div>{t("STUDIO_SNO")}</div>
-                <div>{t("STUDIO_FORMS_NAME")}</div>
-                <div>{t("STUDIO_CREATED_DATE")}</div>
-                <div>{t("STUDIO_CREATED_ACTIONS")}</div>
-              </div>
-
-              {formData.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="checklist-table-row"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "50px 0.75fr 150px 150px 100px",
-                    padding: "20px",
-                    borderBottom: "1px solid #e0e0e0",
-                  }}
-                >
-                  <div>{index + 1}</div>
-                  <div>
-                    <div style={{ fontWeight: "400" }}>{item.name}</div>
-                    <div
-                      style={{ fontSize: "12px", color: "#555" }}
-                    >
-                      {item.description}
-                    </div>
-                  </div>
-                  <div>{item.createdDate}</div>
-                  <div>
-                    <button
-                      style={{ color: "#c84c0e", fontSize: "14px", width:"4rem" }}
-                      onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${item?.item?.data?.module}&service=${item?.item?.data?.service}&formName=${item?.name}&editMode=true`)}
-                    >
-                      {t("STUDIO_EDIT")}
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div style={{ marginTop: "1rem" }}>
+              <DataTable
+                columns={columns}
+                data={formData}
+                customStyles={tableCustomStyle}
+                pagination
+                paginationPerPage={10}
+                paginationRowsPerPageOptions={[5, 10, 20, 50]}
+                noDataComponent={<div style={{ padding: "1rem" }}>{t("STUDIO_NO_FORMS_AVAILABLE")}</div>}
+                responsive
+                highlightOnHover
+                pointerOnHover
+              />
             </div>
           ) : (
             <div style={{ padding: "1rem" }}>{t("STUDIO_NO_FORMS_AVAILABLE")}</div>

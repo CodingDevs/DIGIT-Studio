@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardText, TextInput, SelectionTag, Dropdown, CardHeader, Button, FieldV1, Loader, CheckBox, Stepper, Divider } from "@egovernments/digit-ui-components";
 import { DynamicImageComponent } from "./DynamicImageComponent";
+import { CardSectionHeader, CardSectionSubText } from "@egovernments/digit-ui-react-components";
 // import MobileBezelFrame from "./MobileBezelFrame";
 // import GenericTemplateScreen from "./GenericTemplateScreen";
 // import DynamicSVG from "./DynamicSVGComponent";
@@ -191,12 +192,13 @@ const AppPreview = ({ data = {}, selectedField, t, onSectionChange, selectedSect
   const card = cards[currentStep];
 
   return (
-    <div style={{ width: "70.5rem", margin: '32px auto', background: '#fafbfc', borderRadius: 12, boxShadow: '0 2px 16px rgba(0,0,0,0.07)', padding: 32 }}>
+    <React.Fragment>
+    <div style={{ width: "81.5rem", margin: '32px auto', background: '#fafbfc', borderRadius: 12, boxShadow: '0 2px 16px rgba(0,0,0,0.07)', padding: 32 }}>
       <Stepper
         currentStep={currentStep + 1}
         totalSteps={cards.length}
         customSteps={cards.reduce((acc, c, idx) => {
-          acc[idx] = c.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${idx + 1}`;
+          acc[idx] = c?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${idx + 1}`;
           return acc;
         }, {})}
         onStepClick={(idx) => {
@@ -206,12 +208,14 @@ const AppPreview = ({ data = {}, selectedField, t, onSectionChange, selectedSect
         style={{ marginBottom: 32 }}
       />
       <Card style={{width: "66rem", background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px rgba(0,0,0,0.04)', padding: 24 }}>
-        {card.headerFields.map((headerField, headerIndex) => (
+        {card?.headerFields.map((headerField, headerIndex) => (
           <div key={headerIndex} style={{ marginBottom: headerField.jsonPath === 'ScreenHeading' ? 8 : 16 }}>
             {headerField.jsonPath === "ScreenHeading" ? (
-              <CardHeader>{headerField.value}</CardHeader>
+              <CardSectionHeader>
+                {headerField.value}
+              </CardSectionHeader>
             ) : (
-              <CardText className="app-preview-sub-heading">{headerField.value}</CardText>
+             <CardSectionSubText>{headerField.value}</CardSectionSubText>
             )}
           </div>
         ))}
@@ -300,21 +304,50 @@ const AppPreview = ({ data = {}, selectedField, t, onSectionChange, selectedSect
           />
         )} */}
       </Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32 }}>
+    </div>
+     {/* Section Navigation - Outside Preview */}
+     <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        gap: '1.5rem', 
+        marginTop: '2rem',
+        padding: '1.5rem 0'
+      }}>
         <Button
           variation="secondary"
-          label={"Back"}
+          label={currentStep > 0 ? cards[currentStep - 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep}` : "Previous"}
           onClick={handleBack}
           disabled={currentStep === 0}
+          style={{
+            borderRadius: '2rem',
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            minWidth: '120px'
+          }}
         />
+        
+        {/* Section Indicator */}
+          <span className="typography heading-s">
+            {cards[currentStep]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 1}`}
+          </span>
+        
         <Button
-          variation="primary"
-          label={"Next"}
+          variation="secondary"
+          label={currentStep < totalSteps - 1 ? cards[currentStep + 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 2}` : "Next"}
           onClick={handleNext}
           disabled={currentStep === totalSteps - 1}
+          style={{
+            borderRadius: '2rem',
+            padding: '0.75rem 1.5rem',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            minWidth: '120px'
+          }}
         />
       </div>
-    </div>
+    </React.Fragment>
   );
 };
 

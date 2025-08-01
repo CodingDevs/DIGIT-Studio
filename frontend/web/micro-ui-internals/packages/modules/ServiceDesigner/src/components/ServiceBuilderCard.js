@@ -17,8 +17,8 @@ const ServiceBuilderCard = () => {
     ],
     links: [
       {
-            label: t("SERVICE_DESIGNER_FORMS"),
-            link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        label: t("SERVICE_DESIGNER_FORMS"),
+        link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
       },
       {
         label: t("SERVICE_DESIGNER_CHECKLIST"),

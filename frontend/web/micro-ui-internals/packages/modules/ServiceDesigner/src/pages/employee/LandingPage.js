@@ -8,7 +8,7 @@ import {
   CardHeader,
 } from "@egovernments/digit-ui-react-components";
 import ServiceCard from "../../components/ServiceCard";
-import { Toggle, CustomSVG, Loader, Tab, PopUp, TextInput, Button } from "@egovernments/digit-ui-components";
+import { Toggle, CustomSVG, Loader, Tab, PopUp, TextInput, Button, TextBlock } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
 
@@ -303,13 +303,9 @@ const LandingPage = () => {
           actionCancelOnSubmit={() => setShowCreatePopup(false)}
           onClose={() => setShowCreatePopup(false)}
           children={[
-            <div key="create-service-form" style={{ 
-              padding: "1rem", 
-              background: "#f8f9fa", 
-              borderRadius: "8px",
-              border: "1px solid #e9ecef"
-            }}>
-              <div style={{ marginBottom: "1.5rem" }}>
+            <div>
+              <TextBlock subHeader={t("CREATE_NEW_SERVICE_HEADER")} body={t("CREATE_NEW_SERVICE_SUB_HEADER")} subHeaderClasName="header-popup" />
+              <div style={{ marginTop: "1.5rem" }}>
                 <div style={{ 
                   display: "flex", 
                   alignItems: "center", 
@@ -321,7 +317,7 @@ const LandingPage = () => {
                     fontWeight: "500",
                     color: "#333"
                   }}>
-                    {t("MODULE_NAME")}:
+                    {t("MODULE_NAME")}
                   </label>
                   <TextInput
                     value={moduleName}
@@ -340,7 +336,7 @@ const LandingPage = () => {
                     fontWeight: "500",
                     color: "#333"
                   }}>
-                    {t("SERVICE_NAME")}:
+                    {t("SERVICE_NAME")}
                   </label>
                   <TextInput
                     value={serviceName}
@@ -350,28 +346,25 @@ const LandingPage = () => {
                   />
                 </div>
               </div>
-              
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "flex-end", 
-                gap: "0.5rem",
-                paddingTop: "1rem",
-                borderTop: "1px solid #e9ecef"
-              }}>
-                <Button
-                  variation="secondary"
-                  label={t("CANCEL")}
-                  onClick={() => setShowCreatePopup(false)}
-                />
-                <Button
-                  variation="primary"
-                  label={t("PROCEED")}
-                  onClick={handleProceedToServiceBuilder}
-                  disabled={!moduleName.trim() || !serviceName.trim()}
-                />
               </div>
-            </div>
           ]}
+          footerChildren={[ <div style={{ 
+            display: "flex", 
+            justifyContent: "flex-end", 
+            gap: "0.5rem",
+          }}>
+            <Button
+              variation="secondary"
+              label={t("CANCEL")}
+              onClick={() => setShowCreatePopup(false)}
+            />
+            <Button
+              variation="primary"
+              label={t("PROCEED")}
+              onClick={handleProceedToServiceBuilder}
+              disabled={!moduleName.trim() || !serviceName.trim()}
+            />
+          </div>]}
         />
       )}
     </Card>

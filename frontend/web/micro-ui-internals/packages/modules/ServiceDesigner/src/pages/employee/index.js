@@ -66,7 +66,7 @@ const SampleBreadCrumbs = ({ location }) => {
     // Add Service-Builder-Home for specific pages
     if (["Workflow", "Checklist", "create-checklist", "update-checklist", "Roles", "form-builder", "forms"].includes(lastSegment)) {
       baseCrumbs.push({
-        internalLink: `/${window?.contextPath}/employee/servicedesigner/Service-Builder-Home?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
+        externalLink: `/${window?.contextPath}/employee/servicedesigner/Service-Builder-Home?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
         content: t("SERVICE_BUILDER_HOME"),
         show: true,
       });
@@ -74,6 +74,7 @@ const SampleBreadCrumbs = ({ location }) => {
 
     // Add current page
     baseCrumbs.push({
+      internalLink: `/${window?.contextPath}/employee/servicedesigner/${lastSegment}`,
       content: getBreadcrumbContent(pathname),
       show: true,
     });
@@ -91,7 +92,7 @@ const App = ({ path, stateCode, userType, tenants }) => {
 
   return (
     <Switch>
-      <AppContainer className="ground-container">
+      <AppContainer className="ground-container" style={{padding:"0px", marginLeft:"-0.5rem"}}>
         <React.Fragment>
           <SampleBreadCrumbs location={location} />
         </React.Fragment>

@@ -39,7 +39,7 @@ const locReducer = (state = initialState, action) => {
 
 const MODULE_CONSTANTS = "Studio";
 //TODO @nabeel @jagan move this component to ui-component repo & clean up
-function AppLocalisationWrapperDev({ onSubmit, localeModule, screenConfig, back, showBack, parentDispatch, ...props }) {
+function AppLocalisationWrapperDev({ onSubmit, localeModule, screenConfig, back, showBack, parentDispatch, formName, formDescription, onFormNameChange, onFormDescriptionChange, ...props }) {
   if (!localeModule) {
     return <Loader />;
   }
@@ -125,7 +125,15 @@ function AppLocalisationWrapperDev({ onSubmit, localeModule, screenConfig, back,
         parentDispatch,
       }}
     >
-      <AppConfigurationWrapper pageTag={props?.pageTag} screenConfig={screenConfig} localeModule={localeModule} />
+      <AppConfigurationWrapper 
+        pageTag={props?.pageTag} 
+        screenConfig={screenConfig} 
+        localeModule={localeModule}
+        formName={formName}
+        formDescription={formDescription}
+        onFormNameChange={onFormNameChange}
+        onFormDescriptionChange={onFormDescriptionChange}
+      />
     </AppLocalisationContext.Provider>
   );
 }

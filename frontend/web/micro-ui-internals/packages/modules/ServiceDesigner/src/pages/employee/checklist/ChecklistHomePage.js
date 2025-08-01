@@ -6,6 +6,8 @@ import {
 import { Button, Loader, Toggle } from "@egovernments/digit-ui-components";
 import { useHistory } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import DataTable from "react-data-table-component";
+import { tableCustomStyle } from "../../../utils/tableStyles";
 
 const ChecklistHomePage = () => {
   const history = useHistory();
@@ -45,6 +47,53 @@ const ChecklistHomePage = () => {
   const tabOptions = [
     { name: "My Checklists", code: "MY_CHECKLIST", i18nKey: t("STUDIO_MY_CHECKLIST") },
   ];
+
+  // DataTable columns configuration
+  const columns = [
+    {
+      name: t("STUDIO_SNO"),
+      selector: (row, index) => index + 1,
+      width: "80px",
+      sortable: false,
+    },
+    {
+      name: t("STUDIO_CHECKLIST_NAME"),
+      selector: (row) => row.name,
+      cell: (row) => (
+        <div>
+          <div style={{ fontWeight: "400" }}>{row.name}</div>
+          <div style={{ fontSize: "12px", color: "#555" }}>
+            {row.description}
+          </div>
+        </div>
+      ),
+      sortable: true,
+    },
+    {
+      name: t("STUDIO_QUESTIONS"),
+      selector: (row) => row.questions,
+      sortable: true,
+    },
+    {
+      name: t("STUDIO_CREATED_DATE"),
+      selector: (row) => row.createdDate,
+      sortable: true,
+    },
+    {
+      name: t("STUDIO_CREATED_ACTIONS"),
+      cell: (row) => (
+        <button
+          style={{ color: "#c84c0e", fontSize: "14px", width: "4rem" }}
+          onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/update-checklist?checklistName=${row.name}&module=${module}&service=${service}`)}
+        >
+          {t("STUDIO_EDIT")}
+        </button>
+      ),
+      sortable: false,
+    },
+  ];
+
+
 
   if(moduleListLoading){
     return <Loader />
@@ -101,59 +150,19 @@ const ChecklistHomePage = () => {
           <div style={{ padding: "1rem" }}>Loading...</div>
         ) : selectedTab === "MY_CHECKLIST" ? (
           checklistData.length > 0 ? (
-            <div className="checklist-table" style={{ marginTop: "1rem" }}>
-              <div
-                className="checklist-table-header"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "50px 0.75fr 150px 150px 100px",
-                  fontWeight: "200",
-                  backgroundColor: "#f0f0f0",
-                  padding: "20px",
-                  borderRadius: "4px",
-                }}
-              >
-                <div>{t("STUDIO_SNO")}</div>
-                <div>{t("STUDIO_CHECKLIST_NAME")}</div>
-                <div>{t("STUDIO_QUESTIONS")}</div>
-                <div>{t("STUDIO_CREATED_DATE")}</div>
-                <div>{t("STUDIO_CREATED_ACTIONS")}</div>
-              </div>
-
-              {checklistData.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="checklist-table-row"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "50px 0.75fr 150px 150px 100px",
-                    padding: "20px",
-                    borderBottom: "1px solid #e0e0e0",
-                  }}
-                >
-                  <div>{index + 1}</div>
-                  <div>
-                    <div style={{ fontWeight: "400" }}>{item.name}</div>
-                    <div
-                      style={{ fontSize: "12px", color: "#555" }}
-                    >
-                      {item.description}
-                    </div>
-                  </div>
-                  <div>{item.questions}</div>
-                  <div>{item.createdDate}</div>
-                  <div>
-                    <button
-                      style={{ color: "#c84c0e", fontSize: "14px", width:"4rem" }}
-                      onClick={() => history.push(`/${window.contextPath}/employee/servicedesigner/update-checklist?checklistName=${item.name}&module=${module}&service=${service}`)}
-                    >
-                      {t("STUDIO_EDIT")}
-                    </button>
-                  </div>
-                </div>
-              ))}
+            <div style={{ marginTop: "1rem" }}>
+              <DataTable
+                columns={columns}
+                data={checklistData}
+                customStyles={tableCustomStyle}
+                pagination
+                paginationPerPage={10}
+                paginationRowsPerPageOptions={[5, 10, 20, 50]}
+                noDataComponent={<div style={{ padding: "1rem" }}>{t("STUDIO_NO_CHECKLIST_AVAILABLE")}</div>}
+                responsive
+                highlightOnHover
+                pointerOnHover
+              />
             </div>
           ) : (
             <div style={{ padding: "1rem" }}>{t("STUDIO_NO_CHECKLIST_AVAILABLE")}</div>

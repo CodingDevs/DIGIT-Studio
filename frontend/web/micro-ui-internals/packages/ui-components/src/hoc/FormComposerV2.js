@@ -435,7 +435,7 @@ export const FormComposer = (props) => {
       )}
       {!props.submitInForm && props.label && (
         <Footer>
-          {props?.draftLabel && (  <SubmitBar className="digit-formcomposer-submitbar" submit={false} label={t(props?.draftLabel)} onClick={onDraftLabelClick} />)}
+          {props?.draftLabel && (<SubmitBar className="digit-formcomposer-submitbar" submit={false} label={t(props?.draftLabel)} onClick={onDraftLabelClick} />)}
           <SubmitBar label={t(props.label)} className="digit-formcomposer-submitbar" submit="submit" disabled={isDisabled} />
           {props.onSkip && props.showSkip && <ActionLinks style={props?.skipStyle} label={t(`CS_SKIP_CONTINUE`)} onClick={props.onSkip} />}
         </Footer>
