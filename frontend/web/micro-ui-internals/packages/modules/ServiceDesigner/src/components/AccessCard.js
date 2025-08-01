@@ -8,7 +8,7 @@ const AccessCard = ({ onChange, data }) => {
     return (
         <div className={`state-card`} style={{margin: "0px"}}>
             <div className="state-card-content" style={{ justifyContent: "center", flexDirection: "column", alignItems: "normal" }}>
-                <h3 className={`quickstart-title`}>{t("ACCESS")}</h3>
+                <h3 className={`quickstart-title`} style={{textAlign: "left"}}>{t("ACCESS")}</h3>
                 <CheckBox
                     onChange={(e) => onChange(["editor", e])}
                     value={data.editor}

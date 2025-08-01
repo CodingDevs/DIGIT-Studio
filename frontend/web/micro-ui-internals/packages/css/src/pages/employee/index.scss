@@ -925,3 +925,16 @@
         max-width: 100%;
     }
 }
+
+.digit-employeeCard-input, .digit-employeeCard-inputError, .digit-employee-card-textarea-field, .digit-multiselectdropdown-master{
+  border-radius: 4px;
+}
+
+.state-desc{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.digit-label-field-pair{
+  margin: 6px;
+}

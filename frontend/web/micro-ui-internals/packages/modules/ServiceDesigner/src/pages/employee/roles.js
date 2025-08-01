@@ -7,6 +7,7 @@ import { PopUp } from "@egovernments/digit-ui-components";
 import { SidePanel } from "@egovernments/digit-ui-components";
 import { FieldV1 } from "@egovernments/digit-ui-components";
 import AccessCard from "../../components/AccessCard";
+import { CardHeader } from "@egovernments/digit-ui-react-components";
 import { Button } from "@egovernments/digit-ui-components";
 import generateMdmsRolePayload from "../../config/rolecreateConfig";
 import { AlertCard } from "@egovernments/digit-ui-components";
@@ -29,7 +30,7 @@ const Roles = () => {
         creater: false
     });
     const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
-    const [rolePopup, setRolePopup]=useState(false);
+    const [rolePopup, setRolePopup] = useState(false);
 
     const requestCriteria = {
         url: "/egov-mdms-service/v2/_search",
@@ -60,7 +61,7 @@ const Roles = () => {
     };
 
     const onClick = (name, desc, isNew, editor, viewer, creater) => {
-        if(isNew){
+        if (isNew) {
             setRolePopup(true);
             setStateData({
                 name: "",
@@ -71,7 +72,7 @@ const Roles = () => {
                 creater: false
             });
         }
-        else{
+        else {
             setSelectedElement(true);
             setStateData({ name, desc, isNew, editor, viewer, creater });
         }
@@ -101,7 +102,7 @@ const Roles = () => {
                 }
                 else {
                     const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
-                    if(response?.success){
+                    if (response?.success) {
                         setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
                         setStateData({
                             name: "",
@@ -114,7 +115,7 @@ const Roles = () => {
                         setRolePopup(false);
                         setSelectedElement(false);
                     }
-                    else{
+                    else {
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
                         setStateData({
                             name: "",
@@ -130,13 +131,13 @@ const Roles = () => {
             }
             else {
                 const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
-                if(response?.success){
-                        setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
-                        setSelectedElement(false);
-                    }
-                    else{
-                        setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
-                    }
+                if (response?.success) {
+                    setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
+                    setSelectedElement(false);
+                }
+                else {
+                    setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
+                }
             }
 
         }
@@ -177,6 +178,7 @@ const Roles = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 required
+                infoMessage={t("ROLE_NAME_INFO")}
                 type="text"
                 value={stateData.name}
             />,
@@ -193,6 +195,7 @@ const Roles = () => {
                     fieldStyle: { width: "100%" }
                 }}
                 type="text"
+                infoMessage={t("ROLE_DESC_INFO")}
                 value={stateData.desc}
             />,
             <AccessCard data={stateData} onChange={onDataChange} />,
@@ -212,6 +215,8 @@ const Roles = () => {
     }
     return (
         <React.Fragment>
+            <CardHeader styles={{ fontSize: "xx-large", fontWeight: "bold", paddingTop: "24px", marginBottom: "0px" }}>{t("ROLES_HEADER")}</CardHeader>
+            <CardText>{t("ROLES_HEADER_DESCRIPTION")}</CardText>
             {!selectedElement && <AlertCard
                 style={{ margin: "24px 0px" }}
                 label={t("GETTING_STARTED")}
@@ -220,29 +225,29 @@ const Roles = () => {
             />
             }
             <div style={{ display: "flex" }}>
-            <Card style={{ flex: 1, height: "100%", mixHeight: "800px", padding: "24px", justifyContent: "space-between" }} className="Workflow-card">
-                <div>
-                    <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", padding: "24px" }}>
-                        <RoleComp role={t("CREATE_ROLE")} desc={t("ADD_NEW")} isNew={true} onRoleClick={onClick} />
-                        {roleCodes.map(role =>
-                            <RoleComp role={t(role.code)} desc={t(role.description)} data={role} onRoleClick={onClick} />
-                        )}
+                <Card style={{ flex: 1, height: "670px", justifyContent: "space-between" }} className="Workflow-card">
+                    <div>
+                        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", padding: "24px" }}>
+                            <RoleComp role={t("CREATE_ROLE")} desc={t("ADD_NEW")} isNew={true} onRoleClick={onClick} />
+                            {roleCodes.map(role =>
+                                <RoleComp role={t(role.code)} desc={t(role.description)} data={role} onRoleClick={onClick} />
+                            )}
+                        </div>
                     </div>
-                </div>
-            </Card>
-            {selectedElement && <div className="Workflow-card" style={{ justifyContent: "space-between", margin: "0px 24px" }}>
+                </Card>
+                {selectedElement && <div className="Workflow-card" style={{ justifyContent: "space-between", margin: "0px 24px", height: "fit-content" }}>
                     <SidePanel
                         type="static"
-                        position="left"
+                        position="right"
                         isDraggable={true}
                         sections={Node_Properties_Section}
                         addClose={true}
                         onClose={cancel}
                         header={[
-                            <div className="typography heading-m" style={{ color: "#0B4B66" }}>
+                            <div className="typography heading-m" style={{ color: "#0B4B66", marginLeft: "0px" }}>
                                 <div >{t("EDIT_HEADING")}</div>
                             </div>,
-                            <div className="typography heading-s" style={{ color: "#0B4B66", marginLeft: "16px" }}>
+                            <div className="typography heading-s" style={{ color: "#0B4B66" }}>
                                 <div >{t("EDIT_HEADING_DESC")}</div>
                             </div>
                         ]}
@@ -260,7 +265,8 @@ const Roles = () => {
                     type={"default"}
                     heading={t("CREATE_NEW_ROLE")}
                     children={[]}
-                    style={{ width: "40rem" }}
+                    style={{ width: "30rem" }}
+                    footerStyles={{ width: "100%" }}
                     onOverlayClick={() => {
                         setStateData({
                             name: "",
@@ -284,13 +290,24 @@ const Roles = () => {
                         setRolePopup(false);
                     }}
                     footerChildren={[
-                        <Button
-                            type={"button"}
-                            size={"large"}
-                            variation={"secondary"}
-                            label={t("CREATE_ROLE")}
-                            onClick={(e) => { createRole(e) }}
-                        />
+                        <div style={{ display: "flex", width: "100%" }}>
+                            <Button
+                                type={"button"}
+                                size={"large"}
+                                variation={"primary"}
+                                label={t("CREATE_ROLE")}
+                                style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
+                                onClick={(e) => { createRole(e) }}
+                            />
+                            <Button
+                                type={"button"}
+                                size={"large"}
+                                variation={"secondary"}
+                                style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
+                                label={t("CANCEL")}
+                                onClick={(e) => setRolePopup(false)}
+                            />
+                        </div>
                     ]}
                     sortFooterChildren={true}
                 >
@@ -308,6 +325,7 @@ const Roles = () => {
                         }}
                         required
                         type="text"
+                        infoMessage={t("ROLE_NAME_INFO")}
                         value={stateData.name}
                     />
                     <FieldV1
@@ -322,6 +340,7 @@ const Roles = () => {
                             fieldStyle: { width: "100%" }
                         }}
                         type="text"
+                        infoMessage={t("ROLE_DESC_INFO")}
                         value={stateData.desc}
                     />
                     <AccessCard data={stateData} onChange={onDataChange} />
