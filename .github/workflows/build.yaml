@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       dockerfile_path: ${{ steps.pick_dockerfile.outputs.dockerfile_path }}
+      work_dir: ${{ steps.pick_dockerfile.outputs.work_dir }}
       tag:              ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout Code
@@ -43,24 +44,35 @@ jobs:
           sudo curl -sSL "$URL" -o /usr/local/bin/yq
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Determine Dockerfile path from build-config.yml
+      - name: Determine Dockerfile path and work-dir from build-config.yml
         id: pick_dockerfile
         run: |
           SERVICE="${{ github.event.inputs.service }}"
           DEFAULT_DOCKERFILE="build/maven/Dockerfile"
+          DEFAULT_WORK_DIR="${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}"
 
           echo "Looking for service '$SERVICE' in build-config.yml..."
           DF=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .dockerfile // \"\"" build/build-config.yml)
+          WD=$(yq eval ".config[].build[] | select(.\"image-name\" == \"${SERVICE}\") | .\"work-dir\" // \"\"" build/build-config.yml)
 
           if [ -z "$DF" ] || [ "$DF" = "null" ]; then
-            echo "No entry found; defaulting to $DEFAULT_DOCKERFILE"
+            echo "No dockerfile entry found; defaulting to $DEFAULT_DOCKERFILE"
             DF="$DEFAULT_DOCKERFILE"
           else
             echo "Found dockerfile: $DF"
           fi
 
+          if [ -z "$WD" ] || [ "$WD" = "null" ]; then
+            echo "No work-dir entry found; defaulting to $DEFAULT_WORK_DIR"
+            WD="$DEFAULT_WORK_DIR"
+          else
+            echo "Found work-dir: $WD"
+          fi
+
           echo "dockerfile_path=$DF" >> "$GITHUB_OUTPUT"
+          echo "work_dir=$WD" >> "$GITHUB_OUTPUT"
           echo "DOCKERFILE_PATH=$DF" >> "$GITHUB_ENV"
+          echo "WORK_DIR=$WD" >> "$GITHUB_ENV"
 
       - name: Generate the Next Tag
         id: tag
@@ -94,7 +106,7 @@ jobs:
       - name: Check for DB folder
         id: check-db-folder
         run: |
-          if [ -d "${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}/src/main/resources/db" ]; then
+          if [ -d "${{ needs.resolve-config.outputs.work_dir }}/src/main/resources/db" ]; then
             echo "folder_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "folder_exists=false" >> "$GITHUB_OUTPUT"
@@ -119,15 +131,15 @@ jobs:
           push: true
           tags: egovio/${{ github.event.inputs.service }}:${{ needs.resolve-config.outputs.tag }}-${{ matrix.arch }}
           build-args: |
-            WORK_DIR=${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}
+            WORK_DIR=${{ needs.resolve-config.outputs.work_dir }}
 
       - name: Build and Push Database Docker Image
         if: ${{ steps.check-db-folder.outputs.folder_exists == 'true' }}
         id: build_push_db
         uses: docker/build-push-action@v5
         with:
-          context: ${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}/src/main/resources/db
-          file: ${{ github.event.inputs.service_folder }}/${{ github.event.inputs.service }}/src/main/resources/db/Dockerfile
+          context: ${{ needs.resolve-config.outputs.work_dir }}/src/main/resources/db
+          file: ${{ needs.resolve-config.outputs.work_dir }}/src/main/resources/db/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           tags: egovio/${{ github.event.inputs.service }}-db:${{ needs.resolve-config.outputs.tag }}-${{ matrix.arch }}
