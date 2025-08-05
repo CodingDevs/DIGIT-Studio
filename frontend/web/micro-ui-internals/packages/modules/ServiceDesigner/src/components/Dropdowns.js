@@ -262,12 +262,12 @@ const DropdownOption = ({
               // className="custom-class"
               icon="Delete"
               iconFill=""
-              label={t(`DELETE`)}
+              //label={t(`DELETE`)}
               onClick={() => removeOption(index)}
               size="medium"
-              style={{}}
               title=""
               variation="link"
+              style={{minWidth:"unset"}}
             />
           )}
         </div>

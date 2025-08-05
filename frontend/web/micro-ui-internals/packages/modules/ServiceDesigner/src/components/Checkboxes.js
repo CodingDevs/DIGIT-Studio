@@ -251,10 +251,10 @@ const CheckBoxOption = ({
               // className="custom-class"
               icon="Delete"
               iconFill=""
-              label={t(`DELETE`)}
+              //label={t(`DELETE`)}
               onClick={() => removeOption(index)}
               size="medium"
-              style={{}}
+              style={{minWidth:"unset"}}
               title=""
               variation="link"
             />

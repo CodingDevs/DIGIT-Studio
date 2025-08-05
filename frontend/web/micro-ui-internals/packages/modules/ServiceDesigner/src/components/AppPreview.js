@@ -320,9 +320,9 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
           variation="secondary"
           label={currentStep > 0 ? cards[currentStep - 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep}` : "Previous"}
           onClick={handleBack}
-          disabled={currentStep === 0}
+          isDisabled={currentStep === 0}
           style={{
-            borderRadius: '2rem',
+            borderRadius: '6px',
             padding: '0.75rem 1.5rem',
             fontSize: '0.875rem',
             fontWeight: '500',
@@ -330,7 +330,6 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
           }}
         />
         
-        {/* Section Indicator */}
           <span className="typography heading-s">
             {cards[currentStep]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 1}`}
           </span>
@@ -339,9 +338,9 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
           variation="secondary"
           label={currentStep < totalSteps - 1 ? cards[currentStep + 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 2}` : "Next"}
           onClick={handleNext}
-          disabled={currentStep === totalSteps - 1}
+          isDisabled={currentStep === totalSteps - 1}
           style={{
-            borderRadius: '2rem',
+            borderRadius: '6px',
             padding: '0.75rem 1.5rem',
             fontSize: '0.875rem',
             fontWeight: '500',

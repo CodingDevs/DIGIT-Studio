@@ -401,6 +401,18 @@ const Workflow = () => {
         if (Array.isArray(e) && e.length === 0) {
             return;
         }
+        
+        // Handle array format [fieldName, selectedValue] from StageActions
+        // if (Array.isArray(e) && e.length === 2 && typeof e[0] === 'string') {
+        //     const [fieldName, selectedValue] = e;
+        //     console.log("Setting", fieldName, "to", selectedValue);
+        //     setStateData(prev => ({
+        //         ...prev,
+        //         [fieldName]: selectedValue
+        //     }));
+        //     return;
+        // }
+        
         if (Array.isArray(e) && e[0]?.code) {
             setStateData(prev => ({
                 ...prev,
@@ -683,8 +695,42 @@ const Workflow = () => {
                 infoMessage={t("FORM_INFO")}
                 value={stateData.form}
             />) : null,
-            <StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
-            <StageActions label={t("SEND_NOTIFICATION")} type="dropdown" name="sendnotif" options={notif?.map(({ data }) => ({code: data?.title, name: data?.title}))} desc={t("NOFITICATION_DESC")} onClick={(e) => onDataChange(e)} value={stateData.sendnotif}/>,
+            <FieldV1
+                label={t("ASK_FOR_CHECKLIST")}
+                onChange={(e) => onDataChange(["checklist",e])}
+                populators={{
+                    name: "dropdownField",
+                    alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
+                    optionsKey: "code",
+                    options: moduleListLoading ? [] : [...checklistData],
+                }}
+                props={{
+                    fieldStyle: { width: "100%" }
+                }}
+                type="multiselectdropdown"
+                infoMessage={t("CHECKLIST_INFO")}
+                value={stateData.checklist}
+            />,
+            <FieldV1
+                label={t("SEND_NOTIFICATION")}
+                onChange={(e) => onDataChange(["sendnotif", e])}
+                populators={{
+                    name: "dropdownField",
+                    alignFieldPairVerically: true,
+                    fieldPairClassName: "workflow-field-pair",
+                    optionsKey: "code",
+                    options: notif?.map(({ data }) => ({code: data?.title, name: data?.title})).length === 0 ? [] : notif?.map(({ data }) => ({code: data?.title, name: data?.title})),
+                }}
+                props={{
+                    fieldStyle: { width: "100%" }
+                }}
+                type="multiselectdropdown"
+                infoMessage={t("NOTIF_INFO")}
+                value={stateData.sendnotif}
+            />,
+            //<StageActions label={t("ASK_FOR_CHECKLIST")} type="dropdown" name="checklist" options={checklistData} desc={t("CHECLIST_DESC")} onClick={(e) => onDataChange(e)} value={stateData.checklist}/>,
+            //<StageActions label={t("SEND_NOTIFICATION")} type="dropdown" name="sendnotif" options={notif?.map(({ data }) => ({code: data?.title, name: data?.title}))} desc={t("NOFITICATION_DESC")} onClick={(e) => onDataChange(e)} value={stateData.sendnotif}/>,
             <StageActions label={t("GENERATE_DOCUMENTS")} type="button" name="generatedoc" desc={t("GEN_DOC_DESC")}/>,
             <Button
                 variation="primary"
@@ -855,9 +901,9 @@ const Workflow = () => {
             const actions = outgoingConnections.map(conn => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 return {
-                    roles: conn.aroles?.map(role => role.code),
+                    roles: conn.aroles?.map(role => role.code.toUpperCase().replace(/\s+/g, '_')),
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
-                    nextState: targetState ? targetState.name.toUpperCase() : 'UNKNOWN'
+                    nextState: targetState ? targetState.name.toUpperCase().replace(/\s+/g, '_') : 'UNKNOWN'
                 };
             });
 
@@ -881,7 +927,7 @@ const Workflow = () => {
 
             return {
                 sla: convertSlaToMs(state.sla),
-                state: isStart ? null : state.name.toUpperCase(),
+                state: isStart ? null : state.name.toUpperCase().replace(/\s+/g, '_'),
                 actions: actions,
                 isStartState: isStart,
                 isStateUpdatable: true,
@@ -903,9 +949,7 @@ const Workflow = () => {
             generateDemandAt: [],
             businessServiceSla: 5184000000,
             nextActionAfterPayment: "",
-            autoTransitionEnabledStates: [],
-            canvasElements:statesData,
-            connections:connectionsData
+            autoTransitionEnabledStates: []
         };
 
         return { workflow };
@@ -1013,12 +1057,16 @@ const Workflow = () => {
                         orderNumber: fieldIndex + 1,
                         maxLength: field.maxLength || 128,
                         minLength: field.minLength || 2,
-                        validation: field.validation || {},
                         defaultValue: field.defaultValue || field.value || "",
                         helpText: field.helpText || "",
                         tooltip: field.tooltip || "",
                         errorMessage: field.errorMessage || ""
                     };
+                    
+                    // Only add validation if it's not empty
+                    if (field.validation && Object.keys(field.validation).length > 0) {
+                        fieldConfig.validation = field.validation;
+                    }
                     
                     // Handle dropdown options
                     if (field.dropDownOptions && field.dropDownOptions.length > 0) {
@@ -1071,7 +1119,7 @@ const Workflow = () => {
         canvasElements.forEach(state => {
             if (state.roles && Array.isArray(state.roles)) {
                 state.roles.forEach(role => {
-                    if (role.code) usedRoleCodes.add(role.code);
+                    if (role.code) usedRoleCodes.add(role.code.toUpperCase().replace(/\s+/g, '_'));
                 });
             }
         });
@@ -1080,7 +1128,7 @@ const Workflow = () => {
         connections.forEach(connection => {
             if (connection.aroles && Array.isArray(connection.aroles)) {
                 connection.aroles.forEach(role => {
-                    if (role.code) usedRoleCodes.add(role.code);
+                    if (role.code) usedRoleCodes.add(role.code.toUpperCase().replace(/\s+/g, '_'));
                 });
             }
         });
@@ -1089,7 +1137,7 @@ const Workflow = () => {
         // Fetch roles from API and filter only used ones
         try {
             const apiRoles = await fetchRolesFromAPI();
-            const usedRoles = apiRoles.filter(role => usedRoleCodes.has(role.code));
+            const usedRoles = apiRoles.filter(role => usedRoleCodes.has(role.code.toUpperCase().replace(/\s+/g, '_')));
             
             // Create access mapping based on role permissions
             const accessMapping = {
@@ -1100,15 +1148,16 @@ const Workflow = () => {
             
             usedRoles.forEach(role => {
                 const access = role.access || {};
+                const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
                 
                 if (access.editor) {
-                    accessMapping.editor.push(role.code);
+                    accessMapping.editor.push(roleCode);
                 }
                 if (access.viewer) {
-                    accessMapping.viewer.push(role.code);
+                    accessMapping.viewer.push(roleCode);
                 }
                 if (access.creater) { // Note: API has "creater" not "creator"
-                    accessMapping.creator.push(role.code);
+                    accessMapping.creator.push(roleCode);
                 }
             });
             
@@ -1162,16 +1211,33 @@ const Workflow = () => {
             email: [],
             push:[],
         };
+        
+        // Find states that have notifications selected
+        const statesWithNotifications = canvasElements.filter(state => 
+            state.sendnotif && state.sendnotif.length > 0
+        );
+        
+        // Only include notifications that are actually selected in any state
         notifications.forEach((item) => {
             const type = item.data?.additionalDetails?.type;
             if (!type || !grouped[type]) return;
-            const template = {
-                code: item.data?.title || "",
-                states: item.data?.workflow?.map((w) => w.name) || [],
-                template: item.data?.messageBody || "",
-            };
-            grouped[type].push(template);
+            
+            // Find which states use this notification
+            const statesUsingThisNotification = statesWithNotifications
+                .filter(state => state.sendnotif && state.sendnotif.some(notif => notif.code === item.data?.title))
+                .map(state => state.name.toUpperCase().replace(/\s+/g, '_'));
+            
+            // Only add notification if it's used in at least one state
+            if (statesUsingThisNotification.length > 0) {
+                const template = {
+                    code: item.data?.title || "",
+                    states: statesUsingThisNotification,
+                    template: item.data?.messageBody || "",
+                };
+                grouped[type].push(template);
+            }
         });
+        debugger;
         return grouped;
     };
 
@@ -1194,8 +1260,9 @@ const Workflow = () => {
         // Get module and service from URL parameters
         const moduleName = roleModule.toLowerCase();
         const serviceName = roleService.toLowerCase();
+        debugger;
         
-        const serviceConfig = {
+                const serviceConfig = {
             module: roleModule,
             service: roleService,
             enabled: ["citizen", "employee"],
@@ -1245,8 +1312,13 @@ const Workflow = () => {
             idgen: [
                 {
                     type: "application",
-                    format: `${serviceName}.application.number`,
-                    idname: `${serviceName}-service.application.${serviceName}.applicationapp.id`
+                    format: `${moduleName}-${serviceName}-app-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]`, 
+                    idname: `${moduleName}-${serviceName}.application.${serviceName}.applicationapp.id`
+                },
+                {
+                    type: "service",
+                    format: `${moduleName}-${serviceName}-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]`,
+                    idname: `${moduleName}-${serviceName}.application.${serviceName}.applicationapp.id`
                 }
             ],
             localization: {
@@ -1284,6 +1356,10 @@ const Workflow = () => {
                 }
             ]
         };
+        
+        // Add canvas and connections just before API call
+        serviceConfig.workflow.canvasElements = canvasElements;
+        serviceConfig.workflow.connections = connections;
         return serviceConfig;
     };
 
@@ -1294,8 +1370,16 @@ const Workflow = () => {
             
             // Generate service configuration automatically
             const serviceConfig = await generateServiceConfiguration();
+            
+            // Create a copy for popup display without canvas and connections
+            const displayConfig = JSON.parse(JSON.stringify(serviceConfig));
+            if (displayConfig.workflow) {
+                delete displayConfig.workflow.canvasElements;
+                delete displayConfig.workflow.connections;
+            }
+            
             setServiceConfigData(serviceConfig);
-            setEditableServiceConfig(JSON.stringify(serviceConfig, null, 2));
+            setEditableServiceConfig(JSON.stringify(displayConfig, null, 2));
             
             // Show the popup with the generated configuration
             setShowServiceConfigPopup(true);
@@ -1326,11 +1410,13 @@ const Workflow = () => {
                 return;
             }
 
+            // Use the full service config (with canvas and connections) for API call
+            const fullServiceConfig = serviceConfigData;
 
             if (existingServiceConfigId) {
                 // Update existing service config
                 await updateServiceConfig.mutateAsync({
-                    serviceConfigData: parsedConfig,
+                    serviceConfigData: fullServiceConfig,
                     existingConfig: existingServiceConfig
                 });
                 setShowToast({
@@ -1342,7 +1428,7 @@ const Workflow = () => {
                 }, 3000);
             } else {
                 // Create new service config
-                await saveServiceConfig.mutateAsync(parsedConfig);
+                await saveServiceConfig.mutateAsync(fullServiceConfig);
                 setShowToast({
                     type: "success",
                     label: "SERVICE_CONFIG_SAVED_SUCCESSFULLY"

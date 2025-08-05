@@ -267,9 +267,9 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
   // Memoize the dataType array based on the API response
   const dataType = useMemo(() => {
     if (!mdmsData) return [
-      { code: "SingleValueList" },
-      { code: "MultiValueList" },
-      { code: "Text" }
+      { code: "SingleValueList", i18nKey:"STUDIO_SINGLE_VALUE" },
+      { code: "MultiValueList", i18nKey:"STUDIO_MULTI_VALUE" },
+      { code: "Text", i18nKey:"STUDIO_TEXT" }
     ];
     const apiTypes = mdmsData.mdms?.map(role => ({
       code: role?.data?.code

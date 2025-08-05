@@ -271,11 +271,12 @@ export const RadioButtonOption = ({
             <Button
               icon="Delete"
               iconFill=""
-              label={t(`DELETE`)}
+              //label={t(`DELETE`)}
               onClick={() => removeOption(index)}
               size="medium"
               title=""
               variation="link"
+              style={{minWidth:"unset"}}
             />
           )}
         </div>

@@ -183,8 +183,8 @@ useEffect(() => {
               schemaCode: `Studio.Checklists`,
               filters: { 
                 name: checklistName,
-                module: checklistModule,
-                service: checklistService
+                //module: checklistModule,
+                //service: checklistService
               },
               isActive: true,
             },
@@ -687,7 +687,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
     // Check for duplicate name
     const isDuplicate = await checkDuplicateName();
     if (isDuplicate) {
-      setShowToast({ label: "Checklist name already exists in this service group. Please use a unique name.", isError: true });
+      setShowToast({ label: t("CHECKLIST_ALREADY_EXISTS"), isError: true });
       return;
     }
     let payload;
@@ -833,12 +833,15 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
                   variation={"primary"}
                   label={isUpdate ? t("UPDATE_CHECKLIST") : t("CREATE_CHECKLIST")}
                   onClick={() => {
-                    const processed = organizeQuestions(tempFormData);
-                    const { local: generatedLocal } = generateCodes(processed);
-                    const currentLocalisationData = getFilteredLocaleEntries(processed, generatedLocal);
-                    setLocalisationData(currentLocalisationData);
-                    setShowLocalisationPopup(true);
-                    setShowPopUp(false);
+                    // const processed = organizeQuestions(tempFormData);
+                    // const { local: generatedLocal } = generateCodes(processed);
+                    // const currentLocalisationData = getFilteredLocaleEntries(processed, generatedLocal);
+                    // setLocalisationData(currentLocalisationData);
+                    // setShowLocalisationPopup(true);
+                    // setShowPopUp(false);
+                    
+                    // Direct submission without translation popup
+                    onSubmit(null, 1, tempFormData, []);
                   }}
                 />,
               ]}
@@ -865,7 +868,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               <hr style={{ width: "100%", borderTop: "1px solid #ccc" }} />
             } */}
             <div style={{ display: "flex" }}>
-              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem" }}>{t("NAME_OF_CHECKLIST")}</div>
+              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem" }}>{t("NAME_OF_CHECKLIST")} *</div>
               <TextInput
                 disabled={false}
                 className="tetxinput-example"
@@ -917,7 +920,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               onClose={() => closeToast()}
             />
           )}
-          {showLocalisationPopup && (
+          {/* {showLocalisationPopup && (
             <PopUp
               className="localisation-popup-container"
               heading={t("ADD_TRANSLATIONS")}
@@ -937,7 +940,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
                 onClose={() => setShowLocalisationPopup(false)}
               />
             </PopUp>
-          )}
+          )} */}
         </div>
       }
       <div style={{ height: "2rem" }}></div>

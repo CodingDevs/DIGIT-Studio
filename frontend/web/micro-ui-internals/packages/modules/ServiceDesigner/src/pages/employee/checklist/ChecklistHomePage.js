@@ -119,7 +119,7 @@ const ChecklistHomePage = () => {
                 (window.location.href = `/${window?.contextPath}/employee/servicedesigner/create-checklist?module=${module}&service=${service}`)
               }
               size="medium"
-              style={{width: "100%", height: "5rem"}}
+              style={{width: "100%", height: "5rem", border:"1px dashed #c84c0e", backgroundColor:"#fff", color:"#c84c0e", fontWeight:"500"}}
               title=""
               variation="secondary"
             />

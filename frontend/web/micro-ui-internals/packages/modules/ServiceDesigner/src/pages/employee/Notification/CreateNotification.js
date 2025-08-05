@@ -20,7 +20,7 @@ const CreateNotification = () => {
   const roleService = searchParams.get("service") || "Service";
   const Category = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
   const { type, data, isUpdate } = location.state || {};
-  const workflowNodes = JSON.parse(localStorage.getItem("canvasElements"));
+  const workflowNodes = localStorage.getItem("canvasElements") !== "undefined" ? JSON.parse(localStorage.getItem("canvasElements")) : [];
   const [showToast, setShowToast] = useState(null);
   const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
 
@@ -81,7 +81,7 @@ const CreateNotification = () => {
   };
 
   const updateworkflowNodes = () => {
-    const updated = workflowNodes.map((node) => {
+    const updated = workflowNodes?.map((node) => {
       const match = stateData.workflow.find(w => w.name === node.name);
       if (match) {
         const alreadyExists = node.sendnotif.some(n => n.code === stateData.title && n.name === stateData.title);
@@ -220,42 +220,62 @@ const CreateNotification = () => {
         type="textarea"
         value={stateData.messageBody}
       />
-      <LabelFieldPair removeMargin={true} style={{ margin: "6px" }}>
+      <LabelFieldPair removeMargin={true} style={{ margin: "6px", alignItems:"center", marginBottom:"1.5rem" }}>
         <HeaderComponent className={`label`}>
           <div className={`label-container`}>
             <label className={`label-styles`}>{t("PERSONALIZATION_VARIABLES")}</label>
           </div>
         </HeaderComponent>
         <div className="digit-field" style={{
-          width: "fit-content",
-          background: "#787878",
+          width: "100%",
           padding: "4px",
-          display: "flex"
+          display: "flex",
+          justifyContent: "flex-start"
         }}>
-          <div style={{ display: "flex" }}>
+          <div style={{ display: "flex", gap:"1rem" }}>
             <Chip
               hideClose={false}
               text={t("USER_NAME")}
-              className="multiselectdropdown-tag"
+              //className="multiselectdropdown-tag"
               isErrorTag={true}
               onTagClick={(e) => onTagClick(e, "name")}
               extraStyles={{
                 tagStyles: {
-                  margin: "6px"
+                  //margin: "6px",
+                  background: "lightgray",
+                  padding: "4px 8px",
+                  display:"flex",
+                  alignItems:"center",
+                  borderRadius: "1rem",
+                  gap:"0.5rem"
                 }
               }}
             />
             <Chip
               hideClose={false}
               text={t("APP_NO")}
-              className="multiselectdropdown-tag"
+              //className="multiselectdropdown-tag"
               isErrorTag={true}
               onTagClick={(e) => onTagClick(e, "num")}
+              extraStyles={{
+                tagStyles: {
+                  //margin: "6px",
+                  background: "lightgray",
+                  padding: "4px 8px",
+                  display:"flex",
+                  alignItems:"center",
+                  borderRadius: "1rem",
+                  gap:"0.5rem"
+                }
+              }}
             />
           </div>
         </div>
+        {/* <div style={{ fontSize: "12px", color: "#666", marginTop: "4px", fontStyle: "italic" }}>
+          {t("PERSONALIZATION_VARIABLES_INFO")}
+        </div> */}
       </LabelFieldPair>
-      <FieldV1
+      {/* <FieldV1
         label={t("WORKFLOW_INTEGRATION")}
         onChange={(e) => onDataChange(e)}
         populators={{
@@ -273,13 +293,13 @@ const CreateNotification = () => {
         type="multiselectdropdown"
         infoMessage={t("WORKFLOW_INFO")}
         value={stateData.workflow}
-      />
+      /> */}
       <div style={{ display: "flex", width: "100%" }}>
           <Button
             variation="primary"
             label={t("SAVE")}
             type="button"
-            className="secondary-button"
+            className="primary-button"
             style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
             onClick={(e) => onSubmit(e)}
           />

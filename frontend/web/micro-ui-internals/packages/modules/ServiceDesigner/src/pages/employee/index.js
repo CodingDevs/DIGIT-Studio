@@ -41,6 +41,10 @@ const SampleBreadCrumbs = ({ location }) => {
         return t("FORM_BUILDER");
       case "forms":
         return t("FORM_MANAGEMENT");
+      case "notifications":
+        return t("FORM_NOTIFICATION");
+      case "create-notification":
+        return t("CREATE_NOTIFICATION");
       default:
         return t(lastSegment.toUpperCase());
     }
@@ -64,7 +68,7 @@ const SampleBreadCrumbs = ({ location }) => {
     ];
 
     // Add Service-Builder-Home for specific pages
-    if (["Workflow", "checklist", "create-checklist", "update-checklist", "Roles", "form-builder", "forms"].includes(lastSegment)) {
+    if (["Workflow", "checklist", "create-checklist", "update-checklist", "Roles", "form-builder", "forms","notifications","create-notification"].includes(lastSegment)) {
       baseCrumbs.push({
         externalLink: `/${window?.contextPath}/employee/servicedesigner/Service-Builder-Home?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
         content: t("SERVICE_BUILDER_HOME"),

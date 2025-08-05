@@ -13,6 +13,8 @@ import useUpsertLocalisationParallel from "../../../hooks/useUpsertLocalisationP
 import { useFormConfigAPI, transformFormDataToMDMS } from "../../../hooks/useFormConfigAPI";
 import { useHistory } from "react-router-dom";
 
+const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
+
 const AppConfigContext = createContext();
 
 const initialState = {};
@@ -569,30 +571,80 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
     return locState?.find((i) => i.code === key)?.[currentLocale];
   };
 
+  // Function to check for duplicate form names
+  const checkDuplicateFormName = async (formName) => {
+    if (!formName) return false;
+    
+    try {
+      const payload = {
+        MdmsCriteria: {
+          tenantId: tenantId,
+          schemaCode: "Studio.Forms",
+          isActive: true,
+          filters: {
+            // module: module,
+            // service: service,
+            "formName": formName.trim(),
+          },
+        },
+      };
+
+      const response = await Digit.CustomService.getResponse({
+        url: `/${mdms_context_path}/v2/_search`,
+        params: { tenantId: tenantId },
+        body: payload,
+      });
+
+      const existingForms = response?.mdms || [];
+      
+      // In edit mode, exclude the current form from duplicate check
+      if (editMode && existingFormData) {
+        return existingForms.some(form => 
+          form.id !== existingFormData.id && 
+          form.data?.formName === formName.trim()
+        );
+      }
+      
+      // In create mode, check if any form with same name exists
+      return existingForms.length > 0;
+    } catch (error) {
+      console.error("Error checking duplicate form name:", error);
+      return false; // Return false to allow form creation if check fails
+    }
+  };
+
+
+
   // Validation function for form builder
-  const validateForm = () => {
+  const validateForm = async () => {
     const errors = {};
 
     // 1. Verify if form name not entered
     if (!currentFormName || !currentFormName.trim()) {
       errors.formName = t("FORM_NAME_REQUIRED");
+    } else {
+      // 2. Check for duplicate form name (only if form name is provided)
+      const isDuplicate = await checkDuplicateFormName(currentFormName);
+      if (isDuplicate) {
+        errors.duplicateFormName = t("FORM_NAME_ALREADY_EXISTS");
+      }
     }
 
-    // 2. Verify field added but no type selected
+    // 3. Verify field added but no type selected
     const fields = state?.screenData?.[0]?.cards?.[0]?.fields || [];
     const fieldsWithoutType = fields.filter(field => !field.type);
     if (fieldsWithoutType.length > 0) {
       errors.fieldType = t("FIELD_TYPE_REQUIRED");
     }
 
-    // 3. Verify if two fields with same name
+    // 4. Verify if two fields with same name
     const fieldNames = fields.map(field => field.label).filter(Boolean);
     const duplicateNames = fieldNames.filter((name, index) => fieldNames.indexOf(name) !== index);
     if (duplicateNames.length > 0) {
       errors.duplicateNames = t("DUPLICATE_FIELD_NAMES");
     }
 
-    // 4. Check for required metadata missing
+    // 5. Check for required metadata missing
     const fieldsWithMissingMetadata = fields.filter(field => {
       if (!field.label || !field.type) return true;
       return false;
@@ -861,7 +913,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
   const handleSubmit = async (finalSubmit) => {
     
     // Validate form before proceeding
-    const validationErrors = validateForm();
+    const validationErrors = await validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setValidationErrors(validationErrors);
       

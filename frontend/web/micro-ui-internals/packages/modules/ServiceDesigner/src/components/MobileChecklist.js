@@ -16,7 +16,7 @@ const MobileChecklist = ({ questions, campaignName, checklistRole, typeOfCheckli
                 {question.isRequired && <span className="mandatory-asterisk">*</span>}
               </p> */}
               <p className="mobile-question">{index + 1}{`)`} {question.title} {question.isRequired && <span className="mandatory-asterisk">*</span>}</p>
-              {question.options && question.options.length > 0 && (
+              {question.options && question.options.length > 0 && question.type.code !== "Text" && (
                 <div className="mobile-options">
                   {question.options.map((option, index) => (
                     <div key={index} className="mobile-option-item">
@@ -41,6 +41,23 @@ const MobileChecklist = ({ questions, campaignName, checklistRole, typeOfCheckli
               {question.type.code === "Short Answer" && 
               (
                 <label className="mobile-answer">{question.value}</label>
+              )}
+              {question.type.code === "Text" && 
+              (
+                <div className="mobile-text-input">
+                  <input
+                    type="text"
+                    placeholder={question.value || "Enter text here"}
+                    disabled={true}
+                    style={{
+                      width: "100%",
+                      padding: "0.5rem",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      backgroundColor: "#f5f5f5"
+                    }}
+                  />
+                </div>
               )}
             </div>
           ))}

@@ -166,7 +166,7 @@ const Roles = () => {
     const Node_Properties_Section = [
         [
             <FieldV1
-                error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
+                //error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
                 label={t("ROLE_NAME")}
                 onChange={(e) => onDataChange(e)}
                 populators={{
@@ -312,7 +312,7 @@ const Roles = () => {
                     sortFooterChildren={true}
                 >
                     <FieldV1
-                        error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
+                        //error={stateData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
                         label={t("ROLE_NAME")}
                         onChange={(e) => onDataChange(e)}
                         populators={{
