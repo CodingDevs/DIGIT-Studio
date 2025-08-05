@@ -130,6 +130,21 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 		return errors.New("no process instance returned from workflow")
 	}
 	req.Application.ProcessInstance = &wfResponse.ProcessInstances
+	// --- ✅ Check against activeStates from MDMS ---
+	activeStates, ok := workflowData["ACTIVE"].([]interface{})
+	if !ok {
+		log.Println("ACTIVE not present or invalid in workflow config")
+		return errors.New("invalid or missing active in workflow config")
+	}
+
+	stateName := wfResponse.ProcessInstances[0].State.State
+	req.Application.Status = "INACTIVE"
+	for _, state := range activeStates {
+		if s, ok := state.(string); ok && s == stateName {
+			req.Application.Status = "ACTIVE"
+			break
+		}
+	}
 	return nil
 }
 
