@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@egovernments/digit-ui-react-components";
-import { Loader, Toast } from "@egovernments/digit-ui-components";
+import { CardText, Loader, Toast } from "@egovernments/digit-ui-components";
 import RoleComp from "../../components/rolesComponent";
 import { useTranslation } from "react-i18next";
 import { PopUp } from "@egovernments/digit-ui-components";

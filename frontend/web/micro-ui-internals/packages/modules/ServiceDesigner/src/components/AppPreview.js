@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardText, TextInput, SelectionTag, Dropdown, CardHeader, Button, FieldV1, Loader, CheckBox, Stepper, Divider } from "@egovernments/digit-ui-components";
 import { DynamicImageComponent } from "./DynamicImageComponent";
 import { CardSectionHeader, CardSectionSubText } from "@egovernments/digit-ui-react-components";
+import { useTranslation } from "react-i18next";
 // import MobileBezelFrame from "./MobileBezelFrame";
 // import GenericTemplateScreen from "./GenericTemplateScreen";
 // import DynamicSVG from "./DynamicSVGComponent";
@@ -162,10 +163,11 @@ const getFieldType = (field) => {
   }
 };
 
-const AppPreview = ({ data = {}, selectedField, t, onSectionChange, selectedSection = 0 }) => {
+const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection = 0 }) => {
   const [currentStep, setCurrentStep] = useState(selectedSection);
   const cards = data.cards || [];
   const totalSteps = cards.length;
+  const {t} = useTranslation();
 
   // Sync currentStep with selectedSection prop
   useEffect(() => {
@@ -261,8 +263,8 @@ const AppPreview = ({ data = {}, selectedField, t, onSectionChange, selectedSect
                     getFieldType(field) === "checkbox" || getFieldType(field) === "button"
                       ? null
                       : field?.isMdms
-                      ? t(field?.label)
-                      : field.label
+                      ? (field?.required ? `${t(field?.label)} *` : t(field?.label))
+                      : (field?.required ? `${field.label} *` : field.label)
                   }
                   onChange={function noRefCheck() {}}
                   placeholder={t(field?.innerLabel) || ""}

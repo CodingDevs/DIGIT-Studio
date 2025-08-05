@@ -1250,7 +1250,7 @@ const Workflow = () => {
                 }
             ],
             localization: {
-                modules: [`digit-${serviceName}`]
+                modules: [`digit-studio`]
             },
             notification: generateGroupedTemplates(notif),
             boundary: hasAddressDetails ? {
