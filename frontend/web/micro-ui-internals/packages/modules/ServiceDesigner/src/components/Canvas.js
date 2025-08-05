@@ -436,7 +436,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
               })()}
 
 
-              {connections.map((conn, idx) => {
+              {connections?.map((conn, idx) => {
                 const fromEl = elements.find((el) => el.id === conn.from);
                 const toEl = elements.find((el) => el.id === conn.to);
 
