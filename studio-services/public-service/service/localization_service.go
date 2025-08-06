@@ -290,8 +290,8 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 	}
 	messages = append(messages, message)
 
-	field := []string{"NEXT", "ADD", "SUBMIT", "OWNERNAME", "ADDRESS", "PINCODE", "STREETNAME", "CITY", "ACTIONS", "VIEW_APPLICATION", "APPLICANTDETAILS",
-		"TENANTID", "LATITUDE", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS", "APPLICATION_DETAILS"}
+	field := []string{"NEXT", "ADD", "SUBMIT", "OWNERNAME", "DOWNLOAD", "ADDRESS", "DOCUMENTS", "PINCODE", "STREETNAME", "CITY", "ACTIONS", "VIEW_APPLICATION", "APPLICANTDETAILS",
+		"TENANTID", "LATITUDE", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS"}
 	for key := range field {
 		message := model.Message{
 			Code:    module + "_" + field[key],
@@ -314,6 +314,51 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 	message = model.Message{
 		Code:    module + "_" + "INBOX_HEADER",
 		Message: module + " INBOX",
+		Locale:  locale,
+		Module:  localizationModule,
+	}
+	messages = append(messages, message)
+	message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "HEADING",
+		Message: strings.ToUpper(req.Service.Module),
+		Locale:  locale,
+		Module:  "rainmaker-common",
+	}
+	messages = append(messages, message)
+	message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "SEARCH",
+		Message: strings.ToUpper(req.Service.Module) + " SEARCH",
+		Locale:  locale,
+		Module:  "rainmaker-common",
+	}
+	messages = append(messages, message)
+	message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "INBOX",
+		Message: strings.ToUpper(req.Service.Module) + " INBOX",
+		Locale:  locale,
+		Module:  "rainmaker-common",
+	}
+	messages = append(messages, message)
+
+	message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "CARDDESCRIPTION",
+		Message: strings.ToUpper(req.Service.Module) + " Service ",
+		Locale:  locale,
+		Module:  "rainmaker-common",
+	}
+	messages = append(messages, message)
+
+	message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "HOW_IT_WORKS",
+		Message: "How It Works",
+		Locale:  locale,
+		Module:  "rainmaker-common",
+	}
+	messages = append(messages, message)
+
+	message = model.Message{
+		Code:    module + "_" + "APPLICATION_DETAILS",
+		Message: "APPLICATION DETAILS",
 		Locale:  locale,
 		Module:  localizationModule,
 	}
