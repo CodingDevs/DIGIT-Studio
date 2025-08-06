@@ -338,7 +338,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
           variation="secondary"
           label={
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <CustomSVG.EditIcon width={16} height={16} />
+              <CustomSVG.ClearWorkflowIcon width={16} height={16} />
               {t("CLEAR_CANVAS")}
             </div>
           }
@@ -352,7 +352,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
           variation="secondary"
           label={
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <CustomSVG.EditIcon width={16} height={16} />
+              <CustomSVG.ZoomToFitIcon width={16} height={16} />
               {t("ZOOM_TO_FIT")}
             </div>
           }
@@ -366,7 +366,7 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
           variation="secondary"
           label={
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <CustomSVG.EditIcon width={16} height={16} />
+              <CustomSVG.LoadSampleIcon width={16} height={16} />
               {t("LOAD_SAMPLE")}
             </div>
           }

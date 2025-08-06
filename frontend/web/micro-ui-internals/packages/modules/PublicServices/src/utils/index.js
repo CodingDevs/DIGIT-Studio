@@ -134,7 +134,7 @@ import cloneDeep from "lodash/cloneDeep";
   
     const serviceDetails = getServiceDetails(formData);
   
-    const applicants = formData.applicantDetails?.filter(Boolean)?.map((applicant, index) => ({
+    const applicants = formData?.applicantDetails?.length ? (formData?.applicantDetails?.filter(Boolean)?.map((applicant, index) => ({
       type: "individual",
       name: applicant?.name,
       mobileNumber: Number(applicant?.mobileNumber),
@@ -143,7 +143,16 @@ import cloneDeep from "lodash/cloneDeep";
       prefix: "91",
       type:"individual",
       active: true,
-    })) || [];
+    })) || []) : [{
+      type: "individual",
+      name: formData?.applicantDetails?.name,
+      mobileNumber: Number(formData?.applicantDetails?.mobileNumber),
+      gender : formData?.applicantDetails?.gender?.code,
+      emailId: formData?.applicantDetails?.email || `user@example.com`,
+      prefix: "91",
+      type:"individual",
+      active: true,
+    }];
   
     const documents = transformUploadedDocs(formData?.uploadedDocs);
   

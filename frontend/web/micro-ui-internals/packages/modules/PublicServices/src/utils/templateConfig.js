@@ -87,8 +87,8 @@ export const AddressFields = [
 export const ApplicantFields =  [{
     "name": "applicantDetails",
     "label": "Applicant Details ",
-    "type": "array",
-    "items":{
+    // "type": "array",
+    // "items":{
       "type": "object",
       "properties": [
         {
@@ -118,6 +118,9 @@ export const ApplicantFields =  [{
             "regex": "^[6-9]\\d{9}$",
             "message": "Only 9 numbers allowed"
           },
+          "populators":{
+            hideSpan:true
+          },
           "required": false,
           "orderNumber": 1
         },
@@ -132,7 +135,7 @@ export const ApplicantFields =  [{
           "schema": "common-masters.GenderType" 
         },
       ]
-    }
+    //}
   }]
 
 export const documentFields = [

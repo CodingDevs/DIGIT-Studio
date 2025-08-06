@@ -24,13 +24,13 @@ const Workflow = () => {
     const roleService = searchParams.get("service") || "Service";
     const servicemodule = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
     const [selectedElement, setSelectedElement] = useState(null);
-    const [canvasElements, setCanvasElements] = useState(JSON.parse(localStorage.getItem("canvasElements")) || []);
+    const [canvasElements, setCanvasElements] = useState((localStorage.getItem("canvasElements") !== "undefined" ? JSON.parse(localStorage.getItem("canvasElements")) : []) || []);
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
     const [showToast, setShowToast] = useState(null);
     const [hasStart, setHasStart] = useState(false);
     const [hasEnd, setHasEnd] = useState(false);
     const [connectionStart, setConnectionStart] = useState(null);
-    const [connections, setConnections] = useState(JSON.parse(localStorage.getItem("connections")) || []);
+    const [connections, setConnections] = useState((localStorage.getItem("connections") !== "undefined" ? JSON.parse(localStorage.getItem("connections")) : []) || []);
     const [connecting, setConnecting] = useState(null);
     
     // New state for service configuration popup
@@ -901,7 +901,7 @@ const Workflow = () => {
             const actions = outgoingConnections.map(conn => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 return {
-                    roles: conn.aroles?.map(role => role.code.toUpperCase().replace(/\s+/g, '_')),
+                    roles: conn.aroles ? [...conn.aroles?.map(role => role.code.toUpperCase().replace(/\s+/g, '_')),"CITIZEN", "STUDIO_ADMIN"] : ["CITIZEN", "STUDIO_ADMIN"],
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase().replace(/\s+/g, '_') : 'UNKNOWN'
                 };
@@ -1237,7 +1237,6 @@ const Workflow = () => {
                 grouped[type].push(template);
             }
         });
-        debugger;
         return grouped;
     };
 
@@ -1260,7 +1259,6 @@ const Workflow = () => {
         // Get module and service from URL parameters
         const moduleName = roleModule.toLowerCase();
         const serviceName = roleService.toLowerCase();
-        debugger;
         
                 const serviceConfig = {
             module: roleModule,
@@ -1317,8 +1315,8 @@ const Workflow = () => {
                 },
                 {
                     type: "service",
-                    format: `${moduleName}-${serviceName}-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]`,
-                    idname: `${moduleName}-${serviceName}.application.${serviceName}.applicationapp.id`
+                    format: `${moduleName}-${serviceName}-svc-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]`,
+                    idname: `${moduleName}-${serviceName}.application.${serviceName}.applicationservice.id`
                 }
             ],
             localization: {
@@ -1354,7 +1352,129 @@ const Workflow = () => {
                     service: serviceName,
                     endpoint: `/${serviceName}-services/v1/search`
                 }
-            ]
+            ],
+            "pdf": [
+                {
+                    "key": "tl-application",
+                    "type": "application",
+                    "states": [
+                        "applied",
+                        "approved"
+                    ]
+                },
+                {
+                    "key": "tl-bill",
+                    "type": "bill",
+                    "states": [
+                        "approved"
+                    ]
+                },
+                {
+                    "key": "tl-receipt",
+                    "type": "receipt",
+                    "states": [
+                        "approved"
+                    ]
+                }
+            ],
+            "bill": {
+                "taxHead": [
+                    {
+                        "code": "applicationFee",
+                        "name": "applicationFee",
+                        "order": "2",
+                        "isDebit": false,
+                        "service": "TESTBSONE",
+                        "category": "TAX",
+                        "isRequired": false,
+                        "isActualDemand": true
+                    }
+                ],
+                "taxPeriod": [
+                    {
+                        "code": "TEST2018",
+                        "toDate": 1554076799000,
+                        "service": "TESTBSONE",
+                        "fromDate": 1522540800000,
+                        "periodCycle": "ANNUAL",
+                        "financialYear": "2018-19"
+                    }
+                ],
+                "BusinessService": {
+                    "code": "TESTBSONE",
+                    "businessService": "TESTBSONE",
+                    "demandUpdateTime": 86400000,
+                    "isAdvanceAllowed": false,
+                    "minAmountPayable": 100,
+                    "partPaymentAllowed": true,
+                    "isVoucherCreationEnabled": true,
+                    "collectionModesNotAllowed": [
+                        "DD",
+                        "OFFLINE_NEFT",
+                        "OFFLINE_RTGS",
+                        "POSTAL_ORDER"
+                    ]
+                }
+            },
+            "inbox": {
+                "index": "public-service-index",
+                "module": "public-service",
+                "sortBy": {
+                    "path": "Data.auditDetails.createdTime",
+                    "defaultOrder": "DESC"
+                },
+                "sourceFilterPathList": [
+                    "Data.businessService",
+                    "Data.applicationNumber",
+                    "Data.currentProcessInstance",
+                    "Data.auditDetails",
+                    "Data.additionalDetails",
+                    "Data.module",
+                    "Data.locality",
+                    "Data.status"
+                ],
+                "allowedSearchCriteria": [
+                    {
+                        "name": "tenantId",
+                        "path": "Data.tenantId.keyword",
+                        "operator": "EQUAL",
+                        "isMandatory": true
+                    },
+                    {
+                        "name": "status",
+                        "path": "Data.workflowStatus",
+                        "isMandatory": false
+                    },
+                    {
+                        "name": "applicationNumber",
+                        "path": "Data.applicationNumber.keyword",
+                        "isMandatory": false
+                    },
+                    {
+                        "name": "module",
+                        "path": "Data.module.keyword",
+                        "isMandatory": false
+                    },
+                    {
+                        "name": "businessService",
+                        "path": "Data.businessService.keyword",
+                        "isMandatory": false
+                    },
+                    {
+                        "name": "locality",
+                        "path": "Data.address.locality.keyword",
+                        "isMandatory": false
+                    },
+                    {
+                        "name": "assignee",
+                        "path": "Data.currentProcessInstance.assignes.uuid.keyword",
+                        "isMandatory": false
+                    }
+                ]
+            },
+            "payment": {
+                "gateway": "TODO"
+            }
         };
         
         // Add canvas and connections just before API call
@@ -1539,6 +1659,7 @@ const Workflow = () => {
                     hideScrollIcon={true}
                     hideArrow={false}
                     className="slider-container"
+                    defaultOpenWidth={335}
                 />
             </Card>}
             {showToast && (

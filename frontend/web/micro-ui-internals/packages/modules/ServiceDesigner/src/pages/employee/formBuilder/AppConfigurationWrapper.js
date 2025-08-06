@@ -131,11 +131,17 @@ const reducer = (state = initialState, action, updateLocalization) => {
                       label: "Mobile Number",
                       active: true,
                       jsonPath: "ApplicantMobile",
-                      metaData: {},
+                      metaData: {
+                        hideSpan: true,
+                      },
                       required: true,
                       value: "",
                       readOnly: false,
                       deleteFlag: true,
+                      hideSpan: true,
+                      populators:{
+                        hideSpan:true,
+                      }
                     },
                     {
                       type: "dropdown",
@@ -1215,8 +1221,8 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
               <Button
                 className=""
                 variation="secondary"
-                label={t("BACK")}
-                title={t("BACK")}
+                label={t("FORM_BACK")}
+                title={t("FORM_BACK")}
                 icon="ArrowBack"
                 size="small"
                 onClick={() =>

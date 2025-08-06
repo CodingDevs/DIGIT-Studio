@@ -121,7 +121,7 @@ const CreateNotification = () => {
         const response = await createNotif(generateNotifPayload(tenantId, type, Category, stateData, dataa?.mdms?.filter(role => role?.data?.additionalDetails?.category === Category && role?.data?.title === stateData.title), isUpdate), isUpdate);
         if (response?.success) {
           updateworkflowNodes();
-          setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
+          setShowToast({ key: true, type: "success", label: t("NOTIFICATION_UPDATED_SUCCESSFULLY") });
           setTimeout(() => {
             window.history.back();
           }, 3000);

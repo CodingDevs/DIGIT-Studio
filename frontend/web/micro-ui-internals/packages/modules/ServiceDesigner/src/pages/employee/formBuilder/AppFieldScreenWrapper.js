@@ -236,7 +236,7 @@ function AppFieldScreenWrapper() {
                       <TextInput
                         name="sectionHeading"
                         value={typeof headingField?.value === 'string' ? headingField.value : `Section ${index + 1}`}
-                        placeholder={t("Enter section heading")}
+                        placeholder={t("ENTER_SECTION_HEADING")}
                         onChange={(event) => {
                           dispatch({
                             type: "UPDATE_HEADER_FIELD",
@@ -257,7 +257,7 @@ function AppFieldScreenWrapper() {
                       <TextArea
                         name="sectionDescription"
                         value={typeof descriptionField?.value === 'string' ? descriptionField.value : `Description for Section ${index + 1}`}
-                        placeholder={t("Enter section description")}
+                        placeholder={t("ENTER_SECTION_DESCRIPTION")}
                         onChange={(event) => {
                           dispatch({
                             type: "UPDATE_HEADER_FIELD",

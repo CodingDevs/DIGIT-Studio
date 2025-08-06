@@ -141,7 +141,7 @@ const addValidationArrayToConfig = (field, fieldTypeMasterData = []) => {
   return validationArray;
 };
 
-export const restructure = (data1, fieldTypeMasterData = [], parent) => {
+export const restructure = (data1, fieldTypeMasterData = [], parent, t) => {
   return [...data1?.sort((a, b) => a.order - b.order)].map((page) => {
     const cardFields = page.properties
       ?.sort((a, b) => a.order - b.order)
@@ -186,7 +186,7 @@ export const restructure = (data1, fieldTypeMasterData = [], parent) => {
             {
               type: "text",
               label: "SCREEN_HEADING",
-              value: page.label && !page.label.includes("_") ? page.label : "Section 1",
+              value: page.label && !page.label.includes("_") ? page.label : t("SECTION_1"),
               active: true,
               jsonPath: "ScreenHeading",
               metaData: {},

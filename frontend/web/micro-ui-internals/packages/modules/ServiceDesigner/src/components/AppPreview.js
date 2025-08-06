@@ -287,6 +287,7 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
                     options: field?.isMdms ? null : field?.dropDownOptions,
                     optionsKey: field?.isMdms ? "code" : "name",
                     component: getFieldType(field) === "button" || getFieldType(field) === "select" ? renderField(field, t) : null,
+                    hideSpan:true,
                   }}
                   required={field?.["toArray.required"] || false}
                   type={getFieldType(field) === "button" || getFieldType(field) === "select" ? "custom" : getFieldType(field) || "text"}
@@ -336,7 +337,7 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
         
         <Button
           variation="secondary"
-          label={currentStep < totalSteps - 1 ? cards[currentStep + 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 2}` : "Next"}
+          label={currentStep < totalSteps - 1 ? cards[currentStep + 1]?.headerFields?.find(h => h.label === 'SCREEN_HEADING')?.value || `Section ${currentStep + 2}` : t("FORM_NEXT")}
           onClick={handleNext}
           isDisabled={currentStep === totalSteps - 1}
           style={{

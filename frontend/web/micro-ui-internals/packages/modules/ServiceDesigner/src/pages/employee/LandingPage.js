@@ -36,6 +36,17 @@ export const buildCardData = (drafts = [], published = [], t) => {
       Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
   }));
 
+  const templates = [
+    {
+      title: "Property Tax",
+      description: "Assessment and payment system for Mumbai Municipal Corporation",
+    },
+    {
+      title: "Water Tax",
+      description: "Manage water tax services for your citizens",
+    },
+  ];
+
   return {
     Published: [
       {
@@ -47,7 +58,7 @@ export const buildCardData = (drafts = [], published = [], t) => {
       ...publishedCards,
     ],
     Drafts: draftCards,
-    templates: [],
+    templates: templates,
   };
 };
 
@@ -203,6 +214,7 @@ const LandingPage = () => {
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "1.5rem",
+                marginTop:"1.5rem"
               }}
             >
               <CardSectionHeader style={{ marginBottom: "unset" }}>
@@ -314,9 +326,10 @@ const LandingPage = () => {
           children={[
             <div>
               <TextBlock
-                subHeader={t("CREATE_NEW_SERVICE_HEADER")}
-                body={t("CREATE_NEW_SERVICE_SUB_HEADER")}
+                header={t("CREATE_NEW_SERVICE_HEADER")}
+                subHeader={t("CREATE_NEW_SERVICE_SUB_HEADER")}
                 subHeaderClasName="header-popup"
+                className="typography heading-m"
               />
               <div style={{ marginTop: "1.5rem" }}>
                 <div
@@ -327,7 +340,7 @@ const LandingPage = () => {
                     gap: "1rem",
                   }}
                 >
-                  <label style={{ minWidth: "120px", fontWeight: "500", color: "#333" }}>
+                  <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
                     {t("MODULE_NAME")}
                   </label>
                   <TextInput
@@ -343,7 +356,7 @@ const LandingPage = () => {
                     gap: "1rem",
                   }}
                 >
-                  <label style={{ minWidth: "120px", fontWeight: "500", color: "#333" }}>
+                  <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
                     {t("SERVICE_NAME")}
                   </label>
                   <TextInput

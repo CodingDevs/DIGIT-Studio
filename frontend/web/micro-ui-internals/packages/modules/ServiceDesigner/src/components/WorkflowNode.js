@@ -24,6 +24,13 @@ const WorkflowNode = ({
 }) => {
   const [showAllRoles, setShowAllRoles] = useState(false);
 
+  const iconMap = {
+    START : <CustomSVG.StartStateIcon width={24} height={24}/>,
+    PROCESSING : <CustomSVG.IntermediateStateIcon width={24} height={24}/>,
+    END: <CustomSVG.EndStateIcon width={24} height={24}/>,
+  }
+
+
   const handleLeftClick = (elementId, e) => {
     e.stopPropagation();
     if (onLeftAction) onLeftAction(elementId, e);
@@ -127,7 +134,7 @@ const WorkflowNode = ({
           <div className="text-section state-desc">
             <h3 className="state-title">
               <div className="state-icon">
-                {icon || <CustomSVG.EditIcon />}
+                {iconMap[State] || <CustomSVG.EditIcon />}
               </div>
               {State}
             </h3>

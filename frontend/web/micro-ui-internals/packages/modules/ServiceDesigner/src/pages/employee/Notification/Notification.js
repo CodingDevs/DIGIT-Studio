@@ -155,7 +155,7 @@ const Notification = () => {
             <Card>
                 <div style={{ display: "flex" }}>
                     {NotifCardConfig.map((item, index) => (
-                        <NotificationCard title={item.title} desc={item.desc} index={item.key} onClick={onCardClick} data={null} />
+                        <NotificationCard title={item.title} desc={item.desc} index={item.key} onClick={onCardClick} data={null} icon={item.icon} />
                     ))}
                 </div>
             </Card>

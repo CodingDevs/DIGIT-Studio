@@ -64,7 +64,7 @@ function AppFieldScreenWrapper() {
               <TextInput
                 name="sectionHeading"
                 value={useCustomT(headingField?.value || "")}
-                placeholder={t("Enter section heading")}
+                placeholder={t("ENTER_SECTION_HEADING")}
                 onChange={(event) => {
                   dispatch({
                     type: "UPDATE_HEADER_FIELD",
@@ -86,7 +86,7 @@ function AppFieldScreenWrapper() {
               <TextInput
                 name="sectionDescription"
                 value={useCustomT(descriptionField?.value || "")}
-                placeholder={t("Enter section description")}
+                placeholder={t("ENTER_SECTION_DESCRIPTION")}
                 onChange={(event) => {
                   dispatch({
                     type: "UPDATE_HEADER_FIELD",

@@ -1121,25 +1121,26 @@ digit-button-link {
   gap: .5rem;
 }
 
-// .digit-header-content.label .info-icon .infotext {
-//   position: absolute;
-//   text-align: center;
-//   font-family: Roboto;
-//   font-style: normal;
-//   font-weight: 400;
-//   line-height: 1.37rem;
-//   visibility: hidden;
-//   max-width: 14rem;
-//   width: auto;
-//   white-space: normal;
-//   background-color: #555;
-//   color: #fff;
-//   padding: 0.5rem;
-//   z-index: 1;
-//   bottom: 100%;
-//   left: 500%;
-//   transform: translateX(-50%);
-//   border-radius: 0.375rem;
-//   word-wrap: break-word;
-//   overflow-wrap: break-word;
-// }
+.digit-header-content.label .info-icon .infotext {
+  position: absolute;
+  text-align: center;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.37rem;
+  visibility: hidden;
+  max-width: 14rem;
+  width: auto;
+  white-space: normal;
+  background-color: #555;
+  color: #fff;
+  padding: 0.5rem;
+  z-index: 1;
+  bottom: 100%;
+  left: 500%;
+  transform: translateX(-50%);
+  border-radius: 0.375rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 13rem;
+}

@@ -9,7 +9,7 @@ const ServiceDesignerCard = () => {
   //To show the card at main page
   const propsForModuleCard = {
     Icon: "BeenHere",
-    moduleName: t("SERVICE_DESIGNER"),
+    moduleName: t("SERVICE_DESIGNER_HEADER"),
     kpis: [
 
     ],

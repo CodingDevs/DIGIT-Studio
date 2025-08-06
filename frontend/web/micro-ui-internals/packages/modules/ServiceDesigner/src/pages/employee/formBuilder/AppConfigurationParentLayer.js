@@ -155,7 +155,7 @@ const AppConfigurationParentRedesign = ({ formData = null, isNextTabAvailable, i
       AppConfigMdmsData?.[fieldTypeMaster]?.length > 0
     ) {
       const fieldTypeMasterData = AppConfigMdmsData?.[fieldTypeMaster] || [];
-      const temp = restructure(formData?.data?.pages, fieldTypeMasterData, formData?.data);
+      const temp = restructure(formData?.data?.pages, fieldTypeMasterData, formData?.data,t);
       parentDispatch({
         key: "SET",
         data: [...temp],

@@ -76,6 +76,30 @@ const SampleBreadCrumbs = ({ location }) => {
       });
     }
 
+    if(["form-builder"].includes(lastSegment)){
+      baseCrumbs.push({
+        externalLink: `/${window?.contextPath}/employee/servicedesigner/forms?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
+        content: t("FORM_MANAGEMENT"),
+        show: true,
+      });
+    }
+
+    if(["create-checklist","update-checklist"].includes(lastSegment)){
+      baseCrumbs.push({
+        externalLink: `/${window?.contextPath}/employee/servicedesigner/checklist?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
+        content: t("CHECKLIST_MANAGEMENT"),
+        show: true,
+      });
+    }
+
+    if(["create-notification"].includes(lastSegment)){
+      baseCrumbs.push({
+        externalLink: `/${window?.contextPath}/employee/servicedesigner/notifications?module=${new URLSearchParams(location.search).get("module") || "Studio"}&service=${new URLSearchParams(location.search).get("service") || "Service"}`,
+        content: t("FORM_NOTIFICATION"),
+        show: true,
+      });
+    }
+
     // Add current page
     baseCrumbs.push({
       internalLink: `/${window?.contextPath}/employee/servicedesigner/${lastSegment}`,

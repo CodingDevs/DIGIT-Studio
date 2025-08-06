@@ -35,6 +35,7 @@ export const generateFormConfig = (config, module, service) => {
         prefix: field.prefix,
         reference: field.reference,
         dependencies: field.dependencies,
+        hideSpan:true,
 
         // Handle MDMS-based schema loading
         ...(field?.schema
@@ -152,7 +153,7 @@ export const generateFormConfig = (config, module, service) => {
 
   // Conditionally add document section
   const documentform =
-    config?.ServiceConfiguration?.[0]?.documents && documentFields?.[0]
+    config?.ServiceConfiguration?.[0]?.documents?.[0]?.actions?.[0]?.documents.length > 0 && documentFields?.[0]
       ? getDocumentFields(documentFields[0])
       : {};
 

@@ -114,6 +114,7 @@ const Roles = () => {
                         });
                         setRolePopup(false);
                         setSelectedElement(false);
+                        window.location.reload();
                     }
                     else {
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
