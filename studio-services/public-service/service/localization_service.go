@@ -34,7 +34,7 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 			locale = parts[1]
 		}
 	}
-//TODO: use module specified in the config 
+	//TODO: use module specified in the config
 	url := fmt.Sprintf("%s%s%s?locale=%s&tenantId=%s&module=digit-studio&codes=%s",
 		os.Getenv("LOCALIZATION_SERVICE_HOST"),
 		os.Getenv("LOCALIZATION_CONTEXT_PATH"),
@@ -113,55 +113,55 @@ func (l *LocalizationService) SendLocalizationMessage(messages []model.Message, 
 	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
 	payload := model.Localization{
 		RequestInfo: req.RequestInfo,
-		TenantID: tenantId,
-		Messages: messages,
+		TenantID:    tenantId,
+		Messages:    messages,
 	}
 
 	var result map[string]interface{}
 	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
 	if err != nil {
 		log.Println(err.Error())
-		return result, err;
+		return result, err
 	}
 
 	log.Println(result)
 
 	return result, nil
-} 
+}
 
 func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req model.ServiceRequest) {
 	var messages []model.Message
 	locale := os.Getenv("NOTIFICATION_LOCALE")
 	module := strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService)
-	
+
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 	set := make(map[string]struct{})
 	fields := data["fields"].([]interface{})
 	set[""] = struct{}{}
-        set[""] = struct{}{}
-        set[""] = struct{}{}
-        field := []string{"NAME", "MOBILENUMBER", "GENDER", "EMAILID"}
-        for key := range field {
-                message := model.Message{
-                        Code: module + "_" + field[key],
-                        Message: field[key],
-                        Locale: locale,
-                        Module: localizationModule,
-                }
-                messages = append(messages, message)
-                set[message.Code] = struct{}{}
-        }
+	set[""] = struct{}{}
+	set[""] = struct{}{}
+	field := []string{"NAME", "MOBILENUMBER", "GENDER", "EMAILID"}
+	for key := range field {
+		message := model.Message{
+			Code:    module + "_" + field[key],
+			Message: field[key],
+			Locale:  locale,
+			Module:  localizationModule,
+		}
+		messages = append(messages, message)
+		set[message.Code] = struct{}{}
+	}
 
 	for key := range fields {
 		value := fields[key].(map[string]interface{})
 		heading := value["name"].(string)
 		headingLabel := value["label"].(string)
-		
+
 		message := model.Message{
-			Code: module + "_" + strings.ToUpper(heading),
+			Code:    module + "_" + strings.ToUpper(heading),
 			Message: headingLabel,
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		if _, exists := set[message.Code]; exists {
 			//already exists
@@ -169,18 +169,18 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 			messages = append(messages, message)
 			set[message.Code] = struct{}{}
 		}
-		
+
 		properties := value["properties"].([]interface{})
-		
+
 		for key := range properties {
 			value := properties[key].(map[string]interface{})
 			fieldName := value["name"].(string)
 			fieldLabel := value["label"].(string)
 			message := model.Message{
-				Code: module + "_" + strings.ToUpper(fieldName),
+				Code:    module + "_" + strings.ToUpper(fieldName),
 				Message: fieldLabel,
-				Locale: locale,
-				Module: localizationModule,
+				Locale:  locale,
+				Module:  localizationModule,
 			}
 			if _, exists := set[message.Code]; exists {
 				//already exists
@@ -191,10 +191,10 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 			if dropdownVals, found := value["values"].([]interface{}); found {
 				for key := range dropdownVals {
 					message := model.Message{
-						Code: module + "_" + strings.ToUpper(fieldName) + "_" + strings.ToUpper(dropdownVals[key].(string)),
+						Code:    module + "_" + strings.ToUpper(fieldName) + "_" + strings.ToUpper(dropdownVals[key].(string)),
 						Message: dropdownVals[key].(string),
-						Locale: locale,
-						Module: localizationModule,
+						Locale:  locale,
+						Module:  localizationModule,
 					}
 					if _, exists := set[message.Code]; exists {
 						//already exists
@@ -202,7 +202,7 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 						messages = append(messages, message)
 						set[message.Code] = struct{}{}
 					}
-				}	
+				}
 			} else {
 				//do nothing
 			}
@@ -275,59 +275,74 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 	return resp, err
 }
 
-
-func(l *LocalizationService) Localization(data map[string]interface{}, req model.ServiceRequest) error{
+func (l *LocalizationService) Localization(data map[string]interface{}, req model.ServiceRequest) error {
 	var messages []model.Message
 	locale := os.Getenv("NOTIFICATION_LOCALE")
 	module := strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService)
-	
+
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 
 	message := model.Message{
-		Code: module + "_" + "HEADING", 
-		Message: strings.ToUpper(req.Service.Module) + " " +strings.ToUpper(req.Service.BusinessService),
-		Locale: locale,
-		Module: localizationModule,
+		Code:    module + "_" + "HEADING",
+		Message: strings.ToUpper(req.Service.Module) + " " + strings.ToUpper(req.Service.BusinessService),
+		Locale:  locale,
+		Module:  localizationModule,
 	}
 	messages = append(messages, message)
 
 	field := []string{"NEXT", "ADD", "SUBMIT", "OWNERNAME", "ADDRESS", "PINCODE", "STREETNAME", "CITY", "ACTIONS", "VIEW_APPLICATION", "APPLICANTDETAILS",
-"TENANTID", "LATITUDE", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS", "APPLICATION_DETAILS"}
+		"TENANTID", "LATITUDE", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS", "APPLICATION_DETAILS"}
 	for key := range field {
 		message := model.Message{
-			Code: module + "_" + field[key],
+			Code:    module + "_" + field[key],
 			Message: field[key],
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		messages = append(messages, message)
 	}
-	
+
 	module = strings.ToUpper(req.Service.Module)
 
 	message = model.Message{
-			Code: module + "_" + "SEARCH_HEADER",
-			Message: module + " SEARCH",
-			Locale: locale,
-			Module: localizationModule,
+		Code:    module + "_" + "SEARCH_HEADER",
+		Message: module + " SEARCH",
+		Locale:  locale,
+		Module:  localizationModule,
 	}
 	messages = append(messages, message)
 	message = model.Message{
-			Code: module + "_" + "INBOX_HEADER",
-			Message: module + " INBOX",
-			Locale: locale,
-			Module: localizationModule,
+		Code:    module + "_" + "INBOX_HEADER",
+		Message: module + " INBOX",
+		Locale:  locale,
+		Module:  localizationModule,
 	}
 	messages = append(messages, message)
 
-	
 	field1 := []string{"APPLICATION_NUMBER", "STATUS", "TODATE", "FROMDATE", "BUSINESS_SERVICE"}
 	for key := range field1 {
 		message := model.Message{
-			Code: module + "_" + field1[key],
+			Code:    module + "_" + field1[key],
 			Message: field1[key],
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
+		}
+		messages = append(messages, message)
+	}
+
+	field2 := map[string]string{
+		"DOCUMENTS_ADDRESS_PROOF_UPLOAD":  "ADDRESS PROOF",
+		"DOCUMENTS_IDENTITY_PROOF_UPLOAD": "IDENTITY PROOF",
+		"DOCUMENTS_OWNER_PHOTO_DOWNLOAD":  "OWNER PHOTO",
+		"DOCUMENTS_OWNER_PHOTO_UPLOAD":    "OWNER PHOTO",
+	}
+
+	for code, label := range field2 {
+		message := model.Message{
+			Code:    module + "_" + code,
+			Message: label,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		messages = append(messages, message)
 	}
@@ -346,8 +361,8 @@ func(l *LocalizationService) Localization(data map[string]interface{}, req model
 func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, req model.ServiceRequest) {
 	var messages []model.Message
 	locale := os.Getenv("NOTIFICATION_LOCALE")
-	module := "WF_" + strings.ToUpper(req.Service.Module) + "_" 
-	
+	module := "WF_" + strings.ToUpper(req.Service.Module) + "_"
+
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 
 	actionArr := make(map[string]struct{})
@@ -359,7 +374,7 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 	actionModule := ""
 
 	for key := range actionModuleArr {
-		actionModule += strings.ToUpper(actionModuleArr[key])  
+		actionModule += strings.ToUpper(actionModuleArr[key])
 		actionModule += "_"
 	}
 	actionModule += "ACTION_"
@@ -381,30 +396,30 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 
 	for key := range actionArr {
 		message := model.Message{
-			Code: module + strings.ToUpper(req.Service.BusinessService) + "STATUS_" + key,
+			Code:    module + strings.ToUpper(req.Service.BusinessService) + "STATUS_" + key,
 			Message: "Application Status: " + key,
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		messages = append(messages, message)
 	}
 
 	for key := range actionArr {
 		message := model.Message{
-			Code: module + actionModule + key,
+			Code:    module + actionModule + key,
 			Message: key,
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		messages = append(messages, message)
 	}
 
 	for key := range stateArr {
 		message := model.Message{
-			Code: module + strings.ToUpper(req.Service.BusinessService) + "STATE_" + key,
+			Code:    module + strings.ToUpper(req.Service.BusinessService) + "STATE_" + key,
 			Message: "Current State: " + key,
-			Locale: locale,
-			Module: localizationModule,
+			Locale:  locale,
+			Module:  localizationModule,
 		}
 		messages = append(messages, message)
 	}
