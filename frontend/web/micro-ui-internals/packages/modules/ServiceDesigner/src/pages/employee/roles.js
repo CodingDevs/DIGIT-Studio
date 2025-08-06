@@ -135,6 +135,7 @@ const Roles = () => {
                 if (response?.success) {
                     setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
                     setSelectedElement(false);
+                    window.location.reload();
                 }
                 else {
                     setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
