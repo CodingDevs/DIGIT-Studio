@@ -307,6 +307,7 @@ const CreateNotification = () => {
             variation="secondary"
             label={t("PREVIEW")}
             type="button"
+            isDisabled={true}
             className="secondary-button"
             style={{ margin: "0 8px", borderRadius: "6px", width: "100%" }}
             onClick={(e) => console.log("preview")}
