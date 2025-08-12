@@ -2,6 +2,7 @@ import React, { useState, useEffect, use } from "react";
 import {
   Card,
   CardSectionHeader,
+  CardText,
 } from "@egovernments/digit-ui-react-components";
 import { Button, Loader, TextBlock, Toggle } from "@egovernments/digit-ui-components";
 import { useHistory } from "react-router-dom";
@@ -96,6 +97,7 @@ const FormHomePage = () => {
   return (
     <React.Fragment>
       <TextBlock header={t("STUDIO_CREATE_NEW_FORMS_HEADER")}/>
+      <CardText>{t("FORM_HEADER_DESCRIPTION")}</CardText>
       <Card style={{ padding: "2rem" }}>
         <div
           style={{

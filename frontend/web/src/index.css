@@ -820,7 +820,8 @@
 }
 
 .state-desc{
-  overflow: hidden;
+  scrollbar-width: none;
+  overflow: auto;
   text-overflow: ellipsis;
 }
 

@@ -184,15 +184,25 @@ const Workflow = () => {
     }
 
     const onRightClick = (elementId, e) => {
-        setConnectionStart(elementId);
-    }
+        e?.stopPropagation?.();
+    
+        if (connectionStart === elementId) {
+            // Already drawing from this node → stop arrow mode
+            setConnectionStart(null);
+            setConnecting(null);
+        } else {
+            // Start drawing arrow from this node
+            setConnectionStart(elementId);
+            setConnecting(true);
+        }
+    };
 
     const DeleteClick = (elementId, e) => {
         setCanvasElements(prev => {
             return prev.filter(element => element.id !== elementId);
         });
         setConnections((prev) =>
-            prev.filter((conn) => conn.to !== elementId)
+            prev.filter((conn) => conn.to !== elementId && conn.from !== elementId)
         );
         if (selectedElement && selectedElement.id === elementId) {
             setSelectedElement(null);
@@ -1483,25 +1493,101 @@ const Workflow = () => {
         return serviceConfig;
     };
 
+    // const getWrorkflowData = async () => {
+    //     try {
+    //         // Show loader
+    //         setIsGeneratingConfig(true);
+            
+    //         // Generate service configuration automatically
+    //         const serviceConfig = await generateServiceConfiguration();
+            
+    //         // Create a copy for popup display without canvas and connections
+    //         const displayConfig = JSON.parse(JSON.stringify(serviceConfig));
+    //         if (displayConfig.workflow) {
+    //             delete displayConfig.workflow.canvasElements;
+    //             delete displayConfig.workflow.connections;
+    //         }
+            
+    //         setServiceConfigData(serviceConfig);
+    //         setEditableServiceConfig(JSON.stringify(displayConfig, null, 2));
+            
+    //         // Show the popup with the generated configuration
+    //         setShowServiceConfigPopup(true);
+    //     } catch (error) {
+    //         console.error("Error generating service configuration:", error);
+    //         setShowToast({
+    //             type: "error",
+    //             label: "SERVICE_CONFIG_GENERATION_FAILED"
+    //         });
+    //     } finally {
+    //         // Hide loader
+    //         setIsGeneratingConfig(false);
+    //     }
+    // };
+
     const getWrorkflowData = async () => {
         try {
-            // Show loader
+            // --- VALIDATIONS BEFORE GENERATING CONFIG ---
+            
+            // 1. Check if start node, connections, and processing node are valid
+            const startNode = canvasElements.find(node => node.nodetype === "start");
+            const hasConnections = connections && connections.length > 0;
+    
+            // Processing node validation: must have at least one incoming and one outgoing connection
+            const processingNodes = canvasElements.filter(node => node.nodetype === "intermediate");
+            const invalidProcessing = processingNodes.some(node => {
+                const incoming = connections.some(conn => String(conn.to) === String(node.id));
+                const outgoing = connections.some(conn => String(conn.from) === String(node.id));
+            
+                if (node.nodetype === "start") return !outgoing; // only needs outgoing
+                if (node.nodetype === "end") return !incoming;   // only needs incoming
+                return !(incoming && outgoing); // intermediates need both
+            });
+    
+            if (!startNode || !hasConnections || invalidProcessing) {
+                setShowToast({
+                    type: "error",
+                    label: t("STUDIO_WORKFLOW_INCOMPLETE_ERR")
+                });
+                return; // stop execution
+            }
+    
+            // 2. Check if all nodes have roles assigned
+            const nodesWithoutRoles = canvasElements.filter(node => !node.roles || node.roles.length === 0);
+            console.log(nodesWithoutRoles,"nodes without roles")
+            if (nodesWithoutRoles.length > 0) {
+                setShowToast({
+                    type: "error",
+                    label: t("STUDIO_NODES_WITHOUT_ROLES_ERR")
+                });
+                return;
+            }
+    
+            // 3. Check if a valid form is selected
+            const formDataFromStartState = getFormDataFromStartState();
+            if (!formDataFromStartState || formDataFromStartState.length === 0) {
+                setShowToast({
+                    type: "error",
+                    label: t("STUDIO_NO_FORM_SELECTED_ERR")
+                });
+                return; // stop execution
+            }
+    
+            // --- SHOW LOADER ---
             setIsGeneratingConfig(true);
             
-            // Generate service configuration automatically
+            // Generate service configuration
             const serviceConfig = await generateServiceConfiguration();
-            
-            // Create a copy for popup display without canvas and connections
+    
+            // Create display copy without workflow canvas/connections
             const displayConfig = JSON.parse(JSON.stringify(serviceConfig));
             if (displayConfig.workflow) {
                 delete displayConfig.workflow.canvasElements;
                 delete displayConfig.workflow.connections;
             }
-            
+    
             setServiceConfigData(serviceConfig);
             setEditableServiceConfig(JSON.stringify(displayConfig, null, 2));
-            
-            // Show the popup with the generated configuration
             setShowServiceConfigPopup(true);
         } catch (error) {
             console.error("Error generating service configuration:", error);
@@ -1510,8 +1596,7 @@ const Workflow = () => {
                 label: "SERVICE_CONFIG_GENERATION_FAILED"
             });
         } finally {
-            // Hide loader
-            setIsGeneratingConfig(false);
+            setIsGeneratingConfig(false); // Hide loader
         }
     };
 

@@ -319,7 +319,7 @@ import cloneDeep from "lodash/cloneDeep";
     // Address Details card
     const addressValues = extractSectionValues(addressDetails, "ADDRESS");
     if (addressValues.length > 0) {
-      const headerKey = `${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_ADDRESS_DETAILS`;
+      const headerKey = t(`${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_ADDRESS_DETAILS`);
       cards.push({
         sections: [
           {

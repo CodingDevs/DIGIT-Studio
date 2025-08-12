@@ -437,6 +437,11 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
 
 
               {connections?.map((conn, idx) => {
+
+                const paddingX = 8; // horizontal padding
+                const paddingY = 4; // vertical padding
+                const textWidth = conn.label.length * 12;
+                const textHeight = 24;
                 const fromEl = elements.find((el) => el.id === conn.from);
                 const toEl = elements.find((el) => el.id === conn.to);
 
@@ -463,19 +468,19 @@ const InfiniteCanvas = ({ elements = [], onElementClick, onElementDrag, connecti
                     {conn.label && (
                       <g>
                         <rect
-                          x={labelPos.x - (conn.label.length * 6)}
-                          y={labelPos.y - 12}
-                          width={conn.label.length * 12}
-                          height={24}
-                          fill="white"
-                          stroke="#e2e8f0"
-                          strokeWidth="1"
-                          rx="4"
-                          style={{ cursor: 'pointer', pointerEvents: 'all' }}
-                          onClick={(e) => {
-                            e.stopPropagation(); 
-                            handleConnectionLabelClick(conn, e);
-                          }}
+                           x={labelPos.x - (textWidth / 2) - paddingX}
+                           y={labelPos.y - (textHeight / 2) - paddingY}
+                           width={textWidth + paddingX * 2}
+                           height={textHeight + paddingY * 2}
+                           fill="white"
+                           stroke="#e2e8f0"
+                           strokeWidth="1"
+                           rx="4"
+                           style={{ cursor: 'pointer', pointerEvents: 'all' }}
+                           onClick={(e) => {
+                             e.stopPropagation(); 
+                             handleConnectionLabelClick(conn, e);
+                           }}
                         />
                         <text
                           x={labelPos.x}

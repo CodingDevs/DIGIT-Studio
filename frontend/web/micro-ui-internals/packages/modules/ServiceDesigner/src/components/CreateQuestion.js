@@ -440,6 +440,10 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
         // If no questions exist yet but we have a parent number, start with ".1"
         setNextQuestionNumber(`${parentNumber}.1`);
       }
+      else
+      {
+        setNextQuestionNumber("1");
+      }
       
     }
   }, [initialQuestionData, level, parentId, parentNumber, getQuestionNumber]);

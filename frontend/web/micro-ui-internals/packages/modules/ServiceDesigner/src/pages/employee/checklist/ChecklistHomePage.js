@@ -2,8 +2,9 @@ import React, { useState, useEffect, use } from "react";
 import {
   Card,
   CardSectionHeader,
+  CardText,
 } from "@egovernments/digit-ui-react-components";
-import { Button, Loader, Toggle } from "@egovernments/digit-ui-components";
+import { Button, Loader, TextBlock, Toggle } from "@egovernments/digit-ui-components";
 import { useHistory } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import DataTable from "react-data-table-component";
@@ -101,8 +102,9 @@ const ChecklistHomePage = () => {
 
   return (
     <React.Fragment>
+      <TextBlock header={t("STUDIO_CREATE_NEW_CHECKLIST")}/>
+      <CardText>{t("CHECKLIST_HEADER_DESCRIPTION")}</CardText>
       <Card style={{ padding: "2rem" }}>
-        <CardSectionHeader>{t("STUDIO_CREATE_NEW_CHECKLIST")}</CardSectionHeader>
         <div
           style={{
             display: "flex",
