@@ -20,7 +20,7 @@ export const generateFormConfig = (config, module, service) => {
       isMandatory: !!field.required,
       populators: {
         ...field?.populators, // Spread additional populators if provided
-        name: field.name.replace(/[\s\S]/g, ""),
+        name: field.name,
         optionsKey: "name",
         error: field?.validation?.message || "field is required",
         required: !!field.required,
