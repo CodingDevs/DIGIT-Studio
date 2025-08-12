@@ -9,7 +9,7 @@ const StageActions = ({ label, type, desc, options, name, onClick, value }) => {
     const { t } = useTranslation();
 
     return (
-        <Card style={{ width: "265px", gap: "0px" }}>
+        <Card style={{ width: "300px", gap: "0px" }}>
             {type === "switch" ? (
                 <Switch
                     isLabelFirst={true}

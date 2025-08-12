@@ -10,6 +10,7 @@ import { SVG } from "../atoms";
 import CardLabel from "../atoms/CardLabel";
 import Button from "../atoms/Button";
 import TextInput from "../atoms/TextInput";
+import DataTable from "react-data-table-component";
 
 const ResultsDataTable = ({
   data,
@@ -50,72 +51,71 @@ const ResultsDataTable = ({
   const { t } = useTranslation();
   const renderTable = () => {
     return (
-      <div>data table here</div>
-      // <DataTable
-      //   data={data}
-      //   columns={columns}
-      //   responsive={true}
-      //   sortIcon={
-      //     <CustomSVG.SortUp width={"16px"} height={"16px"} fill={"#0b4b66"} />
-      //   }
-      //   selectableRows={showCheckBox}
-      //   selectableRowsHighlight={true}
-      //   selectableRowsComponent={CheckBox}
-      //   selectableRowsComponentProps={selectProps}
-      //   onSelectedRowsChange={onSelectedRowsChange}
-      //   onRowClicked={onRowClicked}
-      //   selectableRowsNoSelectAll={selectableRowsNoSelectAll}
-      //   expandableRows={expandableRows}
-      //   expandableRowsComponent={expandableRowsComponent}
-      //   expandableIcon={{
-      //     expanded: (
-      //       <SVG.ArrowBackIos
-      //         fill={"#363636"}
-      //         width={"16px"}
-      //         height={"16px"}
-      //         style={{ transform: "rotate(-90deg)" }}
-      //       ></SVG.ArrowBackIos>
-      //     ),
-      //     collapsed: (
-      //       <SVG.ArrowBackIos
-      //         fill={"#363636"}
-      //         width={"16px"}
-      //         height={"16px"}
-      //         style={{ transform: "rotate(-180deg)" }}
-      //       ></SVG.ArrowBackIos>
-      //     ),
-      //   }}
-      //   onRowExpandToggled={onRowExpandToggled}
-      //   progressPending={progressPending}
-      //   progressComponent={progressComponent || <Loader />}
-      //   customStyles={dataTableCustomStyles}
-      //   conditionalRowStyles={conditionalRowStyles}
-      //   className={
-      //     tableClassName
-      //       ? `digit-data-table ${showCheckBox ? "selectable" : "unselectable"} ${tableClassName}`
-      //       : `digit-data-table ${showCheckBox ? "selectable" : "unselectable"}`
-      //   }
-      //   defaultSortAsc={defaultSortAsc}
-      //   pagination={
-      //     isPaginationRequired !== undefined ? isPaginationRequired : true
-      //   }
-      //   paginationServer
-      //   paginationTotalRows={paginationTotalRows}
-      //   onChangeRowsPerPage={onChangeRowsPerPage}
-      //   paginationDefaultPage={paginationDefaultPage}
-      //   paginationPerPage={paginationPerPage}
-      //   onChangePage={onChangePage}
-      //   paginationRowsPerPageOptions={
-      //     paginationRowsPerPageOptions || [10, 20, 30, 40, 50]
-      //   }
-      //   noContextMenu
-      //   fixedHeader={true}
-      //   fixedHeaderScrollHeight={"100vh"}
-      //   paginationComponentOptions={{
-      //     ...paginationComponentOptions,
-      //     rowsPerPageText: rowsPerPageText || t("ROWS_PER_PAGE"),
-      //   }}
-      // />
+      <DataTable
+        data={data}
+        columns={columns}
+        responsive={true}
+        sortIcon={
+          <CustomSVG.SortUp width={"16px"} height={"16px"} fill={"#0b4b66"} />
+        }
+        selectableRows={showCheckBox}
+        selectableRowsHighlight={true}
+        selectableRowsComponent={CheckBox}
+        selectableRowsComponentProps={selectProps}
+        onSelectedRowsChange={onSelectedRowsChange}
+        onRowClicked={onRowClicked}
+        selectableRowsNoSelectAll={selectableRowsNoSelectAll}
+        expandableRows={expandableRows}
+        expandableRowsComponent={expandableRowsComponent}
+        expandableIcon={{
+          expanded: (
+            <SVG.ArrowBackIos
+              fill={"#363636"}
+              width={"16px"}
+              height={"16px"}
+              style={{ transform: "rotate(-90deg)" }}
+            ></SVG.ArrowBackIos>
+          ),
+          collapsed: (
+            <SVG.ArrowBackIos
+              fill={"#363636"}
+              width={"16px"}
+              height={"16px"}
+              style={{ transform: "rotate(-180deg)" }}
+            ></SVG.ArrowBackIos>
+          ),
+        }}
+        onRowExpandToggled={onRowExpandToggled}
+        progressPending={progressPending}
+        progressComponent={progressComponent || <Loader />}
+        customStyles={dataTableCustomStyles}
+        conditionalRowStyles={conditionalRowStyles}
+        className={
+          tableClassName
+            ? `digit-data-table ${showCheckBox ? "selectable" : "unselectable"} ${tableClassName}`
+            : `digit-data-table ${showCheckBox ? "selectable" : "unselectable"}`
+        }
+        defaultSortAsc={defaultSortAsc}
+        pagination={
+          isPaginationRequired !== undefined ? isPaginationRequired : true
+        }
+        paginationServer
+        paginationTotalRows={paginationTotalRows}
+        onChangeRowsPerPage={onChangeRowsPerPage}
+        paginationDefaultPage={paginationDefaultPage}
+        paginationPerPage={paginationPerPage}
+        onChangePage={onChangePage}
+        paginationRowsPerPageOptions={
+          paginationRowsPerPageOptions || [10, 20, 30, 40, 50]
+        }
+        noContextMenu
+        fixedHeader={true}
+        fixedHeaderScrollHeight={"100vh"}
+        paginationComponentOptions={{
+          ...paginationComponentOptions,
+          rowsPerPageText: rowsPerPageText || t("ROWS_PER_PAGE"),
+        }}
+      />
     );
   };
 
