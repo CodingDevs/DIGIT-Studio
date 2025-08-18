@@ -18,23 +18,23 @@ const ServiceBuilderCard = () => {
     links: [
       {
         label: t("SERVICE_DESIGNER_FORMS"),
-        link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}&edit=${true}`,
       },
       {
         label: t("SERVICE_DESIGNER_CHECKLIST"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Checklist?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Checklist?module=${module}&service=${service}&edit=${true}`,
       },
       {
         label: t("SERVICE_DESIGNER_ROLES"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Roles?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Roles?module=${module}&service=${service}&edit=${true}`,
       },
       {
         label: t("SERVICE_DESIGNER_WORKFLOW"),
-        link: `/${window?.contextPath}/employee/servicedesigner/Workflow?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/Workflow?module=${module}&service=${service}&edit=${true}`,
       },
       {
         label: t("SERVICE_DESIGNER_NOTIFICATIONS"),
-        link: `/${window?.contextPath}/employee/servicedesigner/notifications?module=${module}&service=${service}&edit=${edit?true : 'false'}`,
+        link: `/${window?.contextPath}/employee/servicedesigner/notifications?module=${module}&service=${service}&edit=${true}`,
       },
     ],
   };

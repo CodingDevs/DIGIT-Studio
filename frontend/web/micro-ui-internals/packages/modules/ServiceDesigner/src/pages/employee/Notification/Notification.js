@@ -11,6 +11,7 @@ import { SMSPreFilledData, PushPreFilledData } from "../../../config/Notificatio
 import { useHistory } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import { tableCustomStyle } from "../../../utils/tableStyles";
+import { useNotificationConfigAPI } from "../../../hooks/useNotificationConfigAPI";
 
 const Notification = () => {
     const { t } = useTranslation();
@@ -24,19 +25,14 @@ const Notification = () => {
     const [selectedToggle, setSelectedToggle] = useState("email");
     const [notificationData, setNotificationData] = useState([]);
 
-    const requestCriteria = {
-        url: "/egov-mdms-service/v2/_search",
-        body: {
-            MdmsCriteria: {
-                tenantId: tenantId,
-                schemaCode: "studio.notification"
-            },
-        },
-    };
-    const { isLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
-    const smsData = dataa?.mdms.filter(item => item.data?.additionalDetails?.type === "sms" && item.data?.additionalDetails?.category === Category);
-    const emailData = dataa?.mdms.filter(item => item.data?.additionalDetails?.type === "email" && item.data?.additionalDetails?.category === Category);
-    const pushData = dataa?.mdms.filter(item => item.data?.additionalDetails?.type === "push" && item.data?.additionalDetails?.category === Category);
+    // Use the new notification config API hook
+    const { searchNotificationConfigs } = useNotificationConfigAPI();
+    const { data: notificationConfigs, isLoading } = searchNotificationConfigs(roleModule, roleService);
+    
+    // Filter notifications by type
+    const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && item.additionalDetails?.category === Category) || [];
+    const emailData = notificationConfigs?.filter(item => item.additionalDetails?.type === "email" && item.additionalDetails?.category === Category) || [];
+    const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" && item.additionalDetails?.category === Category) || [];
 
     const toggleOptions = [
         { name: t("EMAIL"), code: "email" },
@@ -49,37 +45,37 @@ const Notification = () => {
         let currentData = [];
         if (selectedToggle === "email" && emailData) {
             currentData = emailData.map((item, index) => ({
-                id: item.id || index,
-                title: item.data?.title,
-                messageBody: item.data?.messageBody,
-                subject: item.data?.subject || "-",
-                type: item.data?.additionalDetails?.type,
-                createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
-                data: item.data
+                id: index,
+                title: item.title,
+                messageBody: item.messageBody,
+                subject: item.subject || "-",
+                type: item.additionalDetails?.type,
+                createdDate: "N/A", // Since we don't have auditDetails in the new structure
+                data: item
             }));
         } else if (selectedToggle === "sms" && smsData) {
             currentData = smsData.map((item, index) => ({
-                id: item.id || index,
-                title: item.data?.title,
-                messageBody: item.data?.messageBody,
+                id: index,
+                title: item.title,
+                messageBody: item.messageBody,
                 subject: "-",
-                type: item.data?.additionalDetails?.type,
-                createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
-                data: item.data
+                type: item.additionalDetails?.type,
+                createdDate: "N/A", // Since we don't have auditDetails in the new structure
+                data: item
             }));
         } else if (selectedToggle === "push" && pushData) {
             currentData = pushData.map((item, index) => ({
-                id: item.id || index,
-                title: item.data?.title,
-                messageBody: item.data?.messageBody,
+                id: index,
+                title: item.title,
+                messageBody: item.messageBody,
                 subject: "-",
-                type: item.data?.additionalDetails?.type,
-                createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
-                data: item.data
+                type: item.additionalDetails?.type,
+                createdDate: "N/A", // Since we don't have auditDetails in the new structure
+                data: item
             }));
         }
         setNotificationData(currentData);
-    }, [selectedToggle, dataa]);
+    }, [selectedToggle, notificationConfigs]);
 
     // DataTable columns configuration
     const columns = [

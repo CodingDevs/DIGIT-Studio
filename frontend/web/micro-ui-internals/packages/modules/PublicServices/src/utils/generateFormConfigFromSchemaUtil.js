@@ -35,7 +35,7 @@ export const generateFormConfig = (config, module, service) => {
         prefix: field.prefix,
         reference: field.reference,
         dependencies: field.dependencies,
-        hideSpan:true,
+        //hideSpan:true,
 
         // Handle MDMS-based schema loading
         ...(field?.schema

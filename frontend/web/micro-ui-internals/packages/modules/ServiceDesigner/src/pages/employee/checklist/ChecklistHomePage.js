@@ -9,6 +9,7 @@ import { useHistory } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import DataTable from "react-data-table-component";
 import { tableCustomStyle } from "../../../utils/tableStyles";
+import { useChecklistConfigAPI } from "../../../hooks/useChecklistConfigAPI";
 
 const ChecklistHomePage = () => {
   const history = useHistory();
@@ -18,22 +19,14 @@ const ChecklistHomePage = () => {
   const [checklistData, setChecklistData] = useState([]);
   const {module, service} = Digit.Hooks.useQueryParams();
 
-
-  const requestCriteria = {
-    url: "/egov-mdms-service/v2/_search",
-    body: {
-      MdmsCriteria: {
-        tenantId: tenantId,
-        schemaCode: "Studio.Checklists"
-      },
-    },
-  };
-  const { isLoading: moduleListLoading, data } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+  // Use the new checklist config API hook
+  const { searchChecklistConfigs } = useChecklistConfigAPI();
+  const { data: checklistConfigs, isLoading: moduleListLoading } = searchChecklistConfigs(module, service);
 
   useEffect(() => {
-    if(data)
+    if(checklistConfigs)
     {
-      const formatted = data?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === module.toUpperCase() && ob?.data?.service.toUpperCase() === service.toUpperCase())?.map((item, index) => ({
+      const formatted = checklistConfigs.map((item, index) => ({
                 id: item.id || index,
                 name: item.data?.name,
                 description: item?.data?.description || "-",
@@ -43,7 +36,7 @@ const ChecklistHomePage = () => {
       
               setChecklistData(formatted);
     }
-  },[data])
+  },[checklistConfigs])
 
   const tabOptions = [
     { name: "My Checklists", code: "MY_CHECKLIST", i18nKey: t("STUDIO_MY_CHECKLIST") },

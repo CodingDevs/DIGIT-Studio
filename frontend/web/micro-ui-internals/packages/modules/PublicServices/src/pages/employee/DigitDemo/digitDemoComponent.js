@@ -37,7 +37,7 @@ const DigitDemoComponent = ({editdata}) => {
     }
   },[editdata])
 
-  // Fetch service configuration from MDMS
+  //Fetch service configuration from MDMS
   const requestCriteria = {
     url: "/egov-mdms-service/v2/_search",
     body: {
@@ -55,6 +55,8 @@ const DigitDemoComponent = ({editdata}) => {
   const config = data?.mdms?.find((item) =>
     item?.uniqueIdentifier.toLowerCase() === `${module}.${service}`.toLowerCase()
   );
+  //To run service config locally
+  // const config = serviceConfig;
 
   // Fetch workflow details if available
   const workflowrequestCriteria = {
@@ -76,7 +78,8 @@ const DigitDemoComponent = ({editdata}) => {
   };
 
   //logic to handle steps in apply screen flow
-  const rawConfig = generateFormConfig(Updatedconfig, module.toUpperCase(), service?.toUpperCase());
+  let rawConfig = generateFormConfig(Updatedconfig, module.toUpperCase(), service?.toUpperCase());
+  rawConfig = rawConfig.filter((ob) => Object.keys(ob)?.length > 0)
   const steps = rawConfig.map((config) => config.head || config.label || "Untitled Section");
   const currentFormConfig = rawConfig[currentStep - 1];
   const schemaCode = queryStrings?.serviceCode;
@@ -104,7 +107,7 @@ const DigitDemoComponent = ({editdata}) => {
 
     const updatedFormData = ["multiChildForm", "documents"].includes(currentFormConfig?.type)
       ? { ...formData, ...data }
-      : { ...formData, [sectionName]: data };
+      : { ...formData, [sectionName]: data }  
 
     const isLastStep = currentStep === rawConfig.length;
 

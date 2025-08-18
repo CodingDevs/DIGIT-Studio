@@ -9,7 +9,7 @@ import { FieldV1 } from "@egovernments/digit-ui-components";
 import AccessCard from "../../components/AccessCard";
 import { CardHeader } from "@egovernments/digit-ui-react-components";
 import { Button } from "@egovernments/digit-ui-components";
-import generateMdmsRolePayload from "../../config/rolecreateConfig";
+import { useRoleConfigAPI } from "../../hooks/useRoleConfigAPI";
 import { AlertCard } from "@egovernments/digit-ui-components";
 
 const Roles = () => {
@@ -29,20 +29,12 @@ const Roles = () => {
         viewer: false,
         creater: false
     });
-    const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
     const [rolePopup, setRolePopup] = useState(false);
 
-    const requestCriteria = {
-        url: "/egov-mdms-service/v2/_search",
-        body: {
-            MdmsCriteria: {
-                tenantId: tenantId,
-                schemaCode: "studio.roles"
-            },
-        },
-    };
-    const { isLoading: moduleListLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
-    const roleCodes = dataa?.mdms?.filter(role => role?.data?.category === roleCategory)?.map(role => role?.data);
+    // Use the new role config API hook
+    const { saveRoleConfig, updateRoleConfig, searchRoleConfigs, searchRoleConfigByName } = useRoleConfigAPI();
+    const { data: roleConfigs, isLoading: moduleListLoading } = searchRoleConfigs(roleModule, roleService);
+    const roleCodes = roleConfigs?.map(role => role?.data) || [];
 
     const onDataChange = (e) => {
         if (Array.isArray(e)) {
@@ -78,45 +70,63 @@ const Roles = () => {
         }
     }
 
-    const createMdmsRole = async (req, isUpdate) => {
-        try {
-            const response = await Digit.CustomService.getResponse({
-                url: !isUpdate ? `/${MDMS_CONTEXT_PATH}/v2/_update/studio.roles` : `/${MDMS_CONTEXT_PATH}/v2/_create/studio.roles`,
-                body: {
-                    ...req
-                },
-            });
-            return { success: true, data: response };
-        } catch (error) {
-            const errorCode = error?.response?.data?.Errors?.[0]?.code || "Unknown error";
-            const errorDescription = error?.response?.data?.Errors?.[0]?.description || "An error occurred";
-            return { success: false, error: { code: errorCode, description: errorDescription } };
-        }
+    const generateRolePayload = (roleName, description, access, oldRoleName = null) => {
+        return {
+            module: roleModule,
+            service: roleService,
+            roleName: roleName,
+            description: description,
+            access: access,
+            oldRoleName: oldRoleName
+        };
     };
 
     const createRole = async (e) => {
         if (stateData.name != "" && (stateData.creater || stateData.editor || stateData.viewer)) {
+            const access = {
+                editor: stateData.editor,
+                viewer: stateData.viewer,
+                creater: stateData.creater
+            };
+
             if (stateData.isNew == true) {
-                if (dataa?.mdms?.filter(role => role?.data?.category === roleCategory)?.some(role => role?.data?.code.toUpperCase() === stateData.name.toUpperCase())) {
+                // Check if role name already exists
+                const existingRole = roleCodes.find(role => role.code.toUpperCase() === stateData.name.toUpperCase());
+                if (existingRole) {
                     setShowToast({ key: true, type: "error", label: t("ROLE_NAME_EXISTS") });
                 }
                 else {
-                    const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
-                    if (response?.success) {
-                        setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
-                        setStateData({
-                            name: "",
-                            desc: "",
-                            isNew: false,
-                            viewer: false,
-                            editor: false,
-                            creater: false,
-                        });
-                        setRolePopup(false);
-                        setSelectedElement(false);
-                        window.location.reload();
-                    }
-                    else {
+                    try {
+                        const rolePayload = generateRolePayload(stateData.name, stateData.desc, access);
+                        const response = await saveRoleConfig.mutateAsync(rolePayload);
+                        
+                        if (response?.mdms) {
+                            setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
+                            setStateData({
+                                name: "",
+                                desc: "",
+                                isNew: false,
+                                viewer: false,
+                                editor: false,
+                                creater: false,
+                            });
+                            setRolePopup(false);
+                            setSelectedElement(false);
+                            window.location.reload();
+                        }
+                        else {
+                            setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
+                            setStateData({
+                                name: "",
+                                desc: "",
+                                isNew: false,
+                                viewer: false,
+                                editor: false,
+                                creater: false,
+                            });
+                            setRolePopup(false);
+                        }
+                    } catch (error) {
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
                         setStateData({
                             name: "",
@@ -131,17 +141,22 @@ const Roles = () => {
                 }
             }
             else {
-                const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), roleCategory, stateData, dataa?.mdms?.filter(role => role?.data?.category === roleCategory && role?.data?.code.toUpperCase() === stateData.name.toUpperCase())?.map(role => role), stateData.isNew), stateData.isNew);
-                if (response?.success) {
-                    setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
-                    setSelectedElement(false);
-                    window.location.reload();
-                }
-                else {
+                try {
+                    const rolePayload = generateRolePayload(stateData.name, stateData.desc, access, stateData.name);
+                    const response = await updateRoleConfig.mutateAsync(rolePayload);
+                    
+                    if (response?.mdms) {
+                        setShowToast({ key: true, type: "success", label: t("ROLE_UPDATED_SUCCESSFULLY") });
+                        setSelectedElement(false);
+                        window.location.reload();
+                    }
+                    else {
+                        setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
+                    }
+                } catch (error) {
                     setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
                 }
             }
-
         }
         else {
             if (stateData.name == "") {

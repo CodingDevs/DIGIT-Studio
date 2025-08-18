@@ -16,16 +16,21 @@ import {
   TextInput,
   Button,
   TextBlock,
+  TextArea,
 } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
+import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
 
 // Utility to build card data
 export const buildCardData = (drafts = [], published = [], t) => {
+  console.log(published,drafts);
   const publishedCards = published.map((item) => ({
-    title: item.businessService || item.service || "Unnamed Service",
+    title: `${item?.module} ${item.businessService}` || item.service || "Unnamed Service",
     description: `Manage ${item.businessService || item.service} services for your citizens`,
     link: "/employee",
+    module: item?.module,
+    service: item?.businessService || item?.service,
   }));
 
   const draftCards = drafts.map((item) => ({
@@ -34,16 +39,22 @@ export const buildCardData = (drafts = [], published = [], t) => {
     link: `employee/servicedesigner/Service-Builder-Home?module=${item?.data?.module}&service=${item?.data?.service}&edit=true`,
     createdDate:
       Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
+    module: item?.data?.module,
+    service: item?.data?.service,
   }));
 
   const templates = [
     {
       title: "Property Tax",
       description: "Assessment and payment system for Mumbai Municipal Corporation",
+      module: "PROPERTY_TAX",
+      service: "PROPERTY_TAX",
     },
     {
       title: "Water Tax",
       description: "Manage water tax services for your citizens",
+      module: "WATER_TAX",
+      service: "WATER_TAX",
     },
   ];
 
@@ -54,6 +65,8 @@ export const buildCardData = (drafts = [], published = [], t) => {
         description: t("STUDIO_NEW_SERVICE_DESCRIPTION"),
         isCreateCard: true,
         onClick: true,
+        module: null,
+        service: null,
       },
       ...publishedCards,
     ],
@@ -99,6 +112,10 @@ const LandingPage = () => {
   const [showCreatePopup, setShowCreatePopup] = useState(false);
   const [moduleName, setModuleName] = useState("");
   const [serviceName, setServiceName] = useState("");
+  const [showImportPopup, setShowImportPopup] = useState(false);
+  const [importData, setImportData] = useState("");
+  const [importModuleName, setImportModuleName] = useState("");
+  const [importServiceName, setImportServiceName] = useState("");
 
   const [selectedToggle, setSelectedToggle] = useState(
     LandingPageConfig.find((item) => item.type === "ToggleGroup")?.default || ""
@@ -132,17 +149,111 @@ const LandingPage = () => {
     return () => window.removeEventListener("resize", calculateCardsPerRow);
   }, []);
 
-  const handleProceedToServiceBuilder = () => {
+  // Service configuration API hooks
+  const { saveServiceConfig } = useServiceConfigAPI();
+
+  const handleProceedToServiceBuilder = async () => {
     if (!moduleName.trim() || !serviceName.trim()) return;
   
     const sanitizedModule = moduleName.trim().replace(/\s+/g, "_");
     const sanitizedService = serviceName.trim().replace(/\s+/g, "_");
   
-    const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
-      sanitizedModule
-    )}&service=${encodeURIComponent(sanitizedService)}`;
+    try {
+      // Create Studio.ServiceConfigurationDrafts entry with empty values
+      const emptyServiceConfig = {
+        module: sanitizedModule,
+        service: sanitizedService,
+        pdf: [],
+        bill: {},
+        idgen: [],
+        inbox: {},
+        rules: {},
+        access: {},
+        fields: [],
+        enabled: [],
+        payment: {},
+        uiforms: [],
+        uiroles: [],
+        boundary: {},
+        workflow: {},
+        apiconfig: [],
+        applicant: {},
+        documents: [],
+        calculator: {},
+        uiworkflow: {},
+        localization: {},
+        notification: {},
+        uichecklists: [],
+        uinotifications: []
+      };
+
+      await saveServiceConfig.mutateAsync(emptyServiceConfig);
+
+      console.log("Draft created successfully");
+      
+      // Close the popup
+      setShowCreatePopup(false);
+      setModuleName("");
+      setServiceName("");
+      
+      // Navigate to service builder
+      const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
+        sanitizedModule
+      )}&service=${encodeURIComponent(sanitizedService)}`;
+    
+      history.push(`/${window.contextPath}/${url}`);
+      
+    } catch (error) {
+      console.error("Error creating draft:", error);
+      // You might want to show an error message to the user here
+      // For now, we'll still navigate even if the draft creation fails
+      const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
+        sanitizedModule
+      )}&service=${encodeURIComponent(sanitizedService)}`;
+    
+      history.push(`/${window.contextPath}/${url}`);
+    }
+  };
+
+  const handleImportService = () => {
+    if (!importModuleName.trim() || !importServiceName.trim() || !importData.trim()) return;
   
-    history.push(`/${window.contextPath}/${url}`);
+    const sanitizedModule = importModuleName.trim().replace(/\s+/g, "_");
+    const sanitizedService = importServiceName.trim().replace(/\s+/g, "_");
+  
+    // Parse the JSON data to extract module and service
+    try {
+      const parsedData = JSON.parse(importData);
+      const extractedModule = parsedData.module || parsedData.Module || parsedData.MODULE;
+      const extractedService = parsedData.service || parsedData.Service || parsedData.SERVICE;
+      
+      console.log("Extracted from JSON - Module:", extractedModule);
+      console.log("Extracted from JSON - Service:", extractedService);
+      console.log("New Module Name:", sanitizedModule);
+      console.log("New Service Name:", sanitizedService);
+      
+    } catch (error) {
+      console.error("Error parsing JSON:", error);
+    }
+  
+    // Here you can add logic to process the import data
+    // For now, we'll just navigate to the service builder with the imported data
+    // const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
+    //   sanitizedModule
+    // )}&service=${encodeURIComponent(sanitizedService)}&import=true`;
+  
+    // history.push(`/${window.contextPath}/${url}`);
+    // setShowImportPopup(false);
+    // setImportData("");
+    // setImportModuleName("");
+    // setImportServiceName("");
+  };
+
+  const handleCloseImportPopup = () => {
+    setShowImportPopup(false);
+    setImportData("");
+    setImportModuleName("");
+    setImportServiceName("");
   };
   const handleCreateCardClick = () => {
     setShowCreatePopup(true);
@@ -207,6 +318,7 @@ const LandingPage = () => {
           const isNextToggle = nextItem?.type === "ToggleGroup";
 
           return (
+            <div>
             <div
               key={index}
               style={{
@@ -220,21 +332,23 @@ const LandingPage = () => {
               <CardSectionHeader style={{ marginBottom: "unset" }}>
                 {t(item.text)}
               </CardSectionHeader>
-              {isNextToggle && (
-                <Toggle
-                  name="toggleOptions"
-                  numberOfToggleItems={nextItem?.options?.length}
-                  onSelect={(e) => {
-                    setSelectedToggle(e);
-                    setShowAllCards(false);
-                  }}
-                  style={{ maxWidth: "23.5rem" }}
-                  options={nextItem?.options}
-                  optionsKey="i18nKey"
-                  selectedOption={selectedToggle}
-                  type="toggle"
-                />
-              )}
+             {isNextToggle && <Button style={{marginRight:"3rem"}} label={t("Import")} onClick={() => setShowImportPopup(true)} />}
+            </div>
+             {isNextToggle && (
+              <Toggle
+                name="toggleOptions"
+                numberOfToggleItems={nextItem?.options?.length}
+                onSelect={(e) => {
+                  setSelectedToggle(e);
+                  setShowAllCards(false);
+                }}
+                style={{ maxWidth: "23.5rem" }}
+                options={nextItem?.options}
+                optionsKey="i18nKey"
+                selectedOption={selectedToggle}
+                type="toggle"
+              />
+            )}
             </div>
           );
         }
@@ -284,6 +398,8 @@ const LandingPage = () => {
                       link={card.onClick ? null : card.link}
                       onClick={card.onClick ? handleCreateCardClick : undefined}
                       className={card.isCreateCard ? "create-card" : ""}
+                      module={card.module}
+                      service={card.service}
                     />
                   ))
                 ) : (
@@ -386,6 +502,105 @@ const LandingPage = () => {
                 label={t("PROCEED")}
                 onClick={handleProceedToServiceBuilder}
                 disabled={!moduleName.trim() || !serviceName.trim()}
+              />
+            </div>,
+          ]}
+        />
+      )}
+
+      {showImportPopup && (
+        <PopUp
+          header={t("IMPORT_SERVICE_GROUP")}
+          headerBarMain={t("IMPORT_SERVICE_DETAILS")}
+          actionCancelLabel={t("CANCEL")}
+          actionCancelOnSubmit={handleCloseImportPopup}
+          onClose={handleCloseImportPopup}
+          children={[
+            <div>
+              <TextBlock
+                header={t("IMPORT_NEW_SERVICE_HEADER")}
+                subHeader={t("IMPORT_NEW_SERVICE_SUB_HEADER")}
+                subHeaderClasName="header-popup"
+                className="typography heading-m"
+              />
+              <div style={{ marginTop: "1.5rem" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <label style={{ fontWeight: "500", color: "#333", minWidth: "200px" }}>
+                    {t("IMPORT_DATA")}
+                  </label>
+                  <TextArea
+                    value={importData}
+                    onChange={(e) => setImportData(e.target.value)}
+                    placeholder={t("PASTE_YOUR_SERVICE_CONFIGURATION_JSON_HERE")}
+                    style={{ 
+                      minHeight: "200px",
+                      resize: "vertical",
+                      fontFamily: "monospace",
+                      fontSize: "12px"
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                    gap: "1rem",
+                  }}
+                >
+                  <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
+                    {t("IMPORTMODULE_NAME")}
+                  </label>
+                  <TextInput
+                    value={importModuleName}
+                    onChange={(e) => setImportModuleName(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "1rem",
+                    gap: "1rem",
+                  }}
+                >
+                  <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
+                    {t("IMPORT_SERVICE_NAME")}
+                  </label>
+                  <TextInput
+                    value={importServiceName}
+                    onChange={(e) => setImportServiceName(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+            </div>,
+          ]}
+          footerChildren={[
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.5rem",
+              }}
+            >
+              <Button
+                variation="secondary"
+                label={t("CANCEL")}
+                onClick={handleCloseImportPopup}
+              />
+              <Button
+                variation="primary"
+                label={t("IMPORT")}
+                onClick={handleImportService}
+                disabled={!importModuleName.trim() || !importServiceName.trim() || !importData.trim()}
               />
             </div>,
           ]}

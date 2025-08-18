@@ -23,7 +23,11 @@ const FormHomePage = () => {
     body: {
       MdmsCriteria: {
         tenantId: tenantId,
-        schemaCode: "Studio.Forms"
+        schemaCode: "Studio.ServiceConfigurationDrafts",
+        filters: {
+          module: module,
+          service: service,
+        },
       },
     },
   };
@@ -32,15 +36,31 @@ const FormHomePage = () => {
   useEffect(() => {
     if(data)
     {
-      const formatted = data?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === module.toUpperCase() && ob?.data?.service.toUpperCase() === service.toUpperCase()).map((item, index) => ({
-                id: item.id || index,
-                name: item.data?.formName,
-                description: item?.data?.formDescription || "-",
-                createdDate: Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
-                item: item
-              }));
-      
-              setFormsData(formatted);
+      const draft = data?.mdms?.[0];
+      if (draft && draft.data?.uiforms) {
+        const formatted = draft.data.uiforms.map((form, index) => ({
+          id: `${draft.id}_${index}`,
+          name: form.formName,
+          description: form.formDescription || "-",
+          createdDate: Digit.DateUtils.ConvertEpochToDate(draft?.auditDetails?.createdTime) || "N/A",
+          item: {
+            id: `${draft.id}_${index}`,
+            data: {
+              module: module,
+              service: service,
+              formName: form.formName,
+              formDescription: form.formDescription,
+              formConfig: form.formConfig,
+              isActive: form.isActive
+            },
+            auditDetails: draft.auditDetails
+          }
+        }));
+        
+        setFormsData(formatted);
+      } else {
+        setFormsData([]);
+      }
     }
   },[data])
 

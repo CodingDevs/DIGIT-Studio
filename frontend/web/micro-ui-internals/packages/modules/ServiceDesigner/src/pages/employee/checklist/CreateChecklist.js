@@ -8,7 +8,7 @@ import useCreateChecklist from "../../../hooks/useCreateChecklist";
 import MobileChecklist from "../../../components/MobileChecklist";
 import LocalisationEditorPopup from "../../../components/LocalisationEditorPopup";
 import useUpsertLocalisation from "../../../hooks/useUpsertLocalisation";
-import useCreateMdmsChecklist from "../../../hooks/useCreateMdmsChecklist";
+import { useChecklistConfigAPI } from "../../../hooks/useChecklistConfigAPI";
 
 let temp_data = []
 
@@ -48,7 +48,7 @@ const CreateChecklist = ({isUpdate}) => {
   const [initialChecklistData, setInitialChecklistData] = useState({});
   let locale = Digit?.SessionStorage.get("initData")?.selectedLanguage || "en_IN";
   const { mutateAsync } = useCreateChecklist(tenantId);
-  const { mutateAsync: mdmsMutateAsync } = useCreateMdmsChecklist(tenantId,isUpdate);
+  const { saveChecklistConfig, updateChecklistConfig, searchChecklistConfigByName } = useChecklistConfigAPI();
   const history = useHistory();
   const [serviceCode, setServiceCode] = useState(null);
   const [def_data, setDef_Data] = useState(null);
@@ -102,31 +102,21 @@ useEffect(() => {
     },
   ];
 
-  const callSearch = async () => {
-    const res = await Digit.CustomService.getResponse({
-      url: `/${mdms_context_path}/v2/_search`,
-      params: { tenantId: tenantId },
-      body: {
-        MdmsCriteria: {
-          tenantId: tenantId,
-          schemaCode: `Studio.Checklists`,
-          filters: { name: checklistSearchName },
-          isActive: true,
-        },
-      },
-    });
-    return res;
-  };
-
   const fetchData = async () => {
     try {
-      const res = await callSearch();
-      if (res?.mdms?.[0]?.data?.data) {
+      // Use the new hook to search for checklist by name
+      const checklistData = await searchChecklistConfigByName.mutateAsync({
+        module: checklistModule,
+        service: checklistService,
+        checklistName: checklistSearchName
+      });
+      
+      if (checklistData?.data?.data) {
         setLoading_New(false);
-        let temp_data = res.mdms[0].data.data;
-        setInitialChecklistData(res.mdms[0]);
-        setChecklistName(res?.mdms[0]?.data?.name || "")
-        setHelpText(res?.mdms[0]?.data?.description || "");
+        let temp_data = checklistData.data.data;
+        setInitialChecklistData(checklistData);
+        setChecklistName(checklistData?.data?.name || "")
+        setHelpText(checklistData?.data?.description || "");
         setDef_Data(temp_data);
       }
     } catch (error) {
@@ -174,26 +164,15 @@ useEffect(() => {
     // Validate duplicate checklist name
     const checkDuplicateName = async () => {
       try {
-        const res = await Digit.CustomService.getResponse({
-          url: `/${mdms_context_path}/v2/_search`,
-          params: { tenantId: tenantId },
-          body: {
-            MdmsCriteria: {
-              tenantId: tenantId,
-              schemaCode: `Studio.Checklists`,
-              filters: { 
-                name: checklistName,
-                //module: checklistModule,
-                //service: checklistService
-              },
-              isActive: true,
-            },
-          },
+        const checklistData = await searchChecklistConfigByName.mutateAsync({
+          module: checklistModule,
+          service: checklistService,
+          checklistName: checklistName
         });
         
-        if (res?.mdms && res.mdms.length > 0) {
+        if (checklistData) {
           // If updating, exclude current checklist from duplicate check
-          if (isUpdate && initialChecklistData && res.mdms[0].id === initialChecklistData.id) {
+          if (isUpdate && initialChecklistData && checklistData.id === initialChecklistData.id) {
             return false;
           }
           return true;
@@ -631,45 +610,15 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
     }
   };
 
-  const generateMdmsChecklistPayload = ({ tenantId, module, service, name, description, data }) => {
-    let payload = {};
-    if(isUpdate && initialChecklistData)
-    {
-      payload = {
-        Mdms:{
-          ...initialChecklistData,
-          data:{
-            ...initialChecklistData?.data,
-            name,
-            description,
-            data
-          }
-        }
-      }
-    }
-    else{
-      payload = {
-        Mdms: {
-          tenantId,
-          schemaCode: "Studio.Checklists",
-          data: {
-            module,
-            service,
-            name,
-            description,
-            data,
-          },
-          isActive: true,
-        },
-        RequestInfo: {
-          apiId: "asset-services",
-          authToken: Digit.UserService.getUser()?.accessToken || "",
-          userInfo: Digit.UserService.getUser()?.info || {},
-        },
-      };
-    }
-   
-    return payload;
+  const generateChecklistPayload = ({ module, service, name, description, data }) => {
+    return {
+      module,
+      service,
+      checklistName: name,
+      description,
+      data,
+      oldChecklistName: isUpdate ? initialChecklistData?.data?.name : null
+    };
   };
   
 
@@ -724,11 +673,14 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         }
       }
 
-      let mdmsPayload = generateMdmsChecklistPayload({tenantId:tenantId,name : checklistName,module:checklistModule,service:checklistService,description:helpText,data:extractedValues})
+      let checklistPayload = generateChecklistPayload({name: checklistName, module: checklistModule, service: checklistService, description: helpText, data: extractedValues})
+      console.log(checklistPayload,"payloadd");
       // Proceed to create checklist after all locales succeed
-      const data = await mdmsMutateAsync(mdmsPayload);
-
-      if (data?.success) { // Updated success condition check
+      const data = isUpdate 
+        ? await updateChecklistConfig.mutateAsync(checklistPayload)
+        : await saveChecklistConfig.mutateAsync(checklistPayload);
+      
+      if (data?.mdms) { // Updated success condition check
         // history.push(`/${window.contextPath}/employee/campaign/response?isSuccess=${true}`, {
         //   message: "ES_CHECKLIST_CREATE_SUCCESS_RESPONSE",
         //   preText: "ES_CHECKLIST_CREATE_SUCCESS_RESPONSE_PRE_TEXT",
@@ -740,7 +692,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
         setShowLocalisationPopup(false)
         setShowToast({ label: isUpdate ? "CHECKLIST_UPDATED_SUCCESSFULLY" : "CHECKLIST_CREATED_SUCCESSFULLY", isError: false });
         setTimeout(() => {
-          history.push(`/${window.contextPath}/employee/servicedesigner/checklist?module=${checklistModule}&service=${checklistService}`);
+          history.push(`/${window.contextPath}/employee/servicedesigner/Checklist?module=${checklistModule}&service=${checklistService}`);
       }, 3000);
       } else {
         setShowToast({ label: "CHECKLIST_CREATED_FAILED", isError: true });

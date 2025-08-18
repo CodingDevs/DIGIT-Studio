@@ -17,7 +17,7 @@ import cloneDeep from "lodash/cloneDeep";
     // setupLibraries("Utils", "parsingUtils", { ...window?.Digit?.Utils?.parsingUtils, ...parsingUtils });
   };
 
-  const getServiceDetails = (formData) => {
+  const getServiceDetails = (formData, config = null) => {
     const excludedKeys = ["address", "applicantDetails", "uploadedDocs", "uploaded", "response"];
     const validSections = Object.keys(formData).reduce((acc, key) => {
       if (!excludedKeys.includes(key) &&
@@ -26,13 +26,59 @@ import cloneDeep from "lodash/cloneDeep";
       }
       return acc;
     }, {});
+    
+    // Helper function to get field configuration by name
+    const getFieldConfig = (fieldName) => {
+      if (!config?.data?.fields) return null;
+      
+      for (const section of config.data.fields) {
+        if (section.properties) {
+          const field = section.properties.find(prop => prop.name === fieldName);
+          if (field) return field;
+        }
+      }
+      return null;
+    };
+    
+    // Helper function to convert string numbers to actual numbers based on field configuration
+    const convertValueType = (val, fieldName) => {
+      // If we have field configuration, use it to determine type conversion
+      if (fieldName && config) {
+        const fieldConfig = getFieldConfig(fieldName);
+        if (fieldConfig) {
+          // Convert to number if field type is integer/number
+          if (fieldConfig.type === "integer" || fieldConfig.type === "number" || fieldConfig.format === "number") {
+            if (typeof val === "string" && !isNaN(val) && val.trim() !== "") {
+              const numVal = Number(val);
+              if (!isNaN(numVal)) {
+                return numVal;
+              }
+            }
+            // If it's already a number, return as is
+            if (typeof val === "number") {
+              return val;
+            }
+          }
+        }
+      }
+      
+      // Fallback: convert string numbers to actual numbers for any numeric string
+      if (typeof val === "string" && !isNaN(val) && val.trim() !== "") {
+        const numVal = Number(val);
+        if (!isNaN(numVal)) {
+          return numVal;
+        }
+      }
+      return val;
+    };
+    
     const flattenValues = (obj) => {
       const flat = {};
       for (const [key, val] of Object.entries(obj)) {
         if (val && typeof val === "object" && !Array.isArray(val)) {
-          flat[key] = val && typeof val === "object" && "code" in val ? val.code : val;
+          flat[key] = val && typeof val === "object" && "code" in val ? val.code : convertValueType(val, key);
         } else {
-          flat[key] = val;
+          flat[key] = convertValueType(val, key);
         }
       }
       return flat;
@@ -54,7 +100,7 @@ import cloneDeep from "lodash/cloneDeep";
               const itemKey = Object.keys(item)[0];
               const itemVal = item[itemKey];
               return {
-                [itemKey]: typeof itemVal === "object" && itemVal?.code ? itemVal.code : itemVal
+                [itemKey]: typeof itemVal === "object" && itemVal?.code ? itemVal.code : convertValueType(itemVal, itemKey)
               };
             })
           };
@@ -64,7 +110,7 @@ import cloneDeep from "lodash/cloneDeep";
         }
       } else {
         // Primitive value directly (unexpected case)
-        serviceDetails[sectionKey] = sectionVal;
+        serviceDetails[sectionKey] = convertValueType(sectionVal, sectionKey);
       }
     }
     return serviceDetails;
@@ -132,7 +178,7 @@ import cloneDeep from "lodash/cloneDeep";
   export const transformToApplicationPayload = (formData, configMap, service, tenantId, config, workflowDetails, applicationNumber, serviceCode, action) => {
     const currentConfig = configMap?.ServiceConfiguration?.find(ob => ob?.service === service);
   
-    const serviceDetails = getServiceDetails(formData);
+    const serviceDetails = getServiceDetails(formData, config);
   
     const applicants = formData?.applicantDetails?.length ? (formData?.applicantDetails?.filter(Boolean)?.map((applicant, index) => ({
       type: "individual",
@@ -338,9 +384,9 @@ import cloneDeep from "lodash/cloneDeep";
       cards.push({
         sections: [
           {
-            head: `${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_APPLICANT DETAILS`,
+            head: t(`${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_APPLICANT_DETAILS`),
             type: "DATA",
-            sectionHeader: { value: `${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_APPLICANT DETAILS`, inlineStyles: {} },
+            sectionHeader: { value: t(`${application?.module?.toUpperCase()}_${application?.businessService?.toUpperCase()}_APPLICANT_DETAILS`), inlineStyles: {} },
             values: applicantValues,
           },
         ],

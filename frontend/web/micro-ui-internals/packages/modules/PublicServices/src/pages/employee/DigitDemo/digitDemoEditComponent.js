@@ -89,6 +89,15 @@ const generateFormDataFromSearch = (config = [], searchData = {}, module, servic
     switch (type) {
       case "radioordropdown":
         return { code: rawValue, name: `${prefix.replaceAll(".", "_").toUpperCase()}_${rawValue.toUpperCase()}` };
+      case "number":
+        // Convert string numbers to actual numbers for number type fields
+        if (typeof rawValue === "string" && !isNaN(rawValue) && rawValue.trim() !== "") {
+          const numVal = Number(rawValue);
+          if (!isNaN(numVal)) {
+            return numVal;
+          }
+        }
+        return rawValue;
       default:
         return rawValue;
     }

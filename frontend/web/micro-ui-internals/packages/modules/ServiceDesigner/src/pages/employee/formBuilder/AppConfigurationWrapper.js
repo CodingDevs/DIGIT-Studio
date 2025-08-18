@@ -585,12 +585,10 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
       const payload = {
         MdmsCriteria: {
           tenantId: tenantId,
-          schemaCode: "Studio.Forms",
-          isActive: true,
+          schemaCode: "Studio.ServiceConfigurationDrafts",
           filters: {
-            // module: module,
-            // service: service,
-            "formName": formName.trim(),
+            module: module,
+            service: service,
           },
         },
       };
@@ -601,18 +599,23 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
         body: payload,
       });
 
-      const existingForms = response?.mdms || [];
+      const draft = response?.mdms?.[0];
+      if (!draft || !draft.data?.uiforms) {
+        return false; // No draft or no forms, so no duplicate
+      }
+      
+      const existingForms = draft.data.uiforms;
       
       // In edit mode, exclude the current form from duplicate check
       if (editMode && existingFormData) {
         return existingForms.some(form => 
-          form.id !== existingFormData.id && 
-          form.data?.formName === formName.trim()
+          form.formName === formName.trim() && 
+          form.formName !== existingFormData.data?.formName
         );
       }
       
       // In create mode, check if any form with same name exists
-      return existingForms.length > 0;
+      return existingForms.some(form => form.formName === formName.trim());
     } catch (error) {
       console.error("Error checking duplicate form name:", error);
       return false; // Return false to allow form creation if check fails
@@ -982,14 +985,14 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
           if (editMode) {
             // Update existing form
             if (existingFormData) {
+              // For edit mode, we need to update the specific form in the uiforms array
               const updatePayload = {
-                id: existingFormData.id, // Ensure ID is included
-                tenantId: existingFormData.tenantId,
-                schemaCode: existingFormData.schemaCode,
-                uniqueIdentifier: existingFormData.uniqueIdentifier,
-                data: mdmsFormData, // Replace the entire data object
-                isActive: existingFormData.isActive,
-                auditDetails: existingFormData.auditDetails
+                module: module,
+                service: service,
+                formName: currentFormName,
+                formDescription: currentFormDescription,
+                formConfig: mdmsFormData.formConfig,
+                formId: existingFormData.id
               };
               result = await updateFormConfig.mutateAsync(updatePayload);
               clearUnsavedChanges();
@@ -1005,14 +1008,14 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
               // If editMode is true but existingFormData is not available, 
               // we need to search for the form first
               try {
-                // Search for the form by formName
+                // Search for the form by formName in the draft
                 const searchPayload = {
                   MdmsCriteria: {
                     tenantId: tenantId,
-                    schemaCode: "Studio.Forms",
-                    isActive: true,
+                    schemaCode: "Studio.ServiceConfigurationDrafts",
                     filters: {
-                      "data.formName": formName,
+                      module: module,
+                      service: service,
                     },
                   },
                 };
@@ -1022,29 +1025,33 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                   body: searchPayload,
                 });
                 
-                const foundForm = searchResponse?.mdms?.[0];
-                if (foundForm) {
-                  const updatePayload = {
-                    id: foundForm.id, // Ensure ID is included
-                    tenantId: foundForm.tenantId,
-                    schemaCode: foundForm.schemaCode,
-                    uniqueIdentifier: foundForm.uniqueIdentifier,
-                    data: mdmsFormData, // Replace the entire data object
-                    isActive: foundForm.isActive,
-                    auditDetails: foundForm.auditDetails
-                  };
-                  result = await updateFormConfig.mutateAsync(updatePayload);
-                  clearUnsavedChanges();
-                  setShowToast({ 
-                    key: "success", 
-                    label: "FORM_UPDATED_SUCCESSFULLY",
-                    transitionTime: 5000
-                  });
-                  setTimeout(() => {
-                    history.push(`/${window.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`);
-                }, 3000);
+                const draft = searchResponse?.mdms?.[0];
+                if (draft && draft.data?.uiforms) {
+                  const form = draft.data.uiforms.find(f => f.formName === currentFormName);
+                  if (form) {
+                    const updatePayload = {
+                      module: module,
+                      service: service,
+                      formName: currentFormName,
+                      formDescription: currentFormDescription,
+                      formConfig: mdmsFormData.formConfig,
+                      formId: draft.id
+                    };
+                    result = await updateFormConfig.mutateAsync(updatePayload);
+                    clearUnsavedChanges();
+                    setShowToast({ 
+                      key: "success", 
+                      label: "FORM_UPDATED_SUCCESSFULLY",
+                      transitionTime: 5000
+                    });
+                    setTimeout(() => {
+                      history.push(`/${window.contextPath}/employee/servicedesigner/forms?module=${module}&service=${service}`);
+                  }, 3000);
+                  } else {
+                    throw new Error("Form not found for update");
+                  }
                 } else {
-                  throw new Error("Form not found for update");
+                  throw new Error("Service configuration draft not found");
                 }
               } catch (searchError) {
                 console.error("Error searching for existing form:", searchError);

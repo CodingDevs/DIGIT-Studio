@@ -11,9 +11,12 @@ import { Loader } from "@egovernments/digit-ui-react-components";
 import QuickStart from "../../components/QuickStart";
 import StageActions from "../../components/StageActions";
 import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
+import { useChecklistConfigAPI } from "../../hooks/useChecklistConfigAPI";
+import { useRoleConfigAPI } from "../../hooks/useRoleConfigAPI";
 import generateMdmsRolePayload from "../../config/rolecreateConfig";
 import AccessCard from "../../components/AccessCard";
 import { useHistory } from "react-router-dom";
+import { useNotificationConfigAPI } from "../../hooks/useNotificationConfigAPI";
 
 const Workflow = () => {
     const { t } = useTranslation();
@@ -39,9 +42,21 @@ const Workflow = () => {
     const [isGeneratingConfig, setIsGeneratingConfig] = useState(false);
     const [editableServiceConfig, setEditableServiceConfig] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
     const [existingServiceConfigId, setExistingServiceConfigId] = useState(null);
     const [rolePopup, setRolePopup]=useState(false);
     const [loadSamplePopup,setLoadSamplePopup]=useState(false);
+    
+    // Service creation mutation hook
+    //changes for publish
+    const serviceCreationMutation = Digit.Hooks.useCustomAPIMutationHook({
+        url: "/public-service/v1/service",
+        method: "POST",
+        headers: {
+            "X-Tenant-Id": tenantId
+        },
+        config: { enable: false }
+    });
     const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
     
     // Check if we're in edit mode
@@ -51,59 +66,43 @@ const Workflow = () => {
     const { saveServiceConfig, updateServiceConfig, fetchServiceConfig } = useServiceConfigAPI();
     const { data: existingServiceConfig } = fetchServiceConfig(roleModule, roleService);
 
-    const requestSearchCriteria = {
-        url: "/egov-mdms-service/v2/_search",
-        body: {
-            MdmsCriteria: {
-                tenantId: tenantId,
-                schemaCode: "studio.roles"
-            },
-        },
-    };
-    const { isLoading, data: roles } = Digit.Hooks.useCustomAPIHook(requestSearchCriteria);
-    const data= roles?.mdms?.filter(role => role?.data?.category === servicemodule);
+    // Use the new role config API hook
+    const { searchRoleConfigs, saveRoleConfig } = useRoleConfigAPI();
+    const { data: roleConfigs, isLoading } = searchRoleConfigs(roleModule, roleService);
+    const data = roleConfigs || [];
 
-    const requestCriteria = {
-        url: "/egov-mdms-service/v2/_search",
-        body: {
-            MdmsCriteria: {
-                tenantId: tenantId,
-                schemaCode: "Studio.Checklists"
-            },
-        },
-    };
-    const { isLoading: moduleListLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
-    const checklistData = dataa?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === roleModule.toUpperCase() && ob?.data?.service.toUpperCase() === roleService.toUpperCase())?.map((item) => ({
+    // Use the new checklist config API hook
+    const { searchChecklistConfigs } = useChecklistConfigAPI();
+    const { data: checklistConfigs, isLoading: moduleListLoading } = searchChecklistConfigs(roleModule, roleService);
+    const checklistData = checklistConfigs?.map((item) => ({
         code: item.data.name,
         name: item.data.name,
-    }));
+    })) || [];
 
     const requestCriteriaForm = {
         url: "/egov-mdms-service/v2/_search",
         body: {
             MdmsCriteria: {
                 tenantId: tenantId,
-                schemaCode: "Studio.Forms"
+                schemaCode: "Studio.ServiceConfigurationDrafts",
+                filters: {
+                    module: roleModule,
+                    service: roleService,
+                },
             },
         },
     };
     const { isLoading: FormsLoading, data: FormData } = Digit.Hooks.useCustomAPIHook(requestCriteriaForm);
-    const formOptions = FormData?.mdms?.filter((ob) => ob?.data?.module.toUpperCase() === roleModule.toUpperCase() && ob?.data?.service.toUpperCase() === roleService.toUpperCase())?.map((item) => ({
-        code: item.data.formName,
-        name: item.data.formName,
-    }));
+    const draft = FormData?.mdms?.[0];
+    const formOptions = draft?.data?.uiforms?.map((form) => ({
+        code: form.formName,
+        name: form.formName,
+    })) || [];
 
-    const requestConfigCriteria = {
-        url: "/egov-mdms-service/v2/_search",
-        body: {
-            MdmsCriteria: {
-                tenantId: tenantId,
-                schemaCode: "studio.notification"
-            },
-        },
-    };
-    const { isLoading: isConfigLoad, data: config } = Digit.Hooks.useCustomAPIHook(requestConfigCriteria);
-    const notif=config?.mdms.filter(item =>item.data?.additionalDetails?.category === servicemodule);
+    // Use the new notification config API hook
+    const { searchNotificationConfigs } = useNotificationConfigAPI();
+    const { data: notificationConfigs, isLoading: isConfigLoad } = searchNotificationConfigs(roleModule, roleService);
+    const notif = notificationConfigs?.filter(item => item.additionalDetails?.category === servicemodule) || [];
 
     const [stateData, setStateData] = useState({
         name: "",
@@ -146,15 +145,28 @@ const Workflow = () => {
             if (existingServiceConfig.data) {
                 const configData = existingServiceConfig.data;
                 
-                // Load canvas elements and connections directly from workflow
-                if (configData.workflow && configData.workflow.canvasElements) {
-                    setCanvasElements(configData.workflow.canvasElements);
-                    localStorage.setItem("canvasElements", JSON.stringify(configData.workflow.canvasElements));
+                // Load canvas elements and connections from uiworkflow
+                if (configData.uiworkflow && configData.uiworkflow.canvasElements) {
+                    setCanvasElements(configData.uiworkflow.canvasElements);
+                    localStorage.setItem("canvasElements", JSON.stringify(configData.uiworkflow.canvasElements));
                 }
                 
-                if (configData.workflow && configData.workflow.connections) {
-                    setConnections(configData.workflow.connections);
-                    localStorage.setItem("connections", JSON.stringify(configData.workflow.connections));
+                if (configData.uiworkflow && configData.uiworkflow.connections) {
+                    setConnections(configData.uiworkflow.connections);
+                    localStorage.setItem("connections", JSON.stringify(configData.uiworkflow.connections));
+                }
+                
+                // Fallback to workflow if uiworkflow doesn't exist (for backward compatibility)
+                if (!configData.uiworkflow) {
+                    if (configData.workflow && configData.workflow.canvasElements) {
+                        setCanvasElements(configData.workflow.canvasElements);
+                        localStorage.setItem("canvasElements", JSON.stringify(configData.workflow.canvasElements));
+                    }
+                    
+                    if (configData.workflow && configData.workflow.connections) {
+                        setConnections(configData.workflow.connections);
+                        localStorage.setItem("connections", JSON.stringify(configData.workflow.connections));
+                    }
                 }
             }
         }
@@ -243,41 +255,56 @@ const Workflow = () => {
         }
     };
 
-    const createMdmsRole = async (req) => {
-        try {
-            const response = await Digit.CustomService.getResponse({
-                url:`/${MDMS_CONTEXT_PATH}/v2/_create/studio.roles`,
-                body: {
-                    ...req
-                },
-            });
-            return { success: true, data: response };
-        } catch (error) {
-            const errorCode = error?.response?.data?.Errors?.[0]?.code || "Unknown error";
-            const errorDescription = error?.response?.data?.Errors?.[0]?.description || "An error occurred";
-            return { success: false, error: { code: errorCode, description: errorDescription } };
-        }
+    const generateRolePayload = (roleName, description, access) => {
+        return {
+            module: roleModule,
+            service: roleService,
+            roleName: roleName,
+            description: description,
+            access: access
+        };
     };
 
      const createRole = async (e) => {
         if (roleData.name != "" && (roleData.creater || roleData.editor || roleData.viewer)) {
-                if (roles?.mdms?.filter(role => role?.data?.category === servicemodule)?.some(role => role?.data?.code.toUpperCase() === roleData.name.toUpperCase())) {
+                const access = {
+                    editor: roleData.editor,
+                    viewer: roleData.viewer,
+                    creater: roleData.creater
+                };
+
+                if (data?.some(role => role?.data?.code?.toUpperCase() === roleData.name.toUpperCase())) {
                     setShowToast({ key: true, type: "error", label: t("ROLE_NAME_EXISTS") });
                 }
                 else {
-                    const response = await createMdmsRole(generateMdmsRolePayload(tenantId, Math.floor(100 + Math.random() * 900), servicemodule, roleData, roles?.mdms?.filter(role => role?.data?.category === servicemodule && role?.data?.code.toUpperCase() === roleData.name.toUpperCase())?.map(role => role), true));
-                    if(response?.success){
-                        setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
-                        setRoleData({
-                            name: "",
-                            desc: "",
-                            viewer: false,
-                            editor: false,
-                            creater: false,
-                        });
-                        setRolePopup(false);
-                    }
-                    else{
+                    try {
+                        const rolePayload = generateRolePayload(roleData.name, roleData.desc, access);
+                        const response = await saveRoleConfig.mutateAsync(rolePayload);
+                        
+                        if (response?.mdms) {
+                            setShowToast({ key: true, type: "success", label: t("ROLE_ADDED_SUCCESSFULLY") });
+                            setRoleData({
+                                name: "",
+                                desc: "",
+                                viewer: false,
+                                editor: false,
+                                creater: false,
+                            });
+                            setRolePopup(false);
+                            window.location.reload();
+                        }
+                        else {
+                            setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
+                            setRoleData({
+                                name: "",
+                                desc: "",
+                                viewer: false,
+                                editor: false,
+                                creater: false,
+                            });
+                            setRolePopup(false);
+                        }
+                    } catch (error) {
                         setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_CREATION") });
                         setRoleData({
                             name: "",
@@ -651,7 +678,7 @@ const Workflow = () => {
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
                     isSearchable: true,
-                    options: isLoading ? [] : data?.map(({ data }) => ({ code: data.code, name: data.id })),
+                    options: isLoading ? [] : data?.map((role) => ({ code: role?.data?.code, name: role?.data?.description || role?.data?.code })),
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -730,7 +757,7 @@ const Workflow = () => {
                     alignFieldPairVerically: true,
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
-                    options: notif?.map(({ data }) => ({code: data?.title, name: data?.title})).length === 0 ? [] : notif?.map(({ data }) => ({code: data?.title, name: data?.title})),
+                    options: notif?.map((notification) => ({code: notification?.title, name: notification?.title})) || [],
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -811,7 +838,7 @@ const Workflow = () => {
                     fieldPairClassName: "workflow-field-pair",
                     optionsKey: "code",
                     isSearchable: true,
-                    options: isLoading ? [] : data?.map(({ data }) => ({ code: data.code, name: data.id })),
+                    options: isLoading ? [] : data?.map((role) => ({ code: role?.data?.code, name: role?.data?.description || role?.data?.code })),
                 }}
                 props={{
                     fieldStyle: { width: "100%" }
@@ -910,8 +937,9 @@ const Workflow = () => {
             const outgoingConnections = connectionsData.filter(conn => conn.from === state.id);
             const actions = outgoingConnections.map(conn => {
                 const targetState = statesData.find(s => s.id === conn.to);
+                const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
                 return {
-                    roles: conn.aroles ? [...conn.aroles?.map(role => role.code.toUpperCase().replace(/\s+/g, '_')),"CITIZEN", "STUDIO_ADMIN"] : ["CITIZEN", "STUDIO_ADMIN"],
+                    roles: conn.aroles ? [...conn.aroles?.map(role => `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`),`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`] : [`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`],
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase().replace(/\s+/g, '_') : 'UNKNOWN'
                 };
@@ -967,9 +995,10 @@ const Workflow = () => {
 
     // Function to get form data from start state
     const getFormDataFromStartState = () => {
+
         const startState = canvasElements.find(state => state.nodetype === "start");
         
-        if (!startState || !startState.form || startState.form.length === 0) {
+        if (!startState || !startState.form) {
             return null;
         }
         
@@ -981,9 +1010,8 @@ const Workflow = () => {
         }
         
         // Find the form data from FormData
-        const selectedForm = FormData?.mdms?.find(form => form.data.formName === selectedFormName);
-        
-        return selectedForm?.data?.formConfig?.screens || null;
+        const selectedForm = FormData?.mdms?.[0]?.data?.uiforms?.find(form => form.formName === selectedFormName);
+        return selectedForm?.formConfig?.screens || null;
     };
 
     // Function to fetch roles from API
@@ -1003,9 +1031,9 @@ const Workflow = () => {
             
             if (response && response.mdms && response.mdms.length > 0) {
                 return response.mdms.map(role => ({
-                    code: role.data.code,
-                    name: role.data.description || role.data.code,
-                    access: role.data.additionalDetails?.access || {}
+                    code: role?.data?.code,
+                    name: role?.data?.description || role?.data?.code,
+                    access: role?.data?.additionalDetails?.access || {}
                 }));
             }
             return [];
@@ -1031,7 +1059,6 @@ const Workflow = () => {
                 const headerField = card.headerFields?.find(hf => hf.label === "SCREEN_HEADING");
                 const sectionName = headerField?.value || card.header || `Section ${cardIndex + 1}`;
                 
-                
                 // Skip pre-defined sections (ADDRESS DETAILS, APPLICANT DETAILS)
                 if (sectionName.toUpperCase().includes("ADDRESS DETAILS") || 
                     sectionName.toUpperCase().includes("APPLICANT DETAILS")) {
@@ -1049,54 +1076,183 @@ const Workflow = () => {
                     }
                     
                     const fieldConfig = {
-                        name: field.label.replaceAll(" ","") || `field_${screenIndex}_${cardIndex}_${fieldIndex}`,
-                        type: field.type === "textInput" ? "string" : 
-                              field.type === "datePicker" ? "date" : 
-                              field.type === "dropdown" ? "string" : 
-                              field.type === "text" ? "string" :
-                              field.type === "number" ? "integer" : 
-                              field.type === "mobileNumber" ? "string" : "string",
+                        name: field.label?.replace(/\s+/g, '') || field.jsonPath || `field_${screenIndex}_${cardIndex}_${fieldIndex}`,
                         label: field.label || `Field ${fieldIndex + 1}`,
-                        format: field.type === "textInput" ? "text" : 
-                                field.type === "datePicker" ? "date" : 
-                                field.type === "dropdown" ? "radioordropdown" : 
-                                field.type === "text" ? "text" :
-                                field.type === "number" ? "text" : 
-                                field.type === "mobileNumber" ? "mobileNumber" : "text",
                         required: field.required || false,
                         orderNumber: fieldIndex + 1,
-                        maxLength: field.maxLength || 128,
-                        minLength: field.minLength || 2,
+                        disable: field.readOnly || false,
                         defaultValue: field.defaultValue || field.value || "",
                         helpText: field.helpText || "",
                         tooltip: field.tooltip || "",
                         errorMessage: field.errorMessage || ""
                     };
                     
-                    // Only add validation if it's not empty
-                    if (field.validation && Object.keys(field.validation).length > 0) {
-                        fieldConfig.validation = field.validation;
+                    // Handle different field types with enhanced mapping
+                    switch (field.type) {
+                        case "textInput":
+                        case "text":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "text";
+                            fieldConfig.maxLength = field.maxLength || 128;
+                            fieldConfig.minLength = field.minLength || 2;
+                            if (field.regex && field.errorMessage) {
+                                fieldConfig.validation = {
+                                    regex: field.regex,
+                                    message: field.errorMessage
+                                }
+                            }
+                            break;
+                            
+                        case "number":
+                            fieldConfig.type = "integer";
+                            fieldConfig.format = "number";
+                            if (field.regex && field.errorMessage) {
+                                fieldConfig.validation = {
+                                    regex: field.regex,
+                                    message: field.errorMessage
+                                }
+                            }
+                            break;
+                            
+                        case "datePicker":
+                        case "date":
+                            fieldConfig.type = "date";
+                            fieldConfig.format = "date";
+                            break;
+                            
+                        case "mobileNumber":
+                            fieldConfig.type = "mobileNumber";
+                            fieldConfig.format = "mobileNumber";
+                            fieldConfig.maxLength = field.maxLength || 256;
+                            fieldConfig.minLength = field.minLength || 0;
+                            fieldConfig.prefix = field.isdCodePrefix || "91";
+                            if (field.regex && field.errorMessage) {
+                                fieldConfig.validation = {
+                                    regex: field.regex,
+                                    message: field.errorMessage
+                                }
+                            }
+                            break;
+                            
+                        case "dropdown":
+                            if (field.schemaCode) {
+                                // MDMS dropdown
+                                fieldConfig.type = "string";
+                                fieldConfig.format = "radioordropdown";
+                                fieldConfig.schema = field.schemaCode;
+                                fieldConfig.reference = "mdms";
+                            } else if (field.isBoundaryData) {
+                                // Boundary data dropdown
+                                fieldConfig.type = "string";
+                                fieldConfig.format = "radioordropdown";
+                                fieldConfig.schema = "common-masters.BoundaryType";
+                                fieldConfig.reference = "mdms";
+                            } else if (field.dropDownOptions && field.dropDownOptions.length > 0) {
+                                // Enum dropdown
+                                fieldConfig.type = "enum";
+                                fieldConfig.format = "radioordropdown";
+                                fieldConfig.values = field.dropDownOptions.map(option => 
+                                     option.name || option.value || option.code
+                                );
+                            } else {
+                                // Default dropdown
+                                fieldConfig.type = "string";
+                                fieldConfig.format = "radioordropdown";
+                            }
+                            break;
+                            
+                        case "radio":
+                            if (field.schemaCode) {
+                                // MDMS radio
+                                fieldConfig.type = "string";
+                                fieldConfig.format = "radio";
+                                fieldConfig.schema = field.schemaCode;
+                                fieldConfig.reference = "mdms";
+                            } else if (field.dropDownOptions && field.dropDownOptions.length > 0) {
+                                // Enum radio
+                                fieldConfig.type = "enum";
+                                fieldConfig.format = "radio";
+                                fieldConfig.values = field.dropDownOptions.map(option => 
+                                   option.name || option.value || option.code
+                                );
+                            } else {
+                                // Default radio
+                                fieldConfig.type = "string";
+                                fieldConfig.format = "radio";
+                            }
+                            break;
+                            
+                        case "textarea":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "textarea";
+                            fieldConfig.maxLength = field.maxLength || 1000;
+                            fieldConfig.minLength = field.minLength || 0;
+                            break;
+                            
+                        case "checkbox":
+                            fieldConfig.type = "boolean";
+                            fieldConfig.format = "checkbox";
+                            break;
+                            
+                        case "fileUpload":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "file";
+                            fieldConfig.maxSizeInMB = field.maxSizeInMB || 5;
+                            fieldConfig.allowedFileTypes = field.allowedFileTypes || ["pdf", "doc", "docx", "jpg", "png"];
+                            break;
+                            
+                        case "amount":
+                            fieldConfig.type = "number";
+                            fieldConfig.format = "amount";
+                            if (field.validation && Object.keys(field.validation).length > 0) {
+                                fieldConfig.validation = field.validation;
+                            }
+                            break;
+                            
+                        case "email":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "email";
+                            if (field.validation && Object.keys(field.validation).length > 0) {
+                                fieldConfig.validation = field.validation;
+                            }
+                            break;
+                            
+                        case "password":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "password";
+                            fieldConfig.maxLength = field.maxLength || 128;
+                            fieldConfig.minLength = field.minLength || 6;
+                            break;
+                            
+                        case "time":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "time";
+                            break;
+                            
+                        case "geolocation":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "geolocation";
+                            break;
+                            
+                        case "search":
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "search";
+                            break;
+                            
+                        case "numeric":
+                            fieldConfig.type = "integer";
+                            fieldConfig.format = "numeric";
+                            if (field.validation && Object.keys(field.validation).length > 0) {
+                                fieldConfig.validation = field.validation;
+                            }
+                            break;
+                            
+                        default:
+                            // Default fallback for unknown field types
+                            fieldConfig.type = "string";
+                            fieldConfig.format = "text";
+                            break;
                     }
-                    
-                    // Handle dropdown options
-                    if (field.dropDownOptions && field.dropDownOptions.length > 0) {
-                        fieldConfig.values = field.dropDownOptions.map(option => option.name || option.code);
-                        fieldConfig.schema = `${roleModule.toUpperCase()}.${field.label?.replace(/\s+/g, '')}`;
-                        fieldConfig.reference = "mdms";
-                    }
-                    
-                    // Handle boundary data (city dropdown)
-                    if (field.isBoundaryData) {
-                        fieldConfig.values = [];
-                        fieldConfig.schema = `${roleModule.toUpperCase()}.${field.label?.replace(/\s+/g, '')}`;
-                        fieldConfig.reference = "mdms";
-                    }
-                    
-                    // Handle mobile number specific properties
-                    if (field.type === "mobileNumber") {
-                        fieldConfig.isdCodePrefix = field.isdCodePrefix || "+91";
-                    }
-                    
                     properties.push(fieldConfig);
                 });
                 
@@ -1120,16 +1276,20 @@ const Workflow = () => {
     // Function to collect all roles from workflow
     const collectAllRoles = async () => {
         const usedRoleCodes = new Set();
+        const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
         
-        // Add default roles
-        usedRoleCodes.add("CITIZEN");
-        usedRoleCodes.add("STUDIO_ADMIN");
+        // Add default roles with prefix
+        usedRoleCodes.add(`${moduleServicePrefix}_CITIZEN`);
+        usedRoleCodes.add(`${moduleServicePrefix}_STUDIO_ADMIN`);
         
         // Collect role codes from states
         canvasElements.forEach(state => {
             if (state.roles && Array.isArray(state.roles)) {
                 state.roles.forEach(role => {
-                    if (role.code) usedRoleCodes.add(role.code.toUpperCase().replace(/\s+/g, '_'));
+                    if (role.code) {
+                        const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
+                        usedRoleCodes.add(`${moduleServicePrefix}_${roleCode}`);
+                    }
                 });
             }
         });
@@ -1138,7 +1298,10 @@ const Workflow = () => {
         connections.forEach(connection => {
             if (connection.aroles && Array.isArray(connection.aroles)) {
                 connection.aroles.forEach(role => {
-                    if (role.code) usedRoleCodes.add(role.code.toUpperCase().replace(/\s+/g, '_'));
+                    if (role.code) {
+                        const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
+                        usedRoleCodes.add(`${moduleServicePrefix}_${roleCode}`);
+                    }
                 });
             }
         });
@@ -1147,7 +1310,10 @@ const Workflow = () => {
         // Fetch roles from API and filter only used ones
         try {
             const apiRoles = await fetchRolesFromAPI();
-            const usedRoles = apiRoles.filter(role => usedRoleCodes.has(role.code.toUpperCase().replace(/\s+/g, '_')));
+            const usedRoles = apiRoles.filter(role => {
+                const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
+                return usedRoleCodes.has(`${moduleServicePrefix}_${roleCode}`);
+            });
             
             // Create access mapping based on role permissions
             const accessMapping = {
@@ -1158,7 +1324,7 @@ const Workflow = () => {
             
             usedRoles.forEach(role => {
                 const access = role.access || {};
-                const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
+                const roleCode = `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`;
                 
                 if (access.editor) {
                     accessMapping.editor.push(roleCode);
@@ -1172,9 +1338,9 @@ const Workflow = () => {
             });
             
             // Add default roles to appropriate access levels
-            accessMapping.editor.push("CITIZEN", "STUDIO_ADMIN");
-            accessMapping.viewer.push("CITIZEN", "STUDIO_ADMIN");
-            accessMapping.creator.push("CITIZEN", "STUDIO_ADMIN");
+            accessMapping.editor.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
+            accessMapping.viewer.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
+            accessMapping.creator.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
             
             return accessMapping;
             
@@ -1270,7 +1436,20 @@ const Workflow = () => {
         const moduleName = roleModule.toLowerCase();
         const serviceName = roleService.toLowerCase();
         
-                const serviceConfig = {
+        // Get UI configurations from existing draft
+        const existingDraft = FormData?.mdms?.[0];
+        const uiConfigurations = {
+            uiforms: existingDraft?.data?.uiforms || [],
+            uichecklists: existingDraft?.data?.uichecklists || [],
+            uiroles: existingDraft?.data?.uiroles || [],
+            uinotifications: existingDraft?.data?.uinotifications || [],
+            uiworkflow: {
+                canvasElements: canvasElements,
+                connections: connections
+            }
+        };
+        
+        const serviceConfig = {
             module: roleModule,
             service: roleService,
             enabled: ["citizen", "employee"],
@@ -1487,9 +1666,29 @@ const Workflow = () => {
             }
         };
         
-        // Add canvas and connections just before API call
-        serviceConfig.workflow.canvasElements = canvasElements;
-        serviceConfig.workflow.connections = connections;
+        // Add UI configurations to service config
+        serviceConfig.uiforms = uiConfigurations.uiforms;
+        serviceConfig.uichecklists = uiConfigurations.uichecklists;
+        serviceConfig.uiroles = uiConfigurations.uiroles;
+        serviceConfig.uinotifications = uiConfigurations.uinotifications;
+        serviceConfig.uiworkflow = uiConfigurations.uiworkflow;
+        
+        // Generate checklist configuration
+        const checklistConfig = [];
+        canvasElements.forEach(state => {
+            if (state.checklist && state.checklist.length > 0) {
+                state.checklist.forEach(checklistItem => {
+                    const checklistEntry = {
+                        name: checklistItem.name.replace(/\s+/g, ''), // Remove spaces and concatenate
+                        state: state.name.toUpperCase().replace(/\s+/g, '_') // State name in uppercase with underscores
+                    };
+                    checklistConfig.push(checklistEntry);
+                });
+            }
+        });
+        serviceConfig.checklist = checklistConfig;
+        
+        
         return serviceConfig;
     };
 
@@ -1554,7 +1753,7 @@ const Workflow = () => {
     
             // 2. Check if all nodes have roles assigned
             const nodesWithoutRoles = canvasElements.filter(node => !node.roles || node.roles.length === 0);
-            console.log(nodesWithoutRoles,"nodes without roles")
+
             if (nodesWithoutRoles.length > 0) {
                 setShowToast({
                     type: "error",
@@ -1579,8 +1778,20 @@ const Workflow = () => {
             // Generate service configuration
             const serviceConfig = await generateServiceConfiguration();
     
-            // Create display copy without workflow canvas/connections
+            // Create display copy without UI configurations for popup
             const displayConfig = JSON.parse(JSON.stringify(serviceConfig));
+            
+            // Remove UI configurations from display
+            delete displayConfig.uiforms;
+            delete displayConfig.uichecklists;
+            delete displayConfig.uiroles;
+            delete displayConfig.uinotifications;
+            delete displayConfig.uiworkflow;
+            
+            // Keep checklist configuration in display (it should be visible in popup)
+            // checklist configuration is already added to serviceConfig and will be in displayConfig
+            
+            // Also remove workflow canvas/connections if they exist
             if (displayConfig.workflow) {
                 delete displayConfig.workflow.canvasElements;
                 delete displayConfig.workflow.connections;
@@ -1652,6 +1863,81 @@ const Workflow = () => {
             });
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    //changes for publish
+    const handlePublishServiceConfig = async () => {
+        try {
+            setIsPublishing(true);
+            
+            // Parse the service configuration
+            let serviceConfigData;
+            try {
+                serviceConfigData = JSON.parse(editableServiceConfig);
+            } catch (error) {
+                setShowToast({
+                    type: "error",
+                    label: "INVALID_JSON_FORMAT"
+                });
+                return;
+            }
+
+            // Get current user info and tenant ID
+            const tenantId = Digit.ULBService.getCurrentTenantId();
+            
+            // Prepare MDMS create payload following the same pattern as useServiceConfigAPI
+            const mdmsPayload = {
+                Mdms: {
+                    tenantId: tenantId,
+                    schemaCode: "Studio.ServiceConfiguration",
+                    data: serviceConfigData
+                }
+            };
+
+            // Make MDMS create call using the same pattern as the existing API calls
+            const mdmsContextPath = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
+            const mdmsResponse = await Digit.CustomService.getResponse({
+                url: `/${mdmsContextPath}/v2/_create/Studio.ServiceConfiguration`,
+                body: mdmsPayload
+            });
+
+            if (mdmsResponse) {
+                // Make service API call using mutation hook
+                await serviceCreationMutation.mutateAsync({
+                    body: {
+                        service: {
+                            tenantId: tenantId,
+                            businessService: serviceConfigData.service,
+                            module: serviceConfigData.module,
+                            status: "ACTIVE",
+                            additionalDetails: {
+                                note: "initial creation"
+                            }
+                        }
+                    }
+                });
+
+                setShowToast({
+                    type: "success",
+                    label: "SERVICE_CONFIG_PUBLISHED_SUCCESSFULLY"
+                });
+                setTimeout(() => {
+                    history.push(`/${window.contextPath}/employee/servicedesigner/LandingPage`);
+                }, 3000);
+            } else {
+                throw new Error("MDMS API call failed");
+            }
+            
+            setShowServiceConfigPopup(false);
+        } catch (error) {
+            console.error("Error publishing service configuration:", error);
+            setShowToast({
+                type: "error",
+                label: "SERVICE_CONFIG_PUBLISH_FAILED"
+            });
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -1836,10 +2122,16 @@ const Workflow = () => {
                                         onClick={() => setShowServiceConfigPopup(false)}
                                     />
                                     <Button
-                                        variation="primary"
+                                        variation="secondary"
                                         label={isSaving ? t("SAVING") : t("SAVE")}
                                         onClick={handleSaveServiceConfig}
-                                        disabled={isSaving}
+                                        isDisabled={isSaving || isPublishing}
+                                    />
+                                    <Button
+                                        variation="primary"
+                                        label={isPublishing ? t("PUBLISHING") : t("PUBLISH")}
+                                        onClick={handlePublishServiceConfig}
+                                        isDisabled={isSaving || isPublishing}
                                     />
                                 </div>
                             </div>

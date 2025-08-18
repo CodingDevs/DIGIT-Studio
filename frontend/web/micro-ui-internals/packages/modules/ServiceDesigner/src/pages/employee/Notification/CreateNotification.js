@@ -10,6 +10,7 @@ import { CardHeader } from "@egovernments/digit-ui-react-components";
 import { Button } from "@egovernments/digit-ui-components";
 import { LabelFieldPair, HeaderComponent, Chip } from "@egovernments/digit-ui-components";
 import generateNotifPayload from "../../../config/NotificationConfig";
+import { useNotificationConfigAPI } from "../../../hooks/useNotificationConfigAPI";
 
 const CreateNotification = () => {
   const { t } = useTranslation();
@@ -24,16 +25,9 @@ const CreateNotification = () => {
   const [showToast, setShowToast] = useState(null);
   const MDMS_CONTEXT_PATH = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
 
-  const requestCriteria = {
-    url: "/egov-mdms-service/v2/_search",
-    body: {
-      MdmsCriteria: {
-        tenantId: tenantId,
-        schemaCode: "studio.notification"
-      },
-    },
-  };
-  const { isLoading, data: dataa } = Digit.Hooks.useCustomAPIHook(requestCriteria);
+  // Use the new notification config API hook
+  const { searchNotificationConfigs, saveNotificationConfig, updateNotificationConfig } = useNotificationConfigAPI();
+  const { data: notificationConfigs, isLoading } = searchNotificationConfigs(roleModule, roleService);
 
   const [stateData, setStateData] = useState(isUpdate ? {
     title: data?.title,
@@ -64,20 +58,18 @@ const CreateNotification = () => {
     }
   }
 
-  const createNotif = async (req, isUpdate) => {
-    try {
-      const response = await Digit.CustomService.getResponse({
-        url: isUpdate ? `/${MDMS_CONTEXT_PATH}/v2/_update/studio.notification` : `/${MDMS_CONTEXT_PATH}/v2/_create/studio.notification`,
-        body: {
-          ...req
-        },
-      });
-      return { success: true, data: response };
-    } catch (error) {
-      const errorCode = error?.response?.data?.Errors?.[0]?.code || "Unknown error";
-      const errorDescription = error?.response?.data?.Errors?.[0]?.description || "An error occurred";
-      return { success: false, error: { code: errorCode, description: errorDescription } };
-    }
+  const generateNotificationPayload = (notificationData) => {
+    return {
+      module: roleModule,
+      service: roleService,
+      title: notificationData.title,
+      messageBody: notificationData.messageBody,
+      subject: notificationData.subject || "",
+      type: type,
+      additionalDetails: {
+        workflow: notificationData.workflow || []
+      }
+    };
   };
 
   const updateworkflowNodes = () => {
@@ -96,49 +88,65 @@ const CreateNotification = () => {
 
   const onSubmit = async (e) => {
     if (stateData.title != "" && stateData.messageBody != "") {
-      if (isUpdate == false) {
-        if (dataa?.mdms?.filter(role => role?.data?.additionalDetails?.category === Category)?.some(role => role?.data?.title === stateData.title)) {
-          setShowToast({ key: true, type: "error", label: t("NOTIF_NAME_EXISTS") });
-        }
-        else {
-          const response = await createNotif(generateNotifPayload(tenantId, type, Category, stateData, dataa?.mdms?.filter(role => role?.data?.additionalDetails?.category === Category && role?.data?.title === stateData.title), isUpdate), isUpdate);
-          if (response?.success) {
+      try {
+        if (isUpdate == false) {
+          // Check for duplicate title only when creating new notification
+          const existingNotification = notificationConfigs?.find(notification => 
+            notification.title === stateData.title && 
+            notification.additionalDetails?.category === Category
+          );
+          
+          if (existingNotification) {
+            setShowToast({ key: true, type: "error", label: t("NOTIF_NAME_EXISTS") });
+            return;
+          }
+          
+          const notificationPayload = generateNotificationPayload(stateData);
+          const response = await saveNotificationConfig.mutateAsync(notificationPayload);
+          
+          if (response?.mdms) {
             updateworkflowNodes();
             setShowToast({ key: true, type: "success", label: t("NOTIF_ADDED_SUCCESSFULLY") });
             setTimeout(() => {
               window.history.back();
             }, 3000);
-          }
-          else {
+          } else {
             setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_NOTIF_CREATION") });
             setTimeout(() => {
               window.history.back();
             }, 3000);
           }
+        } else {
+          const notificationPayload = {
+            ...generateNotificationPayload(stateData),
+            originalTitle: data?.title // For update, we need the original title
+          };
+          const response = await updateNotificationConfig.mutateAsync(notificationPayload);
+          
+          if (response?.mdms) {
+            updateworkflowNodes();
+            setShowToast({ key: true, type: "success", label: t("NOTIFICATION_UPDATED_SUCCESSFULLY") });
+            setTimeout(() => {
+              window.history.back();
+            }, 3000);
+          } else {
+            setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
+            setTimeout(() => {
+              window.history.back();
+            }, 3000);
+          }
         }
+      } catch (error) {
+        console.error("Notification operation failed:", error);
+        setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_NOTIF_CREATION") });
+        setTimeout(() => {
+          window.history.back();
+        }, 3000);
       }
-      else {
-        const response = await createNotif(generateNotifPayload(tenantId, type, Category, stateData, dataa?.mdms?.filter(role => role?.data?.additionalDetails?.category === Category && role?.data?.title === stateData.title), isUpdate), isUpdate);
-        if (response?.success) {
-          updateworkflowNodes();
-          setShowToast({ key: true, type: "success", label: t("NOTIFICATION_UPDATED_SUCCESSFULLY") });
-          setTimeout(() => {
-            window.history.back();
-          }, 3000);
-        }
-        else {
-          setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_UPDATION") });
-          setTimeout(() => {
-            window.history.back();
-          }, 3000);
-        }
-      }
-    }
-    else {
+    } else {
       if (stateData.title == "") {
         setShowToast({ key: true, type: "error", label: t("TITLE_IS_REQUIRED") });
-      }
-      else {
+      } else {
         setShowToast({ key: true, type: "error", label: t("MSG_BODY_IS_REQUIRED") });
       }
     }
