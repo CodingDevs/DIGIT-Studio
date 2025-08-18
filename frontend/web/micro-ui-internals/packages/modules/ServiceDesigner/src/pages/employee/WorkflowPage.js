@@ -1679,7 +1679,7 @@ const Workflow = () => {
             if (state.checklist && state.checklist.length > 0) {
                 state.checklist.forEach(checklistItem => {
                     const checklistEntry = {
-                        name: checklistItem.name.replace(/\s+/g, ''), // Remove spaces and concatenate
+                        name: checklistItem.name, // Remove spaces and concatenate
                         state: state.name.toUpperCase().replace(/\s+/g, '_') // State name in uppercase with underscores
                     };
                     checklistConfig.push(checklistEntry);
