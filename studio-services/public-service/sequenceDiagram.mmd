@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant Client
+    participant AC as ApplicationController
+    participant ES as EnrichmentService
+    participant IS as IndividualService
+    participant WI as WorkflowIntegrator
+    participant AS as ApplicationService
+    participant AR as ApplicationRepository
+    participant SMS as SMSService
+    participant INS as IndexerService
+    participant KP as KafkaProducer
+
+    Client->>AC: POST /application/{serviceCode}
+    AC->>ES: EnrichApplicationsWithIdGen()
+    ES->>IDGEN: Generate Application ID
+    IDGEN-->>ES: Application ID
+    ES-->>AC: Enriched Request
+    
+    loop For each applicant
+        AC->>IS: GetIndividual() / CreateUser()
+        IS->>IND: Individual Service API
+        IND-->>IS: Individual Data
+        IS-->>AC: Individual ID
+    end
+    
+    AC->>WI: CallWorkflow()
+    WI->>WF: Workflow Service API
+    WF-->>WI: Workflow Response
+    WI-->>AC: Success
+    
+    AC->>AS: CreateApplication()
+    AS->>AR: CreateUsingKafka()
+    AR->>KP: Push to SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC
+    AR->>KP: Push to SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER
+    KP->>KAFKA: Publish Messages
+    AR-->>AS: Response
+    AS-->>AC: Application Response
+    
+    AC->>SMS: SendSMS()
+    SMS->>LOC: Get localized messages
+    LOC-->>SMS: Messages
+    SMS->>KP: Push to SEND_SMS_TOPIC
+    KP->>KAFKA: SMS Message
+    
+    AC->>INS: SendRequestToIndexerForParallelWorkflow()
+    INS->>KP: Push to Indexer Topic
+    KP->>KAFKA: Indexer Message
+    
+    AC-->>Client: HTTP 200 + Application Data

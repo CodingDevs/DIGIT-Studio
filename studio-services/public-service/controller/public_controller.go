@@ -3,25 +3,29 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"public-service/model"
 	"public-service/service"
 	"public-service/utils"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type PublicController struct {
-	service *service.PublicService
-	enrichmentService  *service.EnrichmentService
+	service           *service.PublicService
+	enrichmentService *service.EnrichmentService
 	validationService *service.ValidateService
+	checklistService  *service.ChecklistService
 }
 
-func NewServiceController(service *service.PublicService,enrichmentService *service.EnrichmentService, validationService *service.ValidateService) *PublicController {
+func NewServiceController(service *service.PublicService, enrichmentService *service.EnrichmentService, validationService *service.ValidateService, checklistService *service.ChecklistService) *PublicController {
 	return &PublicController{
-		service: service,
+		service:           service,
 		enrichmentService: enrichmentService,
-        validationService: validationService,
+		validationService: validationService,
+		checklistService:  checklistService,
 	}
 }
 
@@ -43,17 +47,28 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 		req.Service.TenantId = tenantID
 	}
 
-    req, err = c.enrichmentService.EnrichServiceWithIdGen(req,"service")
+	req, err = c.enrichmentService.EnrichServiceWithIdGen(req, "service")
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Enrichment failed: "+err.Error())
-	    return
+		return
+
+	}
+	if req.Service.ID == uuid.Nil || req.Service.ServiceCode == "" {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Service ID generation failed")
+		return
 	}
 	ctx := context.Background()
 	_, err = c.validationService.Validate(ctx, req)
-    if err != nil {
-		http.Error(w,"Failed to validate: " +err.Error(), http.StatusInternalServerError)
-
-    }
+	if err != nil {
+		http.Error(w, "Failed to validate: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	_, err = c.checklistService.GetChecklist(tenantID, req.Service.Module, req.Service.BusinessService, req.RequestInfo)
+	if err != nil {
+		log.Printf("Failed to fetch checklist: %v", err)
+		http.Error(w, "Failed to fetch checklist: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	res, err := c.service.CreateService(ctx, req, tenantID)
 	if err != nil {
 		log.Printf("CreateService error: %v", err)

@@ -12,7 +12,8 @@ import (
 	db "public-service/scripts"
 	"public-service/service"
 	"public-service/utils"
-    "strings"
+	"strings"
+
 	"github.com/Priyansuvaish/digit_client/configdigit"
 
 	"github.com/gorilla/mux"
@@ -52,30 +53,27 @@ func main() {
 	kafkaProducer := producer.NewPublicServiceProducer(writerFunc)
 
 	// Initialize repositories
-	publicRepo := repository.NewPublicRepository(dbConn,kafkaProducer)
+	publicRepo := repository.NewPublicRepository(dbConn, kafkaProducer)
 	appRepo := repository.NewApplicationRepository(dbConn, publicRepo, kafkaProducer)
 	restRepo := repository.NewRestCallRepository()
 
 	// Initialize services
-	
-	
+
 	mdmsSvc := service.NewMDMSService(restRepo)
-	mdmsv2sSvc := service.NewMDMSV2Service(restRepo,dbConn)
-	individualSvc := service.NewIndividualService(restRepo,*mdmsv2sSvc)
+	mdmsv2sSvc := service.NewMDMSV2Service(restRepo, dbConn)
+	individualSvc := service.NewIndividualService(restRepo, *mdmsv2sSvc)
 	idgenSvc := service.NewIdGenService(restRepo)
-	demandSvc := service.NewDemandService(restRepo,mdmsv2sSvc)
-	localizationService := service.NewLocalizationService(restRepo,*mdmsv2sSvc)
+	demandSvc := service.NewDemandService(restRepo, mdmsv2sSvc)
+	localizationService := service.NewLocalizationService(restRepo, *mdmsv2sSvc)
 	serviceSvc := service.NewPublicService(publicRepo)
 	workflowIntegrator := service.NewWorkflowIntegrator(mdmsv2sSvc)
-	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc,workflowIntegrator,mdmsv2sSvc)
+	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc, workflowIntegrator, mdmsv2sSvc)
 	enrichSvc := service.NewEnrichmentService(individualSvc, demandSvc, mdmsSvc, mdmsv2sSvc, idgenSvc, smsService)
-	appSvc := service.NewApplicationService(appRepo, enrichSvc,workflowIntegrator)
-	indexSvc := service.NewIndexerService(restRepo,kafkaProducer,workflowIntegrator,mdmsv2sSvc)
+	appSvc := service.NewApplicationService(appRepo, enrichSvc, workflowIntegrator)
+	indexSvc := service.NewIndexerService(restRepo, kafkaProducer, workflowIntegrator, mdmsv2sSvc)
 	workflowSvc := service.NewWorkflowService(mdmsv2sSvc, restRepo)
 	validSvc := service.NewValidateService(mdmsv2sSvc, dbConn, kafkaProducer, workflowSvc, localizationService)
-
-	
-
+	cklistSvc := service.NewChecklistService(mdmsv2sSvc)
 
 	// Start Kafka consumer in a separate goroutine if enabled
 	if os.Getenv("KAFKA_PAYMENT_CONSUMER_ENABLED") == "true" {
@@ -84,8 +82,8 @@ func main() {
 	}
 
 	// Initialize controllers
-	appCtrl := controller.NewApplicationController(appSvc, workflowIntegrator, individualSvc, enrichSvc, smsService,indexSvc)
-	serviceCtrl := controller.NewServiceController(serviceSvc,enrichSvc,validSvc)
+	appCtrl := controller.NewApplicationController(appSvc, workflowIntegrator, individualSvc, enrichSvc, smsService, indexSvc)
+	serviceCtrl := controller.NewServiceController(serviceSvc, enrichSvc, validSvc, cklistSvc)
 
 	// Setup router
 	router := mux.NewRouter()
@@ -99,11 +97,10 @@ func main() {
 	router.HandleFunc("/public-service/v1/application/{serviceCode}", appCtrl.CreateApplicationHandler).Methods("POST")
 	router.HandleFunc("/public-service/v1/application/{serviceCode}", appCtrl.SearchApplicationHandler).Methods("GET")
 	router.HandleFunc("/public-service/v1/application/{serviceCode}", appCtrl.UpdateApplicationHandler).Methods("PUT")
-	router.HandleFunc("/public-service/v1/application",appCtrl.SearchMyApplicationHandler).Methods("GET")
+	router.HandleFunc("/public-service/v1/application", appCtrl.SearchMyApplicationHandler).Methods("GET")
 
 	router.HandleFunc("/public-service/_calculate", appCtrl.CalculateHandler).Methods("POST")
-    router.HandleFunc("/public-service/_deleteMDMSSchema", appCtrl.DeleteMDMSSchema).Methods("POST")
-
+	router.HandleFunc("/public-service/_deleteMDMSSchema", appCtrl.DeleteMDMSSchema).Methods("POST")
 
 	// Start HTTP server
 	port := os.Getenv("SERVER_PORT")

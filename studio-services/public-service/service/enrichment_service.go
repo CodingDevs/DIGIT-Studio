@@ -75,9 +75,9 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 	// Step 1: Extract generateDemandAt from MDMS and check if action is allowed
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": apps.Application.BusinessService,
-        "module":  apps.Application.Module,
-    }
+		"service": apps.Application.BusinessService,
+		"module":  apps.Application.Module,
+	}
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
@@ -173,14 +173,13 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 			"tenantId": apps.Application.TenantId,
 		}
 		indResp := s.individualService.GetIndividual(model.RequestInfo{}, criteria)
-	
+
 		if indRespJson, err := json.MarshalIndent(indResp, "", "  "); err != nil {
 			log.Printf("Error marshaling indResp: %v", err)
 		} else {
 			log.Println("indResp JSON:", string(indRespJson))
 		}
-		
-		
+
 		if len(indResp.Individual) > 0 {
 			individual := indResp.Individual[0]
 			parsedUUID, err := uuid.Parse(individual.UserUuid)
@@ -226,21 +225,12 @@ func (s *EnrichmentService) EnrichApplicationsWithDemand(apps model.ApplicationR
 	return apps, nil
 }
 
-
-func logJSON(message string, data interface{}) {
-	if jsonData, err := json.Marshal(data); err == nil {
-		log.Printf(`{"message": "%s", "data": %s}`, message, jsonData)
-	} else {
-		log.Printf(`{"message": "%s", "error": "%v"}`, message, err)
-	}
-}
-
 func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRequest, typeOfApplication string) (model.ApplicationRequest, error) {
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": apps.Application.BusinessService,
-        "module":  apps.Application.Module,
-    }
+		"service": apps.Application.BusinessService,
+		"module":  apps.Application.Module,
+	}
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
@@ -310,9 +300,9 @@ func (s *EnrichmentService) EnrichApplicationsWithIdGen(apps model.ApplicationRe
 func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, typeOfApplication string) (model.ServiceRequest, error) {
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": apps.Service.BusinessService,
-        "module":  apps.Service.Module,
-    }
+		"service": apps.Service.BusinessService,
+		"module":  apps.Service.Module,
+	}
 	mdmsData, _ := s.MDMSV2Service.SearchMDMS(
 		apps.Service.TenantId,
 		schemaCode,
@@ -345,7 +335,7 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 		log.Println("No 'idgen' section in MDMS data")
 		return apps, errors.New("No 'idgen' section in MDMS data")
 	}
-    
+
 	for _, item := range idGens {
 		idGen, ok := item.(map[string]interface{})
 		if !ok {
@@ -375,8 +365,8 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 	if len(ids) > 0 {
 		apps.Service.ServiceCode = ids[0]
 	}
-    _,err = s.MDMSV2Service.createMDMSActionTest(apps.Service.TenantId,apps.Service.ServiceCode,apps)
-	if err !=nil {
+	_, err = s.MDMSV2Service.createMDMSActionTest(apps.Service.TenantId, apps.Service.ServiceCode, apps)
+	if err != nil {
 		return apps, fmt.Errorf("error creating MDMS for Action-test / role_mapping : %w", err)
 	}
 	return apps, nil
@@ -387,9 +377,9 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": apps.Application.BusinessService,
-        "module":  apps.Application.Module,
-    }
+		"service": apps.Application.BusinessService,
+		"module":  apps.Application.Module,
+	}
 	mdmsData, err := s.MDMSV2Service.SearchMDMS(
 		apps.Application.TenantId,
 		schemaCode,
@@ -417,30 +407,30 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 	if !ok {
 		return nil, errors.New("invalid calculator config format")
 	}
-	
+
 	calcTypeRaw, ok := calcConf["type"].(string)
 	if !ok {
 		return nil, errors.New("missing calculator type")
 	}
 	calcType := strings.ToLower(calcTypeRaw)
-	
+
 	if calcType == "custom" {
 		slabs, ok := calcConf["billingSlabs"].([]interface{})
 		if !ok || len(slabs) == 0 {
 			return nil, errors.New("no billingSlabs in custom calculator")
 		}
-	
+
 		for _, slab := range slabs {
 			slabData, ok := slab.(map[string]interface{})
 			if !ok {
 				continue
 			}
-	
+
 			key, ok := slabData["key"].(string)
 			if !ok {
 				continue
 			}
-	
+
 			var floatVal float64
 			switch v := slabData["value"].(type) {
 			case float64:
@@ -450,7 +440,7 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 			default:
 				return nil, errors.New("unsupported value type for billing slab")
 			}
-	
+
 			detail := demand.DemandDetail{
 				ID:                uuid.NewString(),
 				TaxHeadMasterCode: key,
@@ -460,11 +450,11 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 				AuditDetails:      nil,
 			}
 			demandDetails = append(demandDetails, detail)
-	
+
 			log.Printf("Using custom billing slab: %s = %v\n", key, floatVal)
 		}
 		return demandDetails, nil
-	
+
 	} else if calcType == "api" {
 		// apiConf, ok := calcConf[calcType].(map[string]interface{})Add commentMore actions
 		// if !ok {
@@ -481,7 +471,7 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 
 		hosts := strings.Split(hostStr, "||")
 		method := strings.ToUpper(methodStr)
-	
+
 		var responseBody []byte
 		var apiErr error
 		for _, host := range hosts {
@@ -493,33 +483,33 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 			}
 			log.Printf("Failed API call to %s: %v", url, apiErr)
 		}
-	
+
 		if apiErr != nil {
 			return nil, fmt.Errorf("all API hosts failed: %w", apiErr)
 		}
-	
+
 		var apiResponse map[string]interface{}
 		err = json.Unmarshal(responseBody, &apiResponse)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding API response: %w", err)
 		}
-	
+
 		rawList, ok := apiResponse["demandDetails"].([]interface{})
 		if !ok {
 			return nil, errors.New("expected demandDetails as array in API response")
 		}
-	
+
 		for _, rawItem := range rawList {
 			item, ok := rawItem.(map[string]interface{})
 			if !ok {
 				continue
 			}
-	
+
 			key, ok := item["taxhead"].(string)
 			if !ok {
 				continue
 			}
-	
+
 			var floatVal float64
 			switch v := item["amount"].(type) {
 			case float64:
@@ -529,7 +519,7 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 			default:
 				return nil, errors.New("unsupported taxAmount type in API response")
 			}
-	
+
 			detail := demand.DemandDetail{
 				ID:                uuid.NewString(),
 				TaxHeadMasterCode: key,
@@ -540,11 +530,10 @@ func (s *EnrichmentService) GetCalculation(apps model.ApplicationRequest) ([]dem
 			}
 			demandDetails = append(demandDetails, detail)
 		}
-	
+
 		log.Printf("Collected %d demand details from API\n", len(demandDetails))
 		return demandDetails, nil
 	}
-	
 
 	return nil, errors.New("no valid calculator config found")
 }

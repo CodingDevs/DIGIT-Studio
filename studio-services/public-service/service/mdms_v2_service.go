@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"public-service/config"
 	"public-service/model"
 	"public-service/repository"
 	"strconv"
 	"strings"
 	"time"
-	"public-service/config"
 )
 
 const (
 	RoleActionCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLEACTIONS.roleactions"
 	ActionTestCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ACTIONS-TEST.actions-test"
-	DocumentCreatePath = "egov-mdms-service/v2/_create/DigitStudio.DocumentConfig2"
+	DocumentCreatePath   = "egov-mdms-service/v2/_create/DigitStudio.DocumentConfig2"
 )
 
 type MDMSV2Service struct {
@@ -32,21 +32,21 @@ func NewMDMSV2Service(repo repository.RestCallRepository, db *sql.DB) *MDMSV2Ser
 	}
 }
 
-func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[string]string,requestInfo model.RequestInfo) (map[string]interface{}, error) {
+func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[string]string, requestInfo model.RequestInfo) (map[string]interface{}, error) {
 
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_SEARCH_ENDPOINT")
-
+	log.Printf("MDMS Search URL: %s", url)
 	payload := model.MDMSV2Request{
 		MdmsCriteria: model.MdmsV2Criteria{
 			TenantID:   tenantId,
-			Filters: filters,
+			Filters:    filters,
 			SchemaCode: schemaCode,
 			Limit:      10,
 			Offset:     0,
 		},
 		RequestInfo: requestInfo,
 	}
-
+	log.Printf("MDMS Search Payload: %+v", payload)
 	var resp map[string]interface{}
 	err := s.restCallRepo.Post(url, payload, &resp)
 	if err != nil {
@@ -84,13 +84,11 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	accessMdms, _ := data["access"].(map[string]interface{})
 	rolesMap, _ := accessMdms["roles"].(map[string]interface{})
 
-	
-
 	for _, roleList := range rolesMap {
 		if list, ok := roleList.([]interface{}); ok {
 			for _, r := range list {
 				if roleStr, ok := r.(string); ok {
-					err := s.createRoleIfNotExists( tenantId, roleStr, apps.RequestInfo)
+					err := s.createRoleIfNotExists(tenantId, roleStr, apps.RequestInfo)
 					if err != nil {
 						log.Printf("[ERROR] Failed to create role %s: %v", roleStr, err)
 					}
@@ -100,7 +98,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	}
 
 	// Always ensure STUDIO_ADMIN role is created
-	_ = s.createRoleIfNotExists( tenantId, "STUDIO_ADMIN", apps.RequestInfo)
+	_ = s.createRoleIfNotExists(tenantId, "STUDIO_ADMIN", apps.RequestInfo)
 
 	// Prepare role lists
 	var creatorRoles, editorRoles, viewerRoles []string
@@ -214,7 +212,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	return resp, nil
 }
 
-func (s *MDMSV2Service) createRoleIfNotExists( tenantId, roleCode string, reqInfo model.RequestInfo) error {
+func (s *MDMSV2Service) createRoleIfNotExists(tenantId, roleCode string, reqInfo model.RequestInfo) error {
 	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLES.roles"
 	payload := map[string]interface{}{
 		"RequestInfo": reqInfo,
@@ -242,7 +240,6 @@ func (s *MDMSV2Service) createRoleIfNotExists( tenantId, roleCode string, reqInf
 	log.Printf("[CREATED] Role created: %s", roleCode)
 	return nil
 }
-
 
 func isDuplicateError(err error) bool {
 	if err == nil {
@@ -309,7 +306,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	respJSON, _ := json.MarshalIndent(resp, "", "  ")
 	log.Println("MDMS Create ActionTest Response:\n", string(respJSON))
 	var roleMappingErr error
-	const attempts = 10    //we are doing this aspersister was taking sometimetopersist the above action-test data hence was getting reference doesn't exist error 
+	const attempts = 10 //we are doing this aspersister was taking sometimetopersist the above action-test data hence was getting reference doesn't exist error
 	for i := 0; i < attempts; i++ {
 		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), apps)
 		if roleMappingErr == nil {

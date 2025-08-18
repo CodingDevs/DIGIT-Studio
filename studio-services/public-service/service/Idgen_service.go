@@ -44,7 +44,7 @@ func (ser *IdGenService) GetId(requestInfo model.RequestInfo, tenantId, name, fo
 	var ids []string
 	if err != nil {
 		log.Printf("Error calling create Idgen API: %v", err)
-		return ids, nil
+		return ids, err
 	}
 	for _, idResp := range idGenResp.IdResponses {
 		ids = append(ids, idResp.Id)

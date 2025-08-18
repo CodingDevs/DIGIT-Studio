@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"os"
+
 	//"crypto/internal/fips140/edwards25519/field"
 	"encoding/json"
 	"log"
@@ -25,7 +26,7 @@ type ApplicationController struct {
 	indexerService     *service.IndexerService
 }
 
-func NewApplicationController(service *service.ApplicationService, workflowIntegrator *service.WorkflowIntegrator, individualService *service.IndividualService, enrichmentService *service.EnrichmentService, smsService *service.SMSService,indexerService *service.IndexerService) *ApplicationController {
+func NewApplicationController(service *service.ApplicationService, workflowIntegrator *service.WorkflowIntegrator, individualService *service.IndividualService, enrichmentService *service.EnrichmentService, smsService *service.SMSService, indexerService *service.IndexerService) *ApplicationController {
 	return &ApplicationController{service: service, workflowIntegrator: workflowIntegrator, individualService: individualService, enrichmentService: enrichmentService, smsService: smsService, indexerService: indexerService}
 }
 
@@ -66,15 +67,15 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		return
 	}
 
-	req, err = c.enrichmentService.EnrichApplicationsWithIdGen(req,"application")
+	req, err = c.enrichmentService.EnrichApplicationsWithIdGen(req, "application")
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Enrichment failed: "+err.Error())
-	    return
+		return
 	}
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": req.Application.BusinessService,
-        "module":  req.Application.Module,}
+		"service": req.Application.BusinessService,
+		"module":  req.Application.Module}
 
 	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(req.Application.TenantId, schemaCode, filters, req.RequestInfo)
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
@@ -82,25 +83,25 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
 		return
 	}
-	
+
 	firstEntry, ok := mdmsList[0].(map[string]interface{})
 	if !ok {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: first entry is not a map")
 		return
 	}
-	
+
 	data, ok := firstEntry["data"].(map[string]interface{})
 	if !ok {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: missing or invalid 'data'")
 		return
 	}
-	
+
 	applicantMDMS, ok := data["applicant"].(map[string]interface{})
 	if !ok {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No applicant section in MDMS data")
 		return
 	}
-	
+
 	allowedTypes, ok := applicantMDMS["types"].([]interface{})
 	if !ok || len(allowedTypes) == 0 {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "No 'types' defined in applicant MDMS data")
@@ -121,15 +122,15 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 			return
 		}
 		if strings.EqualFold(applicant.Type, "individual") {
-			if  applicant.UserId == "" {
+			if applicant.UserId == "" {
 				mobile := strconv.FormatInt(applicant.MobileNumber, 10)
 				criteria := map[string]interface{}{
 					"mobileNumber": mobile,
 					"tenantId":     req.Application.TenantId,
 				}
-		
+
 				resp := c.individualService.GetIndividual(req.RequestInfo, criteria)
-		
+
 				if len(resp.Individual) == 0 {
 					createdResp := c.individualService.CreateUser(applicant, req.RequestInfo, req.Application)
 					if createdResp.Individual.IndividualId != "" {
@@ -144,37 +145,11 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 					log.Println("Existing individual found")
 				}
 			}
-		/*mobile := strconv.FormatInt(applicant.MobileNumber, 10)
-		criteria := map[string]interface{}{
-			"mobileNumber": mobile,
-			"tenantId":     req.Application.TenantId,
-		}
-
-		// Check if individual exists
-		resp := c.individualService.GetIndividual(req.RequestInfo, criteria)
-
-		if len(resp.Individual) == 0 {
-			// If not found, create individual
-			createdResp := c.individualService.CreateUser(applicant, req.RequestInfo)
-
-			if createdResp.Individual.IndividualId != "" {
-				req.Application.Applicants[i].UserId = createdResp.Individual.IndividualId
-			} else {
-				log.Println("Failed to create individual for applicant:", applicant.Name)
-				utils.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to create individual")
-				return
-			}
 		} else {
-			// Individual exists, update applicant UserId
-			req.Application.Applicants[i].UserId = resp.Individual[0].IndividualId
-		     log.Println("Existing individual found")
-			
-		}*/
-	} else{
-		log.Printf("Skipping individual lookup for applicant '%s' of type '%s'", applicant.Name, applicant.Type)
-	    // TODO: Add organization-specific logic here if needed
+			log.Printf("Skipping individual lookup for applicant '%s' of type '%s'", applicant.Name, applicant.Type)
+			// TODO: Add organization-specific logic here if needed
+		}
 	}
-}
 
 	// Call workflow integrator on success
 	err = c.workflowIntegrator.CallWorkflow(&req)
@@ -190,12 +165,12 @@ func (c *ApplicationController) CreateApplicationHandler(w http.ResponseWriter, 
 	}
 	_, err2 := c.smsService.SendSMS(req, req.Application.TenantId, req.Application.Applicants)
 	if err2 != nil {
-		log.Printf("error sending sms  %v",err2)
+		log.Printf("error sending sms  %v", err2)
 	}
 
-    err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
+	err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("SAVE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
 	if err != nil {
-		log.Printf("error sending to indexer topic   %v",err)
+		log.Printf("error sending to indexer topic   %v", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
@@ -233,7 +208,7 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 	businessService := r.URL.Query().Get("businessService")
 	status := r.URL.Query().Get("status")
 	applicationNumber := r.URL.Query().Get("applicationNumber")
-	userId:=r.URL.Query().Get("userId")
+	userId := r.URL.Query().Get("userId")
 	sortBy := r.URL.Query().Get("sortBy")
 	createdBy := r.URL.Query().Get("createdBy")
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
@@ -262,17 +237,17 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 		criteria.SearchCriteria.ApplicationNumber = applicationNumber
 	}
 	if userId != "" {
-		criteria.SearchCriteria.UserId=userId
+		criteria.SearchCriteria.UserId = userId
 	}
 	if createdBy != "" {
-		criteria.SearchCriteria.CreatedBy= createdBy
+		criteria.SearchCriteria.CreatedBy = createdBy
 	}
 	if idsParam := r.URL.Query().Get("ids"); idsParam != "" {
 		criteria.SearchCriteria.Ids = strings.Split(idsParam, ",")
 	}
 	log.Println("inside search", criteria.SearchCriteria)
 	ctx := context.Background()
-	res, err := c.service.SearchApplication(ctx, criteria.SearchCriteria,AuthToken)
+	res, err := c.service.SearchApplication(ctx, criteria.SearchCriteria, AuthToken)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -292,7 +267,7 @@ func (c *ApplicationController) SearchApplicationHandler(w http.ResponseWriter, 
 func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, r *http.Request) {
 	serviceCode := mux.Vars(r)["serviceCode"]
 
-	if serviceCode == ""  {
+	if serviceCode == "" {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "Path variable 'serviceCode' is required")
 		return
 	}
@@ -305,9 +280,9 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 
 	AuthToken := r.Header.Get("auth-token")
 	if AuthToken == "" {
-		log.Println("auth-token",AuthToken)
+		log.Println("auth-token", AuthToken)
 	}
-    
+
 	var req model.ApplicationRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -325,7 +300,7 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 		req.Application.ServiceCode = serviceCode
 	}
 	ctx := context.Background()
-	req,err =c.enrichmentService.EnrichApplicationsWithDemand(req)
+	req, err = c.enrichmentService.EnrichApplicationsWithDemand(req)
 	if err != nil {
 		log.Printf("Deamnd Creation failed: %v", err)
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
@@ -345,17 +320,17 @@ func (c *ApplicationController) UpdateApplicationHandler(w http.ResponseWriter, 
 	}
 	_, err2 := c.smsService.SendSMS(req, req.Application.TenantId, req.Application.Applicants)
 	if err2 != nil {
-		log.Printf("error sending sms  %v",err2)
+		log.Printf("error sending sms  %v", err2)
 	}
 	err = c.indexerService.SendRequestToIndexerForParallelWorkflow(res, req.RequestInfo, os.Getenv("UPDATE_PUBLIC_SERVICE_APPLICATION_TOPIC_INDEXER"))
 	if err != nil {
-		log.Printf("error sending to indexer topic   %v",err2)
+		log.Printf("error sending to indexer topic   %v", err2)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
 
-func(c *ApplicationController) SearchMyApplicationHandler(w http.ResponseWriter,r *http.Request){
+func (c *ApplicationController) SearchMyApplicationHandler(w http.ResponseWriter, r *http.Request) {
 	var criteria model.SearchRequest
 
 	tenantID := r.Header.Get("X-Tenant-Id")
@@ -378,7 +353,7 @@ func(c *ApplicationController) SearchMyApplicationHandler(w http.ResponseWriter,
 	businessService := r.URL.Query().Get("businessService")
 	status := r.URL.Query().Get("status")
 	applicationNumber := r.URL.Query().Get("applicationNumber")
-	userId:=r.URL.Query().Get("userId")
+	userId := r.URL.Query().Get("userId")
 	sortBy := r.URL.Query().Get("sortBy")
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if limit, err := strconv.Atoi(limitStr); err == nil {
@@ -406,14 +381,14 @@ func(c *ApplicationController) SearchMyApplicationHandler(w http.ResponseWriter,
 		criteria.SearchCriteria.ApplicationNumber = applicationNumber
 	}
 	if userId != "" {
-		criteria.SearchCriteria.UserId=userId
+		criteria.SearchCriteria.UserId = userId
 	}
 	if idsParam := r.URL.Query().Get("ids"); idsParam != "" {
 		criteria.SearchCriteria.Ids = strings.Split(idsParam, ",")
 	}
 	log.Println("inside search", criteria.SearchCriteria)
 	ctx := context.Background()
-	res, err := c.service.SearchApplication(ctx, criteria.SearchCriteria,AuthToken)
+	res, err := c.service.SearchApplication(ctx, criteria.SearchCriteria, AuthToken)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -452,20 +427,19 @@ func (c *ApplicationController) CalculateHandler(w http.ResponseWriter, r *http.
 func (c *ApplicationController) DeleteMDMSSchema(w http.ResponseWriter, r *http.Request) {
 	schemaCode := r.URL.Query().Get("schemaCode")
 	tenantId := r.URL.Query().Get("tenantId")
-	if schemaCode == ""  {
+	if schemaCode == "" {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "schemaCode variable 'SchemaCode' is required")
 		return
 	}
-    if tenantId == ""  {
+	if tenantId == "" {
 		utils.WriteErrorResponse(w, http.StatusBadRequest, "tenantId variable 'TenantId' is required")
 		return
 	}
 	ctx := context.Background()
-	
-	 err := c.service.DeleteMDMSSchema(ctx, schemaCode, tenantId)
+
+	err := c.service.DeleteMDMSSchema(ctx, schemaCode, tenantId)
 	if err != nil {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
-

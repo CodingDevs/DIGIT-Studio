@@ -12,6 +12,7 @@ import (
 	producer "public-service/kafka/producer"
 	"public-service/model"
 	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -65,39 +66,39 @@ func (v ValidateService) PersistData(service string, input model.Validation, suc
 		}
 	}
 
-	/*err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason) 
+	/*err = v.db.QueryRow(`INSERT INTO public_service_process (id, process_name, business_service, module, createdby, created_time, success, failurereason)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, id, process_name, input.Service, input.Module, createdby, created_time, success, failureReason).Scan(&id)
 	if err != nil {
 		log.Fatal("Insert failed:", err)
 	}*/
 
 	payload := map[string]interface{}{
-	 	"id": id,
-		"process_name": process_name,
+		"id":              id,
+		"process_name":    process_name,
 		"businessService": input.Service,
-		"module": input.Module,
-	 	"createdBy": createdby,
-	 	"createdTime": created_time.UnixMilli(),
-	 	"success": success,
-	 	"failureReason": failureReason,
-	 }
+		"module":          input.Module,
+		"createdBy":       createdby,
+		"createdTime":     created_time.UnixMilli(),
+		"success":         success,
+		"failureReason":   failureReason,
+	}
 
-	 kafkaPayload, err := json.Marshal(payload)
-	 if err != nil {
-	 	 fmt.Errorf("failed to marshal application request for Kafka: %w", err)
-	 }
-     ctx := context.Background()
-	 if v.kafkaProducer != nil {
-	 	log.Println("request", string(kafkaPayload))
-	 	err = v.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE_PROCESS"), kafkaPayload)
-	 	if err != nil {
-	 		log.Printf("failed to push kafka message: %v", err)
-			return  err
-	 	}
-	 } else {
-	 	return  errors.New("kafka producer is not initialized")
-	 }
-	 return nil
+	kafkaPayload, err := json.Marshal(payload)
+	if err != nil {
+		fmt.Errorf("failed to marshal application request for Kafka: %w", err)
+	}
+	ctx := context.Background()
+	if v.kafkaProducer != nil {
+		log.Println("request", string(kafkaPayload))
+		err = v.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE_PROCESS"), kafkaPayload)
+		if err != nil {
+			log.Printf("failed to push kafka message: %v", err)
+			return err
+		}
+	} else {
+		return errors.New("kafka producer is not initialized")
+	}
+	return nil
 }
 
 func (v ValidateService) ValidateServices(tenantId string, business_service string, module string, req model.ServiceRequest) (bool, error) {
@@ -136,8 +137,8 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 	}
 
 	funcMap := map[string]func(model.Validation) []model.ValidationResponse{
-		"idgen":     v.IDgenValidation,
-		"bill":      v.BillValidation,
+		"idgen": v.IDgenValidation,
+		"bill":  v.BillValidation,
 	}
 
 	for service, value := range servicemap {
@@ -224,13 +225,13 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 	} else {
 		v.PersistData("workflow", input, true, nil)
 	}
-    //localization of fields data
+	//localization of fields data
 	v.localization_service.BasicLocalization(data, req)
 	//localization of headings and constants like next button and all
 	v.localization_service.Localization(data, req)
-	// localization of workflow action and states 
+	// localization of workflow action and states
 	v.localization_service.WorkflowLocalization(data, req)
-    v.localization_service.SMSLocalization(data,req)
+	v.localization_service.SMSLocalization(data, req)
 
 	return true, nil
 }
