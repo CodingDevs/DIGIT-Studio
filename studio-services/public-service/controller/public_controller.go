@@ -48,10 +48,15 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 	}
 
 	req, err = c.enrichmentService.EnrichServiceWithIdGen(req, "service")
+	log.Printf("Enrichment Service response: %+v", req)
 	if err != nil {
+		log.Printf("Enrichment failed: %v", err)
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Enrichment failed: "+err.Error())
 		return
-
+	}
+	log.Printf("Enriched ServiceCode: %+v", req.Service.ServiceCode)
+	if req.Service.ID == uuid.Nil {
+		req.Service.ID = uuid.New()
 	}
 	if req.Service.ID == uuid.Nil || req.Service.ServiceCode == "" {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Service ID generation failed")
