@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	_ "github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"public-service/config"
 	"public-service/model"
+
+	_ "github.com/joho/godotenv"
 )
 
 const (
@@ -49,9 +50,9 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
 		"service": app.BusinessService,
-		"module": app.Module,
+		"module":  app.Module,
 	}
-	mdmsData, err 	:= wi.MDMSV2Service.SearchMDMS(app.TenantId, schemaCode, filters, req.RequestInfo)
+	mdmsData, err := wi.MDMSV2Service.SearchMDMS(app.TenantId, schemaCode, filters, req.RequestInfo)
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
 	if !ok || len(mdmsList) == 0 {
 		log.Println("MDMS data missing or invalid")
@@ -73,7 +74,6 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 		log.Println("BusinessService not found in workflow data or application")
 		return errors.New("unable to resolve businessService from application or MDMS")
 	}
-
 
 	processInstance[BUSINESS_ID_KEY] = app.ApplicationNumber
 	processInstance[TENANT_ID_KEY] = app.TenantId
@@ -138,6 +138,7 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 	}
 
 	stateName := wfResponse.ProcessInstances[0].State.State
+	req.Application.WorkflowStatus = wfResponse.ProcessInstances[0].State.State
 	req.Application.Status = "INACTIVE"
 	for _, state := range activeStates {
 		if s, ok := state.(string); ok && s == stateName {
@@ -148,7 +149,7 @@ func (wi *WorkflowIntegrator) CallWorkflow(req *model.ApplicationRequest) error 
 	return nil
 }
 
-func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo ) error {
+func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Application, req model.RequestInfo) error {
 	app := applicationResponse
 	requestPayload := make(map[string]interface{})
 	requestPayload[REQUEST_INFO_KEY] = req
@@ -167,7 +168,7 @@ func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Applicat
 		return errors.New("workflow host or search path is not set in environment variables")
 	}
 
-	url := fmt.Sprintf("%s%s?tenantId=%s&businessIds=%s&businessService=%s", wfHost, wfPath, app.TenantId, app.ApplicationNumber,app.Workflow.BusinessService)
+	url := fmt.Sprintf("%s%s?tenantId=%s&businessIds=%s&businessService=%s", wfHost, wfPath, app.TenantId, app.ApplicationNumber, app.Workflow.BusinessService)
 	log.Println("URL:", url)
 
 	resp, err := wi.HttpClient.Post(url, "application/json", bytes.NewReader(payloadBytes))
@@ -195,4 +196,3 @@ func (wi *WorkflowIntegrator) SearchWorkflow(applicationResponse *model.Applicat
 	applicationResponse.ProcessInstance = &firstInstance
 	return nil
 }
-
