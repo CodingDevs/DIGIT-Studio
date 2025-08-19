@@ -11,6 +11,7 @@ import (
 	"public-service/model"
 	"public-service/repository"
 	"strings"
+	"unicode"
 )
 
 type LocalizationService struct {
@@ -107,7 +108,72 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 	return msgDetail
 }
 
+// toTitleCase converts a string to Title Case with spaces
+func toTitleCase(s string) string {
+	if s == "" {
+		return s
+	}
+
+	// Split by spaces, hyphens, underscores, and other common delimiters
+	words := strings.FieldsFunc(s, func(c rune) bool {
+		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+	})
+
+	if len(words) == 0 {
+		return s
+	}
+
+	// Convert each word to title case and join with spaces
+	var titleWords []string
+	for _, word := range words {
+		if len(word) > 0 {
+			titleWords = append(titleWords, strings.Title(strings.ToLower(word)))
+		}
+	}
+
+	return strings.Join(titleWords, " ")
+}
+
+// convertMessagesToTitleCase converts all message content to Title Case
+func convertMessagesToTitleCase(messages []model.Message) []model.Message {
+	convertedMessages := make([]model.Message, len(messages))
+
+	for i, msg := range messages {
+		convertedMessages[i] = msg
+		// Convert the message content to Title Case
+		convertedMessages[i].Message = toTitleCase(msg.Message)
+	}
+
+	return convertedMessages
+}
+
 func (l *LocalizationService) SendLocalizationMessage(messages []model.Message, req model.ServiceRequest) (map[string]interface{}, error) {
+	tenantId := req.Service.TenantId
+
+	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
+
+	// Convert all message content to Title Case
+	titleCaseMessages := convertMessagesToTitleCase(messages)
+
+	payload := model.Localization{
+		RequestInfo: req.RequestInfo,
+		TenantID:    tenantId,
+		Messages:    titleCaseMessages,
+	}
+
+	var result map[string]interface{}
+	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
+	if err != nil {
+		log.Println(err.Error())
+		return result, err
+	}
+
+	log.Println(result)
+
+	return result, nil
+}
+
+func (l *LocalizationService) SendLocalizationMessageOne(messages []model.Message, req model.ServiceRequest) (map[string]interface{}, error) {
 	tenantId := req.Service.TenantId
 
 	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
@@ -342,7 +408,7 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 
 	message = model.Message{
 		Code:    strings.ToUpper(req.Service.Module) + "_" + "CARDDESCRIPTION",
-		Message: strings.ToUpper(req.Service.Module) + " Service ",
+		Message: strings.ToUpper(req.Service.Module) + " SERVICE ",
 		Locale:  locale,
 		Module:  "rainmaker-common",
 	}
