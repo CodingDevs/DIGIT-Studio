@@ -1385,7 +1385,7 @@ const Workflow = () => {
         const grouped = {
             sms: [],
             email: [],
-            push:[],
+            push: [],
         };
         
         // Find states that have notifications selected
@@ -1413,7 +1413,13 @@ const Workflow = () => {
                 grouped[type].push(template);
             }
         });
-        return grouped;
+        
+        // If no notifications are configured, provide empty arrays
+        return {
+            sms: grouped.sms || [],
+            push: grouped.push || [],
+            email: grouped.email || []
+        };
     };
 
     // Function to generate complete service configuration
@@ -1678,9 +1684,15 @@ const Workflow = () => {
         canvasElements.forEach(state => {
             if (state.checklist && state.checklist.length > 0) {
                 state.checklist.forEach(checklistItem => {
+                    // Find the full checklist data from uichecklists
+                    const fullChecklistData = uiConfigurations.uichecklists.find(
+                        checklist => checklist.name === checklistItem.name
+                    );
+                    
                     const checklistEntry = {
-                        name: checklistItem.name, // Remove spaces and concatenate
-                        state: state.name.toUpperCase().replace(/\s+/g, '_') // State name in uppercase with underscores
+                        name: checklistItem.name,
+                        state: state.name.toUpperCase().replace(/\s+/g, '_'), // State name in uppercase with underscores
+                        checklistData: fullChecklistData || null // Include the full checklist object
                     };
                     checklistConfig.push(checklistEntry);
                 });

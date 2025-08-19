@@ -82,7 +82,7 @@ export const extractDraftsAndPublished = (mdmsData = [], serviceData = []) => {
   );
 
   const drafts = mdmsData.filter(
-    (item) => !serviceIdentifiers.includes(item?.uniqueIdentifier)
+    (item) => !serviceIdentifiers.includes(item?.uniqueIdentifier) && item?.isActive
   );
 
   const uniqueModules = [];
@@ -116,6 +116,10 @@ const LandingPage = () => {
   const [importData, setImportData] = useState("");
   const [importModuleName, setImportModuleName] = useState("");
   const [importServiceName, setImportServiceName] = useState("");
+  
+  // Validation states
+  const [importErrors, setImportErrors] = useState({});
+  const [isImporting, setIsImporting] = useState(false);
 
   const [selectedToggle, setSelectedToggle] = useState(
     LandingPageConfig.find((item) => item.type === "ToggleGroup")?.default || ""
@@ -215,38 +219,1077 @@ const LandingPage = () => {
     }
   };
 
-  const handleImportService = () => {
-    if (!importModuleName.trim() || !importServiceName.trim() || !importData.trim()) return;
-  
+  const handleImportService = async () => {
+    // Clear previous errors
+    setImportErrors({});
+    
+    // Validate input data
+    const validationErrors = validateImportData();
+    if (Object.keys(validationErrors).length > 0) {
+      setImportErrors(validationErrors);
+      return;
+    }
+
     const sanitizedModule = importModuleName.trim().replace(/\s+/g, "_");
     const sanitizedService = importServiceName.trim().replace(/\s+/g, "_");
+
+    // Check if service already exists
+    const serviceExists = await checkServiceExists(sanitizedModule, sanitizedService);
+    if (serviceExists) {
+      setImportErrors({
+        serviceName: "A service with this name already exists. Please use a different name."
+      });
+      return;
+    }
+
+    setIsImporting(true);
   
-    // Parse the JSON data to extract module and service
     try {
+      // Parse the JSON data
       const parsedData = JSON.parse(importData);
-      const extractedModule = parsedData.module || parsedData.Module || parsedData.MODULE;
-      const extractedService = parsedData.service || parsedData.Service || parsedData.SERVICE;
       
-      console.log("Extracted from JSON - Module:", extractedModule);
-      console.log("Extracted from JSON - Service:", extractedService);
-      console.log("New Module Name:", sanitizedModule);
-      console.log("New Service Name:", sanitizedService);
+      // Convert published service config to draft service config
+      const draftConfig = convertPublishedToDraftConfig(parsedData, sanitizedModule, sanitizedService);
+      
+      // Save the draft configuration
+      await saveServiceConfig.mutateAsync(draftConfig);
+      console.log(draftConfig,"draftConfig");
+      console.log("Service imported successfully");
+      
+      // Close the popup
+      setShowImportPopup(false);
+      setImportData("");
+      setImportModuleName("");
+      setImportServiceName("");
+      setImportErrors({});
+      setIsImporting(false);
+      
+      // Navigate to service builder
+      const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
+        sanitizedModule
+      )}&service=${encodeURIComponent(sanitizedService)}`;
+    
+      history.push(`/${window.contextPath}/${url}`);
       
     } catch (error) {
-      console.error("Error parsing JSON:", error);
+      console.error("Error importing service:", error);
+      setIsImporting(false);
+      
+      // Show network/backend error
+      setImportErrors({
+        general: "Import failed due to a network error. Please try again."
+      });
     }
-  
-    // Here you can add logic to process the import data
-    // For now, we'll just navigate to the service builder with the imported data
-    // const url = `employee/servicedesigner/Service-Builder-Home?module=${encodeURIComponent(
-    //   sanitizedModule
-    // )}&service=${encodeURIComponent(sanitizedService)}&import=true`;
-  
-    // history.push(`/${window.contextPath}/${url}`);
-    // setShowImportPopup(false);
-    // setImportData("");
-    // setImportModuleName("");
-    // setImportServiceName("");
+  };
+
+  // Function to create address section
+  const createAddressSection = () => {
+    return {
+      name: "addressSection",
+      type: "object",
+      cards: [
+        {
+          fields: [
+            {
+              type: "text",
+              label: "Pincode",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              jsonPath: "AddressPincode",
+              metaData: {},
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              defaultValue: "",
+              errorMessage: ""
+            },
+            {
+              type: "text",
+              label: "Street Name",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              jsonPath: "AddressStreet",
+              metaData: {},
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              defaultValue: "",
+              errorMessage: ""
+            },
+            {
+              type: "dropdown",
+              label: "City",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              jsonPath: "AddressCity",
+              metaData: {},
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              defaultValue: "",
+              errorMessage: "",
+              isBoundaryData: true,
+              dropDownOptions: []
+            }
+          ],
+          header: "Address Details",
+          description: "Address Information",
+          headerFields: [
+            {
+              type: "text",
+              label: "SCREEN_HEADING",
+              value: "Address Details",
+              active: true,
+              jsonPath: "ScreenHeading",
+              metaData: {},
+              required: true
+            },
+            {
+              type: "text",
+              label: "SCREEN_DESCRIPTION",
+              value: "Please provide your address information",
+              active: true,
+              jsonPath: "Description",
+              metaData: {},
+              required: true
+            }
+          ]
+        }
+      ],
+      order: 1,
+      config: {
+        enableComment: false,
+        enableFieldAddition: true,
+        allowFieldsAdditionAt: ["body"],
+        enableSectionAddition: false,
+        allowCommentsAdditionAt: ["body"]
+      },
+      parent: "REGISTRATIONFLOW",
+      navigateTo: {
+        name: "nextScreen",
+        type: "form"
+      },
+      actionLabel: "NEXT"
+    };
+  };
+
+  // Function to create applicant section
+  const createApplicantSection = () => {
+    return {
+      name: "applicantSection",
+      type: "object",
+      cards: [
+        {
+          fields: [
+            {
+              type: "text",
+              label: "Name",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              jsonPath: "ApplicantName",
+              metaData: {},
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              defaultValue: "",
+              errorMessage: ""
+            },
+            {
+              type: "mobileNumber",
+              label: "Mobile Number",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              hideSpan: true,
+              jsonPath: "ApplicantMobile",
+              metaData: { hideSpan: true },
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              populators: { hideSpan: true },
+              defaultValue: "",
+              errorMessage: ""
+            },
+            {
+              type: "dropdown",
+              label: "Gender",
+              value: "",
+              active: true,
+              tooltip: "",
+              helpText: "",
+              jsonPath: "ApplicantGender",
+              metaData: {},
+              readOnly: false,
+              required: true,
+              deleteFlag: true,
+              innerLabel: "",
+              defaultValue: "",
+              errorMessage: "",
+              dropDownOptions: [
+                { name: "Male", value: "male" },
+                { name: "Female", value: "female" },
+                { name: "Other", value: "other" }
+              ]
+            }
+          ],
+          header: "Applicant Details",
+          description: "Applicant Information",
+          headerFields: [
+            {
+              type: "text",
+              label: "SCREEN_HEADING",
+              value: "Applicant Details",
+              active: true,
+              jsonPath: "ScreenHeading",
+              metaData: {},
+              required: true
+            },
+            {
+              type: "text",
+              label: "SCREEN_DESCRIPTION",
+              value: "Please provide your personal information",
+              active: true,
+              jsonPath: "Description",
+              metaData: {},
+              required: true
+            }
+          ]
+        }
+      ],
+      order: 1,
+      config: {
+        enableComment: false,
+        enableFieldAddition: true,
+        allowFieldsAdditionAt: ["body"],
+        enableSectionAddition: false,
+        allowCommentsAdditionAt: ["body"]
+      },
+      parent: "REGISTRATIONFLOW",
+      navigateTo: {
+        name: "nextScreen",
+        type: "form"
+      },
+      actionLabel: "NEXT"
+    };
+  };
+
+  // Function to convert published service fields to uiforms structure
+  const convertFieldsToUiforms = (fields, newModule, newService, boundary = null, applicant = null) => {
+    // Create a default form configuration
+    const defaultForm = {
+      formName: `${newModule} ${newService} Form`,
+      isActive: true,
+      formConfig: {
+        screens: []
+      },
+      localization: {},
+      formDescription: `Form for ${newModule} ${newService} service`
+    };
+
+    // Convert each field to a screen
+    const screens = fields.map((field, index) => {
+      const screen = {
+        name: field.name || `screen_${index}`,
+        type: field.type || "object",
+        cards: []
+      };
+
+      // Convert field properties to form fields
+      if (field.properties && field.properties.length > 0) {
+        const card = {
+          fields: field.properties.map(prop => convertPropertyToField(prop)),
+          header: field.label || field.name,
+          description: field.label || field.name,
+          headerFields: [
+            {
+              type: "text",
+              label: "SCREEN_HEADING",
+              value: field.label || field.name,
+              active: true,
+              jsonPath: "ScreenHeading",
+              metaData: {},
+              required: true,
+              isLocalised: true
+            },
+            {
+              type: "textarea",
+              label: "SCREEN_DESCRIPTION",
+              value: field.label || field.name,
+              active: true,
+              jsonPath: "Description",
+              metaData: {},
+              required: true,
+              isLocalised: true
+            }
+          ]
+        };
+        screen.cards.push(card);
+      } else {
+        // If no properties, create a simple field
+        const card = {
+          fields: [convertPropertyToField(field)],
+          header: field.label || field.name,
+          description: field.label || field.name,
+          headerFields: [
+            {
+              type: "text",
+              label: "SCREEN_HEADING",
+              value: field.label || field.name,
+              active: true,
+              jsonPath: "ScreenHeading",
+              metaData: {},
+              required: true,
+              isLocalised: true
+            },
+            {
+              type: "textarea",
+              label: "SCREEN_DESCRIPTION",
+              value: field.label || field.name,
+              active: true,
+              jsonPath: "Description",
+              metaData: {},
+              required: true,
+              isLocalised: true
+            }
+          ]
+        };
+        screen.cards.push(card);
+      }
+
+      // Add screen configuration
+      screen.order = index + 1;
+      screen.config = {
+        enableComment: false,
+        enableFieldAddition: true,
+        allowFieldsAdditionAt: ["body"],
+        enableSectionAddition: false,
+        allowCommentsAdditionAt: ["body"]
+      };
+      screen.parent = "REGISTRATIONFLOW";
+      screen.navigateTo = {
+        name: "nextScreen",
+        type: "form"
+      };
+      screen.actionLabel = "NEXT";
+
+      return screen;
+    });
+
+    // Add address section if boundary data exists
+    if (boundary) {
+      const addressSection = createAddressSection();
+      addressSection.order = screens.length + 1;
+      screens.push(addressSection);
+    }
+
+    // Add applicant section if applicant data exists
+    if (applicant) {
+      const applicantSection = createApplicantSection();
+      applicantSection.order = screens.length + 1;
+      screens.push(applicantSection);
+    }
+
+    defaultForm.formConfig.screens = screens;
+    return [defaultForm];
+  };
+
+  // Function to convert a property to a form field
+  const convertPropertyToField = (property) => {
+    const field = {
+      type: getFieldType(property),
+      label: property.label || property.name,
+      active: true,
+      tooltip: "",
+      helpText: "",
+      jsonPath: property.name,
+      metaData: {},
+      readOnly: false,
+      required: property.required || false,
+      deleteFlag: true,
+      innerLabel: "",
+      defaultValue: property.defaultValue || "",
+      errorMessage: ""
+    };
+
+    // Add type-specific properties
+    switch (property.format) {
+      case "text":
+        field.maxLength = property.maxLength || 128;
+        field.minLength = property.minLength || 2;
+        break;
+      case "number":
+        field.maxLength = property.maxLength || 10;
+        field.minLength = property.minLength || 1;
+        break;
+      case "mobileNumber":
+        field.maxLength = property.maxLength || 256;
+        field.minLength = property.minLength || 0;
+        field.prefix = property.prefix || "91";
+        field.hideSpan = true;
+        field.populators = { hideSpan: true };
+        break;
+      case "radioordropdown":
+        if (property.reference === "mdms") {
+          field.schemaCode = property.schema;
+          field.reference = "mdms";
+        } else if (property.values && property.values.length > 0) {
+          field.dropDownOptions = property.values.map(value => ({
+            name: value,
+            value: value.toLowerCase()
+          }));
+        }
+        break;
+      case "radio":
+        if (property.reference === "mdms") {
+          field.schemaCode = property.schema;
+          field.reference = "mdms";
+        } else if (property.values && property.values.length > 0) {
+          field.dropDownOptions = property.values.map(value => ({
+            name: value,
+            value: value.toLowerCase()
+          }));
+        }
+        break;
+    }
+
+    return field;
+  };
+
+  // Function to map service config field types to form field types
+  const getFieldType = (property) => {
+    switch (property.format) {
+      case "text":
+        return "text";
+      case "number":
+        return "number";
+      case "date":
+        return "date";
+      case "mobileNumber":
+        return "mobileNumber";
+      case "radioordropdown":
+        return "dropdown";
+      case "radio":
+        return "radio";
+      default:
+        return "text";
+    }
+  };
+
+  // Function to convert published service notifications to uinotifications structure
+  const convertNotificationsToUinotifications = (notification, newModule, newService) => {
+    if (!notification) {
+      return [];
+    }
+
+    const uinotifications = [];
+
+    // Convert SMS notifications
+    if (notification.sms && Array.isArray(notification.sms)) {
+      notification.sms.forEach(smsNotif => {
+        const uinotification = {
+          title: smsNotif.code || "SMS Notification",
+          subject: "",
+          isActive: true,
+          messageBody: smsNotif.template || "",
+          additionalDetails: {
+            type: "sms",
+            category: `${newModule}_${newService}`,
+            workflow: smsNotif.states || []
+          }
+        };
+        uinotifications.push(uinotification);
+      });
+    }
+
+    // Convert Push notifications
+    if (notification.push && Array.isArray(notification.push)) {
+      notification.push.forEach(pushNotif => {
+        const uinotification = {
+          title: pushNotif.code || "Push Notification",
+          subject: "",
+          isActive: true,
+          messageBody: pushNotif.template || "",
+          additionalDetails: {
+            type: "push",
+            category: `${newModule}_${newService}`,
+            workflow: pushNotif.states || []
+          }
+        };
+        uinotifications.push(uinotification);
+      });
+    }
+
+    // Convert Email notifications
+    if (notification.email && Array.isArray(notification.email)) {
+      notification.email.forEach(emailNotif => {
+        const uinotification = {
+          title: emailNotif.code || "Email Notification",
+          subject: emailNotif.subject || "",
+          isActive: true,
+          messageBody: emailNotif.template || "",
+          additionalDetails: {
+            type: "email",
+            category: `${newModule}_${newService}`,
+            workflow: emailNotif.states || []
+          }
+        };
+        uinotifications.push(uinotification);
+      });
+    }
+
+    return uinotifications;
+  };
+
+  // Function to convert published service checklist to uichecklists structure
+  const convertChecklistToUichecklists = (checklist, newModule, newService) => {
+    if (!checklist || !Array.isArray(checklist)) {
+      return [];
+    }
+
+    const uichecklists = [];
+    const uniqueChecklists = new Map(); // To avoid duplicates
+
+    checklist.forEach(checklistItem => {
+      // Use checklist name as key to avoid duplicates
+      const checklistName = checklistItem.name;
+      
+      if (!uniqueChecklists.has(checklistName) && checklistItem.checklistData) {
+        const uichecklist = {
+          data: checklistItem.checklistData.data || [],
+          name: checklistName,
+          isActive: checklistItem.checklistData.isActive !== false, // Default to true
+          description: checklistItem.checklistData.description || `Description for ${checklistName}`
+        };
+        
+        uichecklists.push(uichecklist);
+        uniqueChecklists.set(checklistName, uichecklist);
+      }
+    });
+
+    return uichecklists;
+  };
+
+
+
+  // Helper function to filter out hardcoded system roles
+  const filterHardcodedRoles = (role, moduleServicePrefix) => {
+    // List of hardcoded system roles that should not appear in draft workflow states
+    const hardcodedRoles = ['CITIZEN', 'STUDIO_ADMIN'];
+    
+    // Check if the role contains any hardcoded system role name
+    const containsHardcodedRole = hardcodedRoles.some(hardcodedRole => 
+      role.includes(hardcodedRole)
+    );
+    
+    // Only include roles that have the module/service prefix (custom roles)
+    const hasModuleServicePrefix = role.includes(moduleServicePrefix);
+    
+    // Filter out roles that contain hardcoded role names, even if they have the prefix
+    return hasModuleServicePrefix && !containsHardcodedRole;
+  };
+
+  // Function to convert published service roles to uiroles structure
+  const convertRolesToUiroles = (access, publishedModule, publishedService, newModule, newService, workflow = null) => {
+    const oldModuleServicePrefix = `${publishedModule.toUpperCase()}_${publishedService.toUpperCase()}`;
+    const uiroles = [];
+
+    // Get all unique roles from all role types
+    const allRoles = new Set();
+    
+    // Extract roles from access.roles
+    if (access && access.roles) {
+      Object.values(access.roles).forEach(roleArray => {
+        if (Array.isArray(roleArray)) {
+          roleArray.forEach(role => {
+            // Only include roles that have the module/service prefix (filter out hardcoded roles)
+            if (filterHardcodedRoles(role, oldModuleServicePrefix)) {
+              // Extract the role name without the module/service prefix
+              const roleName = role.replace(oldModuleServicePrefix + "_", "").replace(/_/g, " ");
+              allRoles.add(roleName);
+            }
+          });
+        }
+      });
+    }
+    
+    // Extract roles from workflow states
+    if (workflow && workflow.states) {
+      workflow.states.forEach(state => {
+        if (state.actions) {
+          state.actions.forEach(action => {
+            if (action.roles) {
+              action.roles.forEach(role => {
+                // Only include roles that have the module/service prefix (filter out hardcoded roles)
+                if (filterHardcodedRoles(role, oldModuleServicePrefix)) {
+                  // Extract the role name without the module/service prefix
+                  const roleName = role.replace(oldModuleServicePrefix + "_", "").replace(/_/g, " ");
+                  allRoles.add(roleName);
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // Convert each unique role to a uirole
+    allRoles.forEach(roleName => {
+      const uirole = {
+        code: roleName.toUpperCase(),
+        active: true,
+        category: `${newModule}_${newService}`,
+        isActive: true,
+        description: `Description for ${roleName.toLowerCase()}`,
+        additionalDetails: {
+          access: {
+            editor: true,
+            viewer: true,
+            creater: true
+          }
+        }
+      };
+      uiroles.push(uirole);
+    });
+
+    return uiroles;
+  };
+
+  // Function to convert published service workflow to uiworkflow structure
+  const convertWorkflowToUiworkflow = (workflow, newModule, newService, checklistConfig = []) => {
+    if (!workflow || !workflow.states) {
+      return {};
+    }
+
+    const moduleServicePrefix = `${newModule.toUpperCase()}_${newService.toUpperCase()}`;
+    const connections = [];
+    const canvasElements = [];
+
+    // Convert each state to a canvas element
+    workflow.states.forEach((state, index) => {
+      const elementId = Date.now() + index; // Generate unique ID
+      
+      // Determine node type based on state properties
+      let nodeType = "intermediate";
+      if (state.isStartState) {
+        nodeType = "start";
+      } else if (state.isTerminateState) {
+        nodeType = "end";
+      }
+
+      // Create canvas element
+      const canvasElement = {
+        id: elementId,
+        sla: state.sla ? Math.floor(state.sla / (1000 * 60 * 60)) : 24, // Convert milliseconds to hours
+        desc: state.state || "State Description",
+        form: [],
+        name: state.state || (index === 0 ? "START" : `STATE_${index}`),
+        type: "node",
+        roles: [],
+        nodetype: nodeType,
+        position: {
+          x: 100 + (index * 200),
+          y: 100 + (index * 100)
+        },
+        checklist: [],
+        sendnotif: [],
+        generatedoc: []
+      };
+
+      // Set form for start state
+      if (nodeType === "start") {
+        canvasElement.form = {
+          code: `${newModule} ${newService} Form`,
+          name: `${newModule} ${newService} Form`
+        };
+      }
+
+      // Set checklist based on checklist configuration
+      if (checklistConfig && checklistConfig.length > 0) {
+        const stateChecklists = checklistConfig.filter(checklist => 
+          checklist.state === state.state || 
+          (state.state === null && checklist.state === "START")
+        );
+        
+        if (stateChecklists.length > 0) {
+          canvasElement.checklist = stateChecklists.map(checklist => ({
+            code: checklist.name,
+            name: checklist.name
+          }));
+        }
+      }
+
+      // Add roles if available
+      if (state.actions && state.actions.length > 0) {
+        state.actions.forEach(action => {
+          if (action.roles) {
+            action.roles.forEach(role => {
+              // Only include roles that have the module/service prefix (filter out hardcoded roles)
+              if (filterHardcodedRoles(role, moduleServicePrefix)) {
+                // Convert role to the format expected by uiworkflow
+                const roleObj = {
+                  code: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " "),
+                  name: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " ")
+                };
+                if (!canvasElement.roles.some(r => r.code === roleObj.code)) {
+                  canvasElement.roles.push(roleObj);
+                }
+              }
+            });
+          }
+        });
+      }
+
+      canvasElements.push(canvasElement);
+
+      // Create connections between states
+      if (state.actions && state.actions.length > 0) {
+        state.actions.forEach((action, actionIndex) => {
+          if (action.nextState) {
+            // Find the target state element
+            const targetState = workflow.states.find(s => s.state === action.nextState);
+            if (targetState) {
+              const targetIndex = workflow.states.indexOf(targetState);
+              const targetElementId = Date.now() + targetIndex;
+
+              const connection = {
+                id: Date.now() + index + actionIndex,
+                to: targetElementId,
+                desc: `${action.action} action`,
+                from: elementId,
+                type: "action",
+                label: action.action,
+                aroles: action.roles ? action.roles
+                  .filter(role => filterHardcodedRoles(role, moduleServicePrefix))
+                  .map(role => ({
+                    code: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " "),
+                    name: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " ")
+                  })) : [],
+                aassign: true,
+                acomments: true
+              };
+
+              connections.push(connection);
+            }
+          }
+        });
+      }
+    });
+
+    return {
+      connections: connections,
+      canvasElements: canvasElements
+    };
+  };
+
+  // Function to convert published service config to draft service config
+  const convertPublishedToDraftConfig = (publishedConfig, newModule, newService) => {
+    const moduleServicePrefix = `${newModule.toUpperCase()}_${newService.toUpperCase()}`;
+    
+    // Deep clone the published config to avoid mutating the original
+    const draftConfig = JSON.parse(JSON.stringify(publishedConfig));
+    
+    // Update module and service names
+    draftConfig.module = newModule;
+    draftConfig.service = newService;
+    
+    // Update business service in workflow
+    if (draftConfig.workflow) {
+      draftConfig.workflow.businessService = `${newModule}.${newService}`;
+    }
+    
+    // Update service references in various sections
+    if (draftConfig.bill?.BusinessService) {
+      draftConfig.bill.BusinessService.code = newService.toUpperCase();
+      draftConfig.bill.BusinessService.businessService = newService.toUpperCase();
+    }
+    
+    // Update tax head service references
+    if (draftConfig.bill?.taxHead) {
+      draftConfig.bill.taxHead.forEach(taxHead => {
+        if (taxHead.service) {
+          taxHead.service = newService.toUpperCase();
+        }
+      });
+    }
+    
+    // Update tax period service references
+    if (draftConfig.bill?.taxPeriod) {
+      draftConfig.bill.taxPeriod.forEach(taxPeriod => {
+        if (taxPeriod.service) {
+          taxPeriod.service = newService.toUpperCase();
+        }
+      });
+    }
+    
+    // Update idgen formats and names
+    if (draftConfig.idgen) {
+      const oldModuleServicePattern = `${publishedConfig.module}-${publishedConfig.service}`;
+      const newModuleServicePattern = `${newModule}-${newService}`;
+      
+      draftConfig.idgen.forEach(idgen => {
+        if (idgen.format) {
+          idgen.format = idgen.format.replace(new RegExp(oldModuleServicePattern, 'g'), newModuleServicePattern);
+        }
+        if (idgen.idname) {
+          idgen.idname = idgen.idname.replace(new RegExp(oldModuleServicePattern, 'g'), newModuleServicePattern);
+        }
+      });
+    }
+    
+    // Update rules service references
+    if (draftConfig.rules) {
+      if (draftConfig.rules.registry?.service) {
+        draftConfig.rules.registry.service = newService;
+      }
+      if (draftConfig.rules.calculator?.service) {
+        draftConfig.rules.calculator.service = newService;
+      }
+      if (draftConfig.rules.validation?.service) {
+        draftConfig.rules.validation.service = newService;
+      }
+      if (draftConfig.rules.validation?.schemaCode) {
+        draftConfig.rules.validation.schemaCode = `${newService}.apply`;
+      }
+      if (draftConfig.rules.references) {
+        draftConfig.rules.references.forEach(ref => {
+          if (ref.service) {
+            ref.service = newService;
+          }
+        });
+      }
+    }
+    
+    // Update access roles to use new module/service prefix
+    if (draftConfig.access?.roles) {
+      const roleTypes = ['editor', 'viewer', 'creator'];
+      const oldModuleServicePrefix = `${publishedConfig.module?.toUpperCase()}_${publishedConfig.service?.toUpperCase()}`;
+      
+      roleTypes.forEach(roleType => {
+        if (draftConfig.access.roles[roleType]) {
+          draftConfig.access.roles[roleType] = draftConfig.access.roles[roleType].map(role => {
+            // Replace old module/service prefix with new one
+            if (role.includes(oldModuleServicePrefix)) {
+              return role.replace(oldModuleServicePrefix, moduleServicePrefix);
+            }
+            // Keep standard roles like CITIZEN, STUDIO_ADMIN
+            return role;
+          });
+        }
+      });
+    }
+    
+    // Update API config endpoints
+    if (draftConfig.apiconfig) {
+      draftConfig.apiconfig.forEach(api => {
+        if (api.service) {
+          api.service = newService;
+        }
+        if (api.endpoint) {
+          api.endpoint = api.endpoint.replace(new RegExp(publishedConfig.service, 'g'), newService);
+        }
+      });
+    }
+    
+    // Update workflow states and actions
+    if (draftConfig.workflow?.states) {
+      const oldModuleServicePrefix = `${publishedConfig.module?.toUpperCase()}_${publishedConfig.service?.toUpperCase()}`;
+      
+      draftConfig.workflow.states.forEach(state => {
+        if (state.actions) {
+          state.actions.forEach(action => {
+            if (action.roles) {
+              action.roles = action.roles.map(role => {
+                if (role.includes(oldModuleServicePrefix)) {
+                  return role.replace(oldModuleServicePrefix, moduleServicePrefix);
+                }
+                return role;
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    // Update documents module name
+    if (draftConfig.documents) {
+      draftConfig.documents.forEach(doc => {
+        if (doc.module) {
+          doc.module = `${newModule}${newService}`;
+        }
+      });
+    }
+    
+    // Update checklist state references (if any)
+    if (draftConfig.checklist) {
+      // Keep checklist as is, but you might want to update state names if they reference the old service
+    }
+    
+    // Handle UI-specific configurations
+    // Convert published service fields to uiforms structure
+    if (publishedConfig.fields && publishedConfig.fields.length > 0) {
+      // Convert fields to uiforms structure with boundary and applicant data
+      draftConfig.uiforms = convertFieldsToUiforms(
+        publishedConfig.fields, 
+        newModule, 
+        newService, 
+        publishedConfig.boundary, 
+        publishedConfig.applicant
+      );
+    } else {
+      draftConfig.uiforms = [];
+    }
+    
+    // Convert published service roles to uiroles structure
+    if (publishedConfig.access && publishedConfig.access.roles) {
+      draftConfig.uiroles = convertRolesToUiroles(
+        publishedConfig.access, 
+        publishedConfig.module, 
+        publishedConfig.service, 
+        newModule, 
+        newService, 
+        publishedConfig.workflow
+      );
+    } else {
+      draftConfig.uiroles = [];
+    }
+    
+    // Convert published service workflow to uiworkflow structure
+    if (publishedConfig.workflow && publishedConfig.workflow.states) {
+      draftConfig.uiworkflow = convertWorkflowToUiworkflow(
+        publishedConfig.workflow, 
+        newModule, 
+        newService, 
+        publishedConfig.checklist || []
+      );
+    } else {
+      draftConfig.uiworkflow = {};
+    }
+    
+    // Convert published service checklist to uichecklists structure
+    if (publishedConfig.checklist && publishedConfig.checklist.length > 0) {
+      draftConfig.uichecklists = convertChecklistToUichecklists(publishedConfig.checklist, newModule, newService);
+    } else {
+      draftConfig.uichecklists = [];
+    }
+    
+    // Convert published service notifications to uinotifications structure
+    if (publishedConfig.notification) {
+      draftConfig.uinotifications = convertNotificationsToUinotifications(publishedConfig.notification, newModule, newService);
+    } else {
+      draftConfig.uinotifications = [];
+    }
+    
+    return draftConfig;
+  };
+
+  // Validation functions
+  const validateImportData = () => {
+    const errors = {};
+
+    // Check if import data is empty
+    if (!importData.trim()) {
+      errors.importData = "Service configuration cannot be empty.";
+      return errors;
+    }
+
+    // Check if module name is empty
+    if (!importModuleName.trim()) {
+      errors.moduleName = "Module name is required.";
+    }
+
+    // Check if service name is empty
+    if (!importServiceName.trim()) {
+      errors.serviceName = "Service name is required.";
+    }
+
+    // Validate JSON format
+    try {
+      const parsedData = JSON.parse(importData);
+      debugger;
+      
+      // Check if it's a valid service configuration
+      if (!parsedData || typeof parsedData !== 'object') {
+        errors.importData = "Invalid configuration format, please paste a valid service config.";
+        return errors;
+      }
+
+      // Check for required service configuration fields
+      if (!parsedData.module || !parsedData.service) {
+        errors.importData = "Invalid configuration format, please paste a valid service config.";
+        return errors;
+      }
+
+    } catch (error) {
+      errors.importData = "Invalid configuration format, please paste a valid service config.";
+      return errors;
+    }
+
+    return errors;
+  };
+
+  const checkServiceExists = async (moduleName, serviceName) => {
+    try {
+      // Check in drafts
+      const draftsResponse = await axios.post(
+        "/egov-mdms-service/v2/_search",
+        {
+          MdmsCriteria: {
+            tenantId,
+            schemaCode: "Studio.ServiceConfigurationDrafts",
+            limit: 100,
+            offset: 0,
+          },
+          RequestInfo: {
+            apiId: "Rainmaker",
+            authToken: localStorage.getItem("Employee.token"),
+            userInfo: { tenantId },
+          },
+        },
+        { headers: { "Content-Type": "application/json;charset=UTF-8" } }
+      );
+
+      const drafts = draftsResponse.data?.mdms || [];
+      const draftExists = drafts.some(draft => 
+        draft?.data?.module === moduleName && draft?.data?.service === serviceName
+      );
+
+      if (draftExists) {
+        return true;
+      }
+
+      // Check in published services
+      const publishedResponse = await axios.get("/public-service/v1/service", {
+        params: { tenantId },
+        headers: {
+          "X-Tenant-Id": tenantId,
+          "auth-token": localStorage.getItem("Employee.token"),
+        },
+      });
+
+      const publishedServices = publishedResponse.data?.Services || [];
+      const publishedExists = publishedServices.some(service => 
+        service?.module === moduleName && service?.businessService === serviceName
+      );
+
+      return publishedExists;
+    } catch (error) {
+      console.error("Error checking service existence:", error);
+      return false; // Assume it doesn't exist if we can't check
+    }
   };
 
   const handleCloseImportPopup = () => {
@@ -254,6 +1297,8 @@ const LandingPage = () => {
     setImportData("");
     setImportModuleName("");
     setImportServiceName("");
+    setImportErrors({});
+    setIsImporting(false);
   };
   const handleCreateCardClick = () => {
     setShowCreatePopup(true);
@@ -524,6 +1569,20 @@ const LandingPage = () => {
                 className="typography heading-m"
               />
               <div style={{ marginTop: "1.5rem" }}>
+                {/* General error message */}
+                {importErrors.general && (
+                  <div style={{ 
+                    color: "#d32f2f", 
+                    backgroundColor: "#ffebee", 
+                    padding: "0.75rem", 
+                    borderRadius: "4px", 
+                    marginBottom: "1rem",
+                    border: "1px solid #ffcdd2"
+                  }}>
+                    {importErrors.general}
+                  </div>
+                )}
+
                 <div
                   style={{
                     display: "flex",
@@ -534,17 +1593,35 @@ const LandingPage = () => {
                   <label style={{ fontWeight: "500", color: "#333", minWidth: "200px" }}>
                     {t("IMPORT_DATA")}
                   </label>
-                  <TextArea
-                    value={importData}
-                    onChange={(e) => setImportData(e.target.value)}
-                    placeholder={t("PASTE_YOUR_SERVICE_CONFIGURATION_JSON_HERE")}
-                    style={{ 
-                      minHeight: "200px",
-                      resize: "vertical",
-                      fontFamily: "monospace",
-                      fontSize: "12px"
-                    }}
-                  />
+                  <div style={{ flex: 1 }}>
+                    <TextArea
+                      value={importData}
+                      onChange={(e) => {
+                        setImportData(e.target.value);
+                        // Clear error when user starts typing
+                        if (importErrors.importData) {
+                          setImportErrors(prev => ({ ...prev, importData: null }));
+                        }
+                      }}
+                      placeholder={t("PASTE_YOUR_SERVICE_CONFIGURATION_JSON_HERE")}
+                      style={{ 
+                        minHeight: "200px",
+                        resize: "vertical",
+                        fontFamily: "monospace",
+                        fontSize: "12px",
+                        borderColor: importErrors.importData ? "#d32f2f" : undefined
+                      }}
+                    />
+                    {importErrors.importData && (
+                      <div style={{ 
+                        color: "#d32f2f", 
+                        fontSize: "12px", 
+                        marginTop: "4px" 
+                      }}>
+                        {importErrors.importData}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div
                   style={{
@@ -557,11 +1634,30 @@ const LandingPage = () => {
                   <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
                     {t("IMPORTMODULE_NAME")}
                   </label>
-                  <TextInput
-                    value={importModuleName}
-                    onChange={(e) => setImportModuleName(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
+                  <div style={{ flex: 1 }}>
+                    <TextInput
+                      value={importModuleName}
+                      onChange={(e) => {
+                        setImportModuleName(e.target.value);
+                        // Clear error when user starts typing
+                        if (importErrors.moduleName) {
+                          setImportErrors(prev => ({ ...prev, moduleName: null }));
+                        }
+                      }}
+                      style={{ 
+                        borderColor: importErrors.moduleName ? "#d32f2f" : undefined
+                      }}
+                    />
+                    {importErrors.moduleName && (
+                      <div style={{ 
+                        color: "#d32f2f", 
+                        fontSize: "12px", 
+                        marginTop: "4px" 
+                      }}>
+                        {importErrors.moduleName}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div
                   style={{
@@ -574,11 +1670,30 @@ const LandingPage = () => {
                   <label style={{ minWidth: "200px", fontWeight: "500", color: "#333" }}>
                     {t("IMPORT_SERVICE_NAME")}
                   </label>
-                  <TextInput
-                    value={importServiceName}
-                    onChange={(e) => setImportServiceName(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
+                  <div style={{ flex: 1 }}>
+                    <TextInput
+                      value={importServiceName}
+                      onChange={(e) => {
+                        setImportServiceName(e.target.value);
+                        // Clear error when user starts typing
+                        if (importErrors.serviceName) {
+                          setImportErrors(prev => ({ ...prev, serviceName: null }));
+                        }
+                      }}
+                      style={{ 
+                        borderColor: importErrors.serviceName ? "#d32f2f" : undefined
+                      }}
+                    />
+                    {importErrors.serviceName && (
+                      <div style={{ 
+                        color: "#d32f2f", 
+                        fontSize: "12px", 
+                        marginTop: "4px" 
+                      }}>
+                        {importErrors.serviceName}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>,
@@ -595,12 +1710,19 @@ const LandingPage = () => {
                 variation="secondary"
                 label={t("CANCEL")}
                 onClick={handleCloseImportPopup}
+                disabled={isImporting}
               />
               <Button
                 variation="primary"
-                label={t("IMPORT")}
+                label={isImporting ? "Importing..." : t("IMPORT")}
                 onClick={handleImportService}
-                disabled={!importModuleName.trim() || !importServiceName.trim() || !importData.trim()}
+                disabled={
+                  isImporting || 
+                  !importModuleName.trim() || 
+                  !importServiceName.trim() || 
+                  !importData.trim() ||
+                  Object.keys(importErrors).length > 0
+                }
               />
             </div>,
           ]}

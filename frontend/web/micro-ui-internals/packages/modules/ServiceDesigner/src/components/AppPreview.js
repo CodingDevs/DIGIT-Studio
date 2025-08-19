@@ -210,7 +210,7 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
         style={{ marginBottom: 32 }}
       />
       <Card style={{width: "66rem", background: '#fff', borderRadius: 8, boxShadow: '0 1px 6px rgba(0,0,0,0.04)', padding: 24 }}>
-        {card?.headerFields.map((headerField, headerIndex) => (
+        {card?.headerFields?.map((headerField, headerIndex) => (
           <div key={headerIndex} style={{ marginBottom: headerField.jsonPath === 'ScreenHeading' ? 8 : 16 }}>
             {headerField.jsonPath === "ScreenHeading" ? (
               <CardSectionHeader>
