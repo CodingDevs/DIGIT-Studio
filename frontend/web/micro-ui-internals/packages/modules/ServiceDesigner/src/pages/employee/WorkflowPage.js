@@ -939,7 +939,7 @@ const Workflow = () => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
                 return {
-                    roles: conn.aroles ? [...conn.aroles?.map(role => `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`),`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`] : [`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`],
+                    roles: conn.aroles ? [...conn.aroles?.map(role => `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`),`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`,"CITIZEN","STUDIO_ADMIN"] : [`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`,"CITIZEN","STUDIO_ADMIN"],
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase().replace(/\s+/g, '_') : 'UNKNOWN'
                 };
