@@ -1736,9 +1736,68 @@ const Workflow = () => {
     //     }
     // };
 
+    // Function to check for inline errors in property panel and canvas elements
+    const checkForInlineErrors = () => {
+        const errors = [];
+        
+        // Check for state property errors in the currently selected element
+        if (selectedElement && selectedElement.type === "node") {
+            if (stateData.name === "") {
+                errors.push("State name is required");
+            }
+            if (stateData.sla < 1) {
+                errors.push("SLA must be at least 1 hour");
+            }
+        }
+        
+        // Check for action property errors in the currently selected element
+        if (selectedElement && selectedElement.type === "action") {
+            if (actionData.label === "") {
+                errors.push("Action name is required");
+            }
+        }
+        
+        // Check for role property errors in the currently selected element
+        if (rolePopup && roleData.name === "") {
+            errors.push("Role name is required");
+        }
+        if (rolePopup && !roleData.creater && !roleData.editor && !roleData.viewer) {
+            errors.push("At least one role permission must be selected");
+        }
+        
+        // Check for errors in all canvas elements
+        canvasElements.forEach((element, index) => {
+            if (element.name === "" || element.name === undefined) {
+                errors.push(`State ${index + 1} name is required`);
+            }
+            if (element.sla < 1) {
+                errors.push(`State ${index + 1} SLA must be at least 1 hour`);
+            }
+        });
+        
+        // Check for errors in all connections
+        connections.forEach((connection, index) => {
+            if (connection.label === "" || connection.label === undefined) {
+                errors.push(`Action ${index + 1} name is required`);
+            }
+        });
+        
+        return errors;
+    };
+
     const getWrorkflowData = async () => {
         try {
             // --- VALIDATIONS BEFORE GENERATING CONFIG ---
+            
+            // 0. Check for inline errors in property panel
+            const inlineErrors = checkForInlineErrors();
+            if (inlineErrors.length > 0) {
+                setShowToast({
+                    type: "error",
+                    label: t("STUDIO_WORKFLOW_INCOMPLETE_ERR")
+                });
+                return; // stop execution
+            }
             
             // 1. Check if start node, connections, and processing node are valid
             const startNode = canvasElements.find(node => node.nodetype === "start");
@@ -1755,7 +1814,7 @@ const Workflow = () => {
                 return !(incoming && outgoing); // intermediates need both
             });
     
-            if (!startNode || !hasConnections || invalidProcessing) {
+            if (!startNode || !hasConnections || invalidProcessing || showToast?.type === "error") {
                 setShowToast({
                     type: "error",
                     label: t("STUDIO_WORKFLOW_INCOMPLETE_ERR")
