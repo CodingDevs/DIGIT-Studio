@@ -27,7 +27,8 @@ const Roles = () => {
         isNew: false,
         editor: false,
         viewer: false,
-        creater: false
+        creater: false,
+        originalName: "" // Store the original role name for updates
     });
     const [rolePopup, setRolePopup] = useState(false);
 
@@ -61,12 +62,21 @@ const Roles = () => {
                 isNew: true,
                 editor: false,
                 viewer: false,
-                creater: false
+                creater: false,
+                originalName: ""
             });
         }
         else {
             setSelectedElement(true);
-            setStateData({ name, desc, isNew, editor, viewer, creater });
+            setStateData({ 
+                name, 
+                desc, 
+                isNew, 
+                editor, 
+                viewer, 
+                creater,
+                originalName: name // Store the original name for updates
+            });
         }
     }
 
@@ -109,6 +119,7 @@ const Roles = () => {
                                 viewer: false,
                                 editor: false,
                                 creater: false,
+                                originalName: "",
                             });
                             setRolePopup(false);
                             setSelectedElement(false);
@@ -123,6 +134,7 @@ const Roles = () => {
                                 viewer: false,
                                 editor: false,
                                 creater: false,
+                                originalName: "",
                             });
                             setRolePopup(false);
                         }
@@ -135,6 +147,7 @@ const Roles = () => {
                             viewer: false,
                             editor: false,
                             creater: false,
+                            originalName: "",
                         });
                         setRolePopup(false);
                     }
@@ -142,7 +155,7 @@ const Roles = () => {
             }
             else {
                 try {
-                    const rolePayload = generateRolePayload(stateData.name, stateData.desc, access, stateData.name);
+                    const rolePayload = generateRolePayload(stateData.name, stateData.desc, access, stateData.originalName);
                     const response = await updateRoleConfig.mutateAsync(rolePayload);
                     
                     if (response?.mdms) {
@@ -176,7 +189,8 @@ const Roles = () => {
             isNew: false,
             editor: false,
             viewer: false,
-            creater: false
+            creater: false,
+            originalName: ""
         });
     }
 
@@ -241,40 +255,53 @@ const Roles = () => {
                 className={"uploadWidget-error-card"}
             />
             }
-            <div style={{ display: "flex" }}>
-                <Card style={{ flex: 1, height: "670px", justifyContent: "space-between" }} className="Workflow-card">
-                    <div>
-                        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", padding: "24px" }}>
+            <div style={{ display: "flex", minHeight: "670px" }}>
+                <Card style={{ flex: 1, minHeight: "670px", display: "flex", flexDirection: "column" }} className="Workflow-card">
+                    <div style={{ flex: 1, overflow: "auto" }}>
+                        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", padding: "24px", gap: "16px" }}>
                             <RoleComp role={t("CREATE_ROLE")} desc={t("ADD_NEW")} isNew={true} onRoleClick={onClick} />
-                            {roleCodes.map(role =>
-                                <RoleComp role={t(role.code)} desc={t(role.description)} data={role} onRoleClick={onClick} />
+                            {roleCodes.map((role, index) =>
+                                <RoleComp key={role.code || index} role={t(role.code)} desc={t(role.description)} data={role} onRoleClick={onClick} />
                             )}
                         </div>
                     </div>
                 </Card>
-                {selectedElement && <div className="Workflow-card" style={{ justifyContent: "space-between", margin: "0px 24px", height: "fit-content" }}>
-                    <SidePanel
-                        type="static"
-                        position="right"
-                        isDraggable={true}
-                        sections={Node_Properties_Section}
-                        addClose={true}
-                        onClose={cancel}
-                        header={[
-                            <div className="typography heading-m" style={{ color: "#0B4B66", marginLeft: "0px" }}>
-                                <div >{t("EDIT_HEADING")}</div>
-                            </div>,
-                            <div className="typography heading-s" style={{ color: "#0B4B66" }}>
-                                <div >{t("EDIT_HEADING_DESC")}</div>
-                            </div>
-                        ]}
-                        isOverlay={false}
-                        hideScrollIcon={true}
-                        hideArrow={false}
-                        className="slider-container"
-                    />
-            </div>}
-            
+                {selectedElement && (
+                    <div className="Workflow-card" style={{ 
+                        margin: "0px 24px", 
+                        minHeight: "670px",
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: "400px",
+                        maxWidth: "500px"
+                    }}>
+                        <SidePanel
+                            type="static"
+                            position="right"
+                            isDraggable={true}
+                            sections={Node_Properties_Section}
+                            addClose={true}
+                            onClose={cancel}
+                            header={[
+                                <div className="typography heading-m" style={{ color: "#0B4B66", marginLeft: "0px" }}>
+                                    <div >{t("EDIT_HEADING")}</div>
+                                </div>,
+                                <div className="typography heading-s" style={{ color: "#0B4B66" }}>
+                                    <div >{t("EDIT_HEADING_DESC")}</div>
+                                </div>
+                            ]}
+                            isOverlay={false}
+                            hideScrollIcon={true}
+                            hideArrow={false}
+                            className="slider-container"
+                            style={{ 
+                                height: "100%",
+                                maxHeight: "670px",
+                                overflow: "auto"
+                            }}
+                        />
+                    </div>
+                )}
             </div>
             {/*Create role Popup */}
             {rolePopup && (
@@ -292,6 +319,7 @@ const Roles = () => {
                             viewer: false,
                             editor: false,
                             creater: false,
+                            originalName: "",
                         });
                         setRolePopup(false);
                     }}
@@ -303,6 +331,7 @@ const Roles = () => {
                             viewer: false,
                             editor: false,
                             creater: false,
+                            originalName: "",
                         });
                         setRolePopup(false);
                     }}

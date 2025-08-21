@@ -662,6 +662,31 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
       errors.missingMetadata = t("MISSING_REQUIRED_INFORMATION");
     }
 
+    // 6. Check for radio and dropdown fields with less than 2 options
+    const radioDropdownFields = fields.filter(field => 
+      field.type === 'radio' || field.type === 'dropdown'
+    );
+    
+    const fieldsWithInsufficientOptions = radioDropdownFields.filter(field => {
+      // For MDMS fields, we don't need to check options as they come from master data
+      if (field.isMdms || field.schemaCode) {
+        return false;
+      }
+      
+      // For enum fields with dropDownOptions, check if there are at least 2 options
+      if (field.dropDownOptions && Array.isArray(field.dropDownOptions)) {
+        return field.dropDownOptions.length < 2;
+      }
+      
+      // For fields without options, they need at least 2 options
+      return true;
+    });
+    
+    if (fieldsWithInsufficientOptions.length > 0) {
+      const fieldNames = fieldsWithInsufficientOptions.map(field => field.label).join(', ');
+      errors.insufficientOptions = `${t("AT_LEAST_2_OPTIONS_REQUIRED")} ${fieldNames}`;
+    }
+
     return errors;
   };
 
@@ -672,21 +697,21 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
   };
 
   // Function to handle window beforeunload event
-  const handleBeforeUnload = (e) => {
-    if (checkForUnsavedChanges()) {
-      e.preventDefault();
-      e.returnValue = t("STUDIO_UNSAVED_CHANGES_WARNING");
-      return t("STUDIO_UNSAVED_CHANGES_WARNING");
-    }
-  };
+  // const handleBeforeUnload = (e) => {
+  //   if (checkForUnsavedChanges()) {
+  //     e.preventDefault();
+  //     e.returnValue = t("STUDIO_UNSAVED_CHANGES_WARNING");
+  //     return t("STUDIO_UNSAVED_CHANGES_WARNING");
+  //   }
+  // };
 
   // Add event listener for window beforeunload
-  useEffect(() => {
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
+  // useEffect(() => {
+  //   window.addEventListener('beforeunload', handleBeforeUnload);
+  //   return () => {
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //   };
+  // }, [hasUnsavedChanges]);
 
   // Add event listener for opening form name popup
   useEffect(() => {

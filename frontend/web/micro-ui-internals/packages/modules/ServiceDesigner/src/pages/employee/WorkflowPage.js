@@ -939,7 +939,7 @@ const Workflow = () => {
                 const targetState = statesData.find(s => s.id === conn.to);
                 const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
                 return {
-                    roles: conn.aroles ? [...conn.aroles?.map(role => `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`),`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`,"CITIZEN","STUDIO_ADMIN"] : [`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`,"CITIZEN","STUDIO_ADMIN"],
+                    roles: conn.aroles ? [...conn.aroles?.map(role => `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`), "CITIZEN", "STUDIO_ADMIN"] : ["CITIZEN", "STUDIO_ADMIN"],
                     action: conn.label.toUpperCase().replace(/\s+/g, '_'),
                     nextState: targetState ? targetState.name.toUpperCase().replace(/\s+/g, '_') : 'UNKNOWN'
                 };
@@ -1014,33 +1014,41 @@ const Workflow = () => {
         return selectedForm?.formConfig?.screens || null;
     };
 
-    // Function to fetch roles from API
-    const fetchRolesFromAPI = async () => {
-        try {
-            const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
-            const response = await Digit.CustomService.getResponse({
-                url: `/${mdms_context_path}/v2/_search`,
-                body: {
-                    MdmsCriteria: {
-                        tenantId: Digit.ULBService.getCurrentTenantId(),
-                        schemaCode: "studio.roles",
-                        isActive: true
+    // Function to get role access mapping from existing role data
+    const getRoleAccessMapping = () => {
+        const accessMapping = {
+            editor: [],
+            viewer: [],
+            creator: []
+        };
+        
+        // Use the existing role data from searchRoleConfigs
+        if (data && Array.isArray(data)) {
+            data.forEach(role => {
+                const roleCode = role?.data?.code;
+                const access = role?.data?.additionalDetails?.access || {};
+                
+                if (roleCode) {
+                    const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
+                    const prefixedRoleCode = `${moduleServicePrefix}_${roleCode.toUpperCase().replace(/\s+/g, '_')}`;
+                    
+                    if (access.editor) {
+                        accessMapping.editor.push(prefixedRoleCode);
+                    }
+                    if (access.viewer) {
+                        accessMapping.viewer.push(prefixedRoleCode);
+                    }
+                    if (access.creater) { // Note: API has "creater" not "creator"
+                        accessMapping.creator.push(prefixedRoleCode);
                     }
                 }
             });
-            
-            if (response && response.mdms && response.mdms.length > 0) {
-                return response.mdms.map(role => ({
-                    code: role?.data?.code,
-                    name: role?.data?.description || role?.data?.code,
-                    access: role?.data?.additionalDetails?.access || {}
-                }));
-            }
-            return [];
-        } catch (error) {
-            console.error("Error fetching roles:", error);
-            return [];
         }
+        
+        // Note: CITIZEN and STUDIO_ADMIN are hardcoded backend roles that are automatically added to workflow actions
+        // They should not be included in the service configuration roles mapping
+        
+        return accessMapping;
     };
 
     // Function to transform form configuration to fields format
@@ -1086,15 +1094,14 @@ const Workflow = () => {
                         tooltip: field.tooltip || "",
                         errorMessage: field.errorMessage || ""
                     };
-                    
                     // Handle different field types with enhanced mapping
                     switch (field.type) {
                         case "textInput":
                         case "text":
                             fieldConfig.type = "string";
                             fieldConfig.format = "text";
-                            fieldConfig.maxLength = field.maxLength || 128;
-                            fieldConfig.minLength = field.minLength || 2;
+                            if(field?.charCount)fieldConfig.maxLength = field.maxLength ? Number(field.maxLength): 128;
+                            if(field?.charCount) fieldConfig.minLength = field.minLength ? Number(field.minLength): 2;
                             if (field.regex && field.errorMessage) {
                                 fieldConfig.validation = {
                                     regex: field.regex,
@@ -1274,13 +1281,9 @@ const Workflow = () => {
     };
 
     // Function to collect all roles from workflow
-    const collectAllRoles = async () => {
+    const collectAllRoles = () => {
         const usedRoleCodes = new Set();
         const moduleServicePrefix = `${roleModule.toUpperCase()}_${roleService.toUpperCase()}`;
-        
-        // Add default roles with prefix
-        usedRoleCodes.add(`${moduleServicePrefix}_CITIZEN`);
-        usedRoleCodes.add(`${moduleServicePrefix}_STUDIO_ADMIN`);
         
         // Collect role codes from states
         canvasElements.forEach(state => {
@@ -1306,55 +1309,20 @@ const Workflow = () => {
             }
         });
         
+        // Get access mapping from existing role data
+        const accessMapping = getRoleAccessMapping();
         
-        // Fetch roles from API and filter only used ones
-        try {
-            const apiRoles = await fetchRolesFromAPI();
-            const usedRoles = apiRoles.filter(role => {
-                const roleCode = role.code.toUpperCase().replace(/\s+/g, '_');
-                return usedRoleCodes.has(`${moduleServicePrefix}_${roleCode}`);
-            });
-            
-            // Create access mapping based on role permissions
-            const accessMapping = {
-                editor: [],
-                viewer: [],
-                creator: []
-            };
-            
-            usedRoles.forEach(role => {
-                const access = role.access || {};
-                const roleCode = `${moduleServicePrefix}_${role.code.toUpperCase().replace(/\s+/g, '_')}`;
-                
-                if (access.editor) {
-                    accessMapping.editor.push(roleCode);
-                }
-                if (access.viewer) {
-                    accessMapping.viewer.push(roleCode);
-                }
-                if (access.creater) { // Note: API has "creater" not "creator"
-                    accessMapping.creator.push(roleCode);
-                }
-            });
-            
-            // Add default roles to appropriate access levels
-            accessMapping.editor.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
-            accessMapping.viewer.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
-            accessMapping.creator.push(`${moduleServicePrefix}_CITIZEN`, `${moduleServicePrefix}_STUDIO_ADMIN`);
-            
-            return accessMapping;
-            
-        } catch (error) {
-            console.error("Error fetching roles from API:", error);
-            
-            // Fallback: return all used roles for all access levels
-            const allUsedRoles = Array.from(usedRoleCodes);
-            return {
-                editor: allUsedRoles,
-                viewer: allUsedRoles,
-                creator: allUsedRoles
-            };
-        }
+        // Filter access mapping to only include roles that are actually used in the workflow
+        const filteredAccessMapping = {
+            editor: accessMapping.editor.filter(role => usedRoleCodes.has(role)),
+            viewer: accessMapping.viewer.filter(role => usedRoleCodes.has(role)),
+            creator: accessMapping.creator.filter(role => usedRoleCodes.has(role))
+        };
+        
+        // Note: CITIZEN and STUDIO_ADMIN are hardcoded backend roles that are automatically added to workflow actions
+        // They should not be included in the service configuration roles mapping
+        
+        return filteredAccessMapping;
     };
 
     // Function to check if specific sections exist in form
@@ -1395,20 +1363,20 @@ const Workflow = () => {
         
         // Only include notifications that are actually selected in any state
         notifications.forEach((item) => {
-            const type = item.data?.additionalDetails?.type;
+            const type = item.additionalDetails?.type;
             if (!type || !grouped[type]) return;
             
             // Find which states use this notification
             const statesUsingThisNotification = statesWithNotifications
-                .filter(state => state.sendnotif && state.sendnotif.some(notif => notif.code === item.data?.title))
+                .filter(state => state.sendnotif && state.sendnotif.some(notif => notif.code === item.title))
                 .map(state => state.name.toUpperCase().replace(/\s+/g, '_'));
             
             // Only add notification if it's used in at least one state
             if (statesUsingThisNotification.length > 0) {
                 const template = {
-                    code: item.data?.title || "",
+                    code: item.title || "",
                     states: statesUsingThisNotification,
-                    template: item.data?.messageBody || "",
+                    template: item.messageBody || "",
                 };
                 grouped[type].push(template);
             }
@@ -1436,7 +1404,7 @@ const Workflow = () => {
         const { hasAddressDetails, hasApplicantDetails } = checkFormSections(formDataFromStartState);
         
         // Transform roles to the format expected in service config
-        const accessMapping = await collectAllRoles();
+        const accessMapping = collectAllRoles();
         
         // Get module and service from URL parameters
         const moduleName = roleModule.toLowerCase();
@@ -1518,20 +1486,24 @@ const Workflow = () => {
                 modules: [`digit-studio`]
             },
             notification: generateGroupedTemplates(notif),
-            boundary: hasAddressDetails ? {
-                lowestLevel: "locality",
-                hierarchyType: "REVENUE"
-            } : {},
-            applicant: hasApplicantDetails ? {
-                types: ["individual", "organisation"],
-                config: {
-                    systemUser: true,
-                    systemRoles: ["CITIZEN"],
-                    systemUserType: "CITIZEN"
-                },
-                maximum: 3,
-                minimum: 1
-            } : {},
+            ...(hasAddressDetails && {
+                boundary: {
+                    lowestLevel: "locality",
+                    hierarchyType: "REVENUE"
+                }
+            }),
+            ...(hasApplicantDetails && {
+                applicant: {
+                    types: ["individual", "organisation"],
+                    config: {
+                        systemUser: true,
+                        systemRoles: ["CITIZEN"],
+                        systemUserType: "CITIZEN"
+                    },
+                    maximum: 3,
+                    minimum: 1
+                }
+            }),
             apiconfig: [
                 {
                     host: "https://staging.digit.org",
@@ -2033,7 +2005,9 @@ const Workflow = () => {
             (el) => el.nodetype === "end"
         );
         setHasEnd(foundEnd);
-    }, [canvasElements]);
+        
+        // Debug: Log canvas elements and connections
+    }, [canvasElements, connections]);
 
     useEffect(() => {
         const handleMouseMove = (e) => {

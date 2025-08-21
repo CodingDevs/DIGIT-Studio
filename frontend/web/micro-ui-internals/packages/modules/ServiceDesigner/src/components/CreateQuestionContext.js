@@ -54,7 +54,7 @@ const CreateQuestionContext = ({ onSelect, ...props }) => {
             title: null,
             type: { "code": "SingleValueList" },
             value: null,
-            isRequired: true,
+            isRequired: false,
             isActive: true
           },
         ];
@@ -71,7 +71,7 @@ const CreateQuestionContext = ({ onSelect, ...props }) => {
             title: null,
             type: { "code": "SingleValueList" },
             value: null,
-            isRequired: true,
+            isRequired: false,
             isActive: true
           },
         ];
@@ -128,7 +128,7 @@ const CreateQuestionContext = ({ onSelect, ...props }) => {
               title: null,
               type: null,
               value: null,
-              isRequired: true,
+              isRequired: false,
             },
           ];
         } else if (action?.payload?.target === "dependency" && action?.payload?.data?.target?.checked !== true) {

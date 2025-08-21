@@ -161,6 +161,22 @@ useEffect(() => {
       errors.push(t("CHECKLIST_QUESTION_ERROR"));
     }
     
+    // Validate SingleValueList and MultiValueList questions have at least 2 options
+    const listTypeQuestions = activeQuestions.filter(q => 
+      (q.type?.code === "SingleValueList" || q.type?.code === "MultiValueList" || q.type === "SingleValueList" || q.type === "MultiValueList") &&
+      q.title && q.title.trim()
+    );
+    
+    const questionsWithInsufficientOptions = listTypeQuestions.filter(q => {
+      const options = q.options || [];
+      const validOptions = options.filter(option => option.label && option.label.trim());
+      return validOptions.length < 2;
+    });
+    
+    if (questionsWithInsufficientOptions.length > 0) {
+      errors.push(t("CHECKLIST_OPTIONS_ERROR") || "Single value and multi-value questions must have at least 2 options");
+    }
+    
     // Validate duplicate checklist name
     const checkDuplicateName = async () => {
       try {
@@ -226,7 +242,7 @@ useEffect(() => {
       title: null,
       type: { "code": "SingleValueList" },
       value: null,
-      isRequired: true,
+      isRequired: false,
       isActive: true,
       options: [{
         id: crypto.randomUUID(),

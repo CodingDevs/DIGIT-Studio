@@ -166,7 +166,7 @@ export const useRoleConfigAPI = () => {
       // Update the specific role in uiroles array
       const existingRoles = existingDraft.data?.uiroles || [];
       const updatedRoles = existingRoles.map(role => 
-        role.code === oldRoleName 
+        t(role.code) === oldRoleName 
           ? {
               ...role,
               code: roleName,

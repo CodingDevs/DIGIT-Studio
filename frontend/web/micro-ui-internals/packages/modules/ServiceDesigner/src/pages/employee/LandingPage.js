@@ -24,7 +24,6 @@ import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
 
 // Utility to build card data
 export const buildCardData = (drafts = [], published = [], t) => {
-  console.log(published,drafts);
   const publishedCards = published.map((item) => ({
     title: `${item?.module} ${item.businessService}` || item.service || "Unnamed Service",
     description: `Manage ${item.businessService || item.service} services for your citizens`,
@@ -192,8 +191,6 @@ const LandingPage = () => {
       };
 
       await saveServiceConfig.mutateAsync(emptyServiceConfig);
-
-      console.log("Draft created successfully");
       
       // Close the popup
       setShowCreatePopup(false);
@@ -253,8 +250,6 @@ const LandingPage = () => {
       
       // Save the draft configuration
       await saveServiceConfig.mutateAsync(draftConfig);
-      console.log(draftConfig,"draftConfig");
-      console.log("Service imported successfully");
       
       // Close the popup
       setShowImportPopup(false);
@@ -796,10 +791,12 @@ const LandingPage = () => {
     );
     
     // Only include roles that have the module/service prefix (custom roles)
-    const hasModuleServicePrefix = role.includes(moduleServicePrefix);
+    // const hasModuleServicePrefix = role.includes(moduleServicePrefix);
+
+    return !containsHardcodedRole;
     
     // Filter out roles that contain hardcoded role names, even if they have the prefix
-    return hasModuleServicePrefix && !containsHardcodedRole;
+    // return hasModuleServicePrefix && !containsHardcodedRole;
   };
 
   // Function to convert published service roles to uiroles structure
@@ -807,26 +804,44 @@ const LandingPage = () => {
     const oldModuleServicePrefix = `${publishedModule.toUpperCase()}_${publishedService.toUpperCase()}`;
     const uiroles = [];
 
-    // Get all unique roles from all role types
-    const allRoles = new Set();
+    // Create a map to store role access permissions
+    const roleAccessMap = new Map();
     
-    // Extract roles from access.roles
+    // Extract roles and their access permissions from access.roles
     if (access && access.roles) {
-      Object.values(access.roles).forEach(roleArray => {
+      Object.entries(access.roles).forEach(([accessType, roleArray]) => {
         if (Array.isArray(roleArray)) {
           roleArray.forEach(role => {
             // Only include roles that have the module/service prefix (filter out hardcoded roles)
             if (filterHardcodedRoles(role, oldModuleServicePrefix)) {
               // Extract the role name without the module/service prefix
               const roleName = role.replace(oldModuleServicePrefix + "_", "").replace(/_/g, " ");
-              allRoles.add(roleName);
+              
+              // Initialize role access if not exists
+              if (!roleAccessMap.has(roleName)) {
+                roleAccessMap.set(roleName, {
+                  editor: false,
+                  viewer: false,
+                  creater: false
+                });
+              }
+              
+              // Set the specific access permission to true
+              const roleAccess = roleAccessMap.get(roleName);
+              if (accessType === 'editor') {
+                roleAccess.editor = true;
+              } else if (accessType === 'viewer') {
+                roleAccess.viewer = true;
+              } else if (accessType === 'creator') {
+                roleAccess.creater = true;
+              }
             }
           });
         }
       });
     }
     
-    // Extract roles from workflow states
+    // Extract roles from workflow states (for roles that might not be in access.roles)
     if (workflow && workflow.states) {
       workflow.states.forEach(state => {
         if (state.actions) {
@@ -837,7 +852,15 @@ const LandingPage = () => {
                 if (filterHardcodedRoles(role, oldModuleServicePrefix)) {
                   // Extract the role name without the module/service prefix
                   const roleName = role.replace(oldModuleServicePrefix + "_", "").replace(/_/g, " ");
-                  allRoles.add(roleName);
+                  
+                  // Initialize role access if not exists
+                  if (!roleAccessMap.has(roleName)) {
+                    roleAccessMap.set(roleName, {
+                      editor: false,
+                      viewer: false,
+                      creater: false
+                    });
+                  }
                 }
               });
             }
@@ -846,8 +869,8 @@ const LandingPage = () => {
       });
     }
 
-    // Convert each unique role to a uirole
-    allRoles.forEach(roleName => {
+    // Convert each unique role to a uirole with proper access permissions
+    roleAccessMap.forEach((accessPermissions, roleName) => {
       const uirole = {
         code: roleName.toUpperCase(),
         active: true,
@@ -855,11 +878,7 @@ const LandingPage = () => {
         isActive: true,
         description: `Description for ${roleName.toLowerCase()}`,
         additionalDetails: {
-          access: {
-            editor: true,
-            viewer: true,
-            creater: true
-          }
+          access: accessPermissions
         }
       };
       uiroles.push(uirole);
@@ -869,7 +888,7 @@ const LandingPage = () => {
   };
 
   // Function to convert published service workflow to uiworkflow structure
-  const convertWorkflowToUiworkflow = (workflow, newModule, newService, checklistConfig = []) => {
+  const convertWorkflowToUiworkflow = (workflow, newModule, newService, checklistConfig = [], oldModule, oldService) => {
     if (!workflow || !workflow.states) {
       return {};
     }
@@ -879,8 +898,9 @@ const LandingPage = () => {
     const canvasElements = [];
 
     // Convert each state to a canvas element
+    const baseTime = Date.now();
     workflow.states.forEach((state, index) => {
-      const elementId = Date.now() + index; // Generate unique ID
+      const elementId = baseTime + index; // Generate unique ID
       
       // Determine node type based on state properties
       let nodeType = "intermediate";
@@ -941,8 +961,8 @@ const LandingPage = () => {
               if (filterHardcodedRoles(role, moduleServicePrefix)) {
                 // Convert role to the format expected by uiworkflow
                 const roleObj = {
-                  code: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " "),
-                  name: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " ")
+                  code: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, ""),
+                  name: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, "")
                 };
                 if (!canvasElement.roles.some(r => r.code === roleObj.code)) {
                   canvasElement.roles.push(roleObj);
@@ -963,8 +983,8 @@ const LandingPage = () => {
             const targetState = workflow.states.find(s => s.state === action.nextState);
             if (targetState) {
               const targetIndex = workflow.states.indexOf(targetState);
-              const targetElementId = Date.now() + targetIndex;
-
+              // Use the same ID generation logic as canvas elements
+              const targetElementId = baseTime + targetIndex;
               const connection = {
                 id: Date.now() + index + actionIndex,
                 to: targetElementId,
@@ -975,8 +995,8 @@ const LandingPage = () => {
                 aroles: action.roles ? action.roles
                   .filter(role => filterHardcodedRoles(role, moduleServicePrefix))
                   .map(role => ({
-                    code: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " "),
-                    name: role.replace(moduleServicePrefix + "_", "").replace(/_/g, " ")
+                    code: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, ""),
+                    name: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, "")
                   })) : [],
                 aassign: true,
                 acomments: true
@@ -1173,7 +1193,9 @@ const LandingPage = () => {
         publishedConfig.workflow, 
         newModule, 
         newService, 
-        publishedConfig.checklist || []
+        publishedConfig.checklist || [],
+        publishedConfig.module, 
+        publishedConfig.service, 
       );
     } else {
       draftConfig.uiworkflow = {};
@@ -1219,7 +1241,6 @@ const LandingPage = () => {
     // Validate JSON format
     try {
       const parsedData = JSON.parse(importData);
-      debugger;
       
       // Check if it's a valid service configuration
       if (!parsedData || typeof parsedData !== 'object') {

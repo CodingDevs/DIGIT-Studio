@@ -27,7 +27,7 @@ const Notification = () => {
 
     // Use the new notification config API hook
     const { searchNotificationConfigs } = useNotificationConfigAPI();
-    const { data: notificationConfigs, isLoading } = searchNotificationConfigs(roleModule, roleService);
+    const { data: notificationConfigs, isLoading, refetch } = searchNotificationConfigs(roleModule, roleService);
     
     // Filter notifications by type
     const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && item.additionalDetails?.category === Category) || [];
@@ -39,6 +39,32 @@ const Notification = () => {
         { name: t("SMS"), code: "sms" },
         { name: t("PUSH"), code: "push" },
     ]
+
+    // Refetch data when component mounts or when navigating back
+    useEffect(() => {
+        refetch();
+        
+        // Add focus event listener to refetch data when user returns to the page
+        const handleFocus = () => {
+            refetch();
+        };
+        
+        // Add visibility change listener to refetch data when user switches tabs
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                refetch();
+            }
+        };
+        
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Cleanup event listeners on component unmount
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [refetch]);
 
     // Format data for data table
     useEffect(() => {
@@ -151,7 +177,7 @@ const Notification = () => {
             <Card>
                 <div style={{ display: "flex" }}>
                     {NotifCardConfig.map((item, index) => (
-                        <NotificationCard title={item.title} desc={item.desc} index={item.key} onClick={onCardClick} data={null} icon={item.icon} />
+                        <NotificationCard key={item.key || index} title={item.title} desc={item.desc} index={item.key} onClick={onCardClick} data={null} icon={item.icon} />
                     ))}
                 </div>
             </Card>
