@@ -457,7 +457,7 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 		}
 		messages = append(messages, message)
 	}
-
+	logJSON("Localization Messages", messages)
 	resp, err := l.SendLocalizationMessage(messages, req)
 	if err != nil {
 		log.Println(err)
