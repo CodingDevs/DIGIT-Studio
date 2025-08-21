@@ -385,8 +385,109 @@ const Workflow = () => {
         }
     }
 
-    const AddState = (state, x, y) => {
+    // Smart positioning function to avoid overlapping elements
+    const findSmartPosition = (proposedX, proposedY, existingElements) => {
+        const elementWidth = 250; // Approximate width of canvas elements
+        const elementHeight = 120; // Approximate height of canvas elements
+        const padding = 50; // Minimum distance between elements
+        const viewportWidth = 1200; // Approximate viewport width
+        const viewportHeight = 800; // Approximate viewport height
+        
+        // If no existing elements, use the proposed position
+        if (existingElements.length === 0) {
+            return { x: proposedX, y: proposedY };
+        }
+        
+        // Check if proposed position overlaps with any existing element
+        const isOverlapping = (x, y) => {
+            return existingElements.some(element => {
+                const elementX = element.position.x;
+                const elementY = element.position.y;
+                
+                // Check if rectangles overlap
+                return !(x + elementWidth + padding < elementX || 
+                        elementX + elementWidth + padding < x ||
+                        y + elementHeight + padding < elementY || 
+                        elementY + elementHeight + padding < y);
+            });
+        };
+        
+        // If proposed position doesn't overlap, use it
+        if (!isOverlapping(proposedX, proposedY)) {
+            return { x: proposedX, y: proposedY };
+        }
+        
+        // Try to find a position in a grid pattern around the proposed position
+        const gridSpacing = elementWidth + padding;
+        const maxAttempts = 20; // Limit search attempts
+        
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            // Try positions in expanding circles around the proposed position
+            const radius = attempt * gridSpacing;
+            
+            // Try 8 directions around the proposed position
+            const directions = [
+                { dx: 0, dy: -radius }, // North
+                { dx: radius, dy: -radius }, // Northeast
+                { dx: radius, dy: 0 }, // East
+                { dx: radius, dy: radius }, // Southeast
+                { dx: 0, dy: radius }, // South
+                { dx: -radius, dy: radius }, // Southwest
+                { dx: -radius, dy: 0 }, // West
+                { dx: -radius, dy: -radius } // Northwest
+            ];
+            
+            for (const direction of directions) {
+                const testX = proposedX + direction.dx;
+                const testY = proposedY + direction.dy;
+                
+                // Ensure position is within viewport bounds
+                if (testX >= 0 && testX <= viewportWidth - elementWidth &&
+                    testY >= 0 && testY <= viewportHeight - elementHeight) {
+                    
+                    if (!isOverlapping(testX, testY)) {
+                        return { x: testX, y: testY };
+                    }
+                }
+            }
+        }
+        
+        // If no position found, try to find the least crowded area
+        const gridSize = 50;
+        const grid = {};
+        
+        // Create a grid and count elements in each cell
+        existingElements.forEach(element => {
+            const gridX = Math.floor(element.position.x / gridSize);
+            const gridY = Math.floor(element.position.y / gridSize);
+            const key = `${gridX},${gridY}`;
+            grid[key] = (grid[key] || 0) + 1;
+        });
+        
+        // Find the least crowded area
+        let bestX = proposedX;
+        let bestY = proposedY;
+        let minDensity = Infinity;
+        
+        for (let x = 0; x < viewportWidth; x += gridSize) {
+            for (let y = 0; y < viewportHeight; y += gridSize) {
+                const gridX = Math.floor(x / gridSize);
+                const gridY = Math.floor(y / gridSize);
+                const key = `${gridX},${gridY}`;
+                const density = grid[key] || 0;
+                
+                if (density < minDensity && !isOverlapping(x, y)) {
+                    minDensity = density;
+                    bestX = x;
+                    bestY = y;
+                }
+            }
+        }
+        
+        return { x: bestX, y: bestY };
+    };
 
+    const AddState = (state, x, y) => {
         const currentX = x || coords[0].x;
         const currentY = y || coords[0].y;
 
@@ -414,6 +515,9 @@ const Workflow = () => {
 
         const elementId = Date.now();
 
+        // Use smart positioning to find the best location
+        const smartPosition = findSmartPosition(currentX, currentY, canvasElements);
+
         const newElement = {
             id: elementId,
             type: type,
@@ -426,11 +530,16 @@ const Workflow = () => {
             generatedoc:[],
             sendnotif:[],
             nodetype: nodetype,
-            position: { x: currentX, y: currentY }
+            position: smartPosition
         };
 
         setCanvasElements(prev => [...prev, newElement]);
-        x === undefined && setCoords([{ x: coords[0].x + 265, y: coords[0].y }]);
+        
+        // Update coords for next element placement
+        if (x === undefined) {
+            setCoords([{ x: smartPosition.x + 265, y: smartPosition.y }]);
+        }
+        
         return newElement.id;
     };
 

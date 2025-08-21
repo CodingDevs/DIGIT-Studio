@@ -30,9 +30,9 @@ const Notification = () => {
     const { data: notificationConfigs, isLoading, refetch } = searchNotificationConfigs(roleModule, roleService);
     
     // Filter notifications by type
-    const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && item.additionalDetails?.category === Category) || [];
-    const emailData = notificationConfigs?.filter(item => item.additionalDetails?.type === "email" && item.additionalDetails?.category === Category) || [];
-    const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" && item.additionalDetails?.category === Category) || [];
+    const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
+    const emailData = notificationConfigs?.filter(item => item.additionalDetails?.type === "email" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
+    const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
 
     const toggleOptions = [
         { name: t("EMAIL"), code: "email" },

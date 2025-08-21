@@ -706,7 +706,7 @@ const LandingPage = () => {
           messageBody: smsNotif.template || "",
           additionalDetails: {
             type: "sms",
-            category: `${newModule}_${newService}`,
+            category: `${newModule.toUpperCase()}_${newService.toUpperCase()}`,
             workflow: smsNotif.states || []
           }
         };
@@ -724,7 +724,7 @@ const LandingPage = () => {
           messageBody: pushNotif.template || "",
           additionalDetails: {
             type: "push",
-            category: `${newModule}_${newService}`,
+            category: `${newModule.toUpperCase()}_${newService.toUpperCase()}`,
             workflow: pushNotif.states || []
           }
         };
@@ -742,7 +742,7 @@ const LandingPage = () => {
           messageBody: emailNotif.template || "",
           additionalDetails: {
             type: "email",
-            category: `${newModule}_${newService}`,
+            category: `${newModule.toUpperCase()}_${newService.toUpperCase()}`,
             workflow: emailNotif.states || []
           }
         };
@@ -943,16 +943,48 @@ const LandingPage = () => {
 
       // Set checklist based on checklist configuration
       if (checklistConfig && checklistConfig.length > 0) {
-        const stateChecklists = checklistConfig.filter(checklist => 
-          checklist.state === state.state || 
-          (state.state === null && checklist.state === "START")
-        );
+        // Handle different state name formats for matching
+        const stateName = state.state || (state.isStartState ? "START" : null);
+        const stateNameUpper = stateName ? stateName.toUpperCase() : null;
+        
+        const stateChecklists = checklistConfig.filter(checklist => {
+          const checklistState = checklist.state?.toUpperCase();
+          
+          // Match exact state name
+          if (checklistState === stateNameUpper) {
+            return true;
+          }
+          
+          // Handle special cases for start state (null state or isStartState = true)
+          if ((state.isStartState || !state.state) && 
+              (checklistState === "START" || checklistState === "APPLY")) {
+            return true;
+          }
+          
+          // Handle intermediate states
+          if (state.state && !state.isStartState && !state.isTerminateState) {
+            // For intermediate states, match exact state name or common variations
+            if (checklistState === stateNameUpper || 
+                checklistState === state.state.toUpperCase()) {
+              return true;
+            }
+          }
+          
+          // Handle end state
+          if (state.isTerminateState && checklistState === "END") {
+            return true;
+          }
+          
+          return false;
+        });
         
         if (stateChecklists.length > 0) {
           canvasElement.checklist = stateChecklists.map(checklist => ({
             code: checklist.name,
             name: checklist.name
           }));
+          
+            stateChecklists.map(c => c.name));
         }
       }
 
