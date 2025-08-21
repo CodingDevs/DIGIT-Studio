@@ -281,208 +281,145 @@ const LandingPage = () => {
     }
   };
 
-  // Function to create address section
-  const createAddressSection = () => {
+  // Function to create address card
+  const createAddressCard = (screenName, screenUUID) => {
     return {
-      name: "addressSection",
-      type: "object",
-      cards: [
+      fields: [
         {
-          fields: [
-            {
-              type: "text",
-              label: "Pincode",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              jsonPath: "AddressPincode",
-              metaData: {},
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              defaultValue: "",
-              errorMessage: ""
-            },
-            {
-              type: "text",
-              label: "Street Name",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              jsonPath: "AddressStreet",
-              metaData: {},
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              defaultValue: "",
-              errorMessage: ""
-            },
-            {
-              type: "dropdown",
-              label: "City",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              jsonPath: "AddressCity",
-              metaData: {},
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              defaultValue: "",
-              errorMessage: "",
-              isBoundaryData: true,
-              dropDownOptions: []
-            }
-          ],
-          header: "Address Details",
-          description: "Address Information",
-          headerFields: [
-            {
-              type: "text",
-              label: "SCREEN_HEADING",
-              value: "Address Details",
-              active: true,
-              jsonPath: "ScreenHeading",
-              metaData: {},
-              required: true
-            },
-            {
-              type: "text",
-              label: "SCREEN_DESCRIPTION",
-              value: "Please provide your address information",
-              active: true,
-              jsonPath: "Description",
-              metaData: {},
-              required: true
-            }
-          ]
+          type: "text",
+          label: "Pincode",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          jsonPath: "AddressPincode",
+          required: true,
+          deleteFlag: true,
+          defaultValue: "",
+          errorMessage: ""
+        },
+        {
+          type: "text",
+          label: "Street Name",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          jsonPath: "AddressStreet",
+          required: true,
+          deleteFlag: true,
+          defaultValue: "",
+          errorMessage: ""
+        },
+        {
+          type: "dropdown",
+          label: "City",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          jsonPath: "AddressCity",
+          required: true,
+          deleteFlag: true,
+          defaultValue: "",
+          errorMessage: "",
+          isBoundaryData: true,
+          dropDownOptions: []
         }
       ],
-      order: 1,
-      config: {
-        enableComment: false,
-        enableFieldAddition: true,
-        allowFieldsAdditionAt: ["body"],
-        enableSectionAddition: false,
-        allowCommentsAdditionAt: ["body"]
-      },
-      parent: "REGISTRATIONFLOW",
-      navigateTo: {
-        name: "nextScreen",
-        type: "form"
-      },
-      actionLabel: "NEXT"
+      header: "Address Details",
+      description: "Address Information",
+      headerFields: [
+        {
+          type: "text",
+          label: "SCREEN_HEADING",
+          value: "Address Details",
+          active: true,
+          jsonPath: "ScreenHeading",
+          metaData: {},
+          required: true
+        },
+        {
+          type: "text",
+          label: "SCREEN_DESCRIPTION",
+          value: "Please provide your address information",
+          active: true,
+          jsonPath: "Description",
+          metaData: {},
+          required: true
+        }
+      ]
     };
   };
 
-  // Function to create applicant section
-  const createApplicantSection = () => {
+  // Function to create applicant card
+  const createApplicantCard = (screenName, screenUUID) => {
     return {
-      name: "applicantSection",
-      type: "object",
-      cards: [
+      fields: [
         {
-          fields: [
-            {
-              type: "text",
-              label: "Name",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              jsonPath: "ApplicantName",
-              metaData: {},
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              defaultValue: "",
-              errorMessage: ""
-            },
-            {
-              type: "mobileNumber",
-              label: "Mobile Number",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              hideSpan: true,
-              jsonPath: "ApplicantMobile",
-              metaData: { hideSpan: true },
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              populators: { hideSpan: true },
-              defaultValue: "",
-              errorMessage: ""
-            },
-            {
-              type: "dropdown",
-              label: "Gender",
-              value: "",
-              active: true,
-              tooltip: "",
-              helpText: "",
-              jsonPath: "ApplicantGender",
-              metaData: {},
-              readOnly: false,
-              required: true,
-              deleteFlag: true,
-              innerLabel: "",
-              defaultValue: "",
-              errorMessage: "",
-              dropDownOptions: [
-                { name: "Male", value: "male" },
-                { name: "Female", value: "female" },
-                { name: "Other", value: "other" }
-              ]
-            }
-          ],
-          header: "Applicant Details",
-          description: "Applicant Information",
-          headerFields: [
-            {
-              type: "text",
-              label: "SCREEN_HEADING",
-              value: "Applicant Details",
-              active: true,
-              jsonPath: "ScreenHeading",
-              metaData: {},
-              required: true
-            },
-            {
-              type: "text",
-              label: "SCREEN_DESCRIPTION",
-              value: "Please provide your personal information",
-              active: true,
-              jsonPath: "Description",
-              metaData: {},
-              required: true
-            }
+          type: "text",
+          label: "Name",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          jsonPath: "ApplicantName",
+          required: true,
+          deleteFlag: true,
+          defaultValue: "",
+          errorMessage: ""
+        },
+        {
+          type: "mobileNumber",
+          label: "Mobile Number",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          hideSpan: true,
+          jsonPath: "ApplicantMobile",
+          metaData: { hideSpan: true },
+          required: true,
+          deleteFlag: true,
+          populators: { hideSpan: true },
+          defaultValue: "",
+          errorMessage: ""
+        },
+        {
+          type: "dropdown",
+          label: "Gender",
+          active: true,
+          tooltip: "",
+          helpText: "",
+          jsonPath: "ApplicantGender",
+          required: true,
+          deleteFlag: true,
+          defaultValue: "",
+          errorMessage: "",
+          dropDownOptions: [
+            { name: "Male", value: "male" },
+            { name: "Female", value: "female" },
+            { name: "Other", value: "other" }
           ]
         }
       ],
-      order: 1,
-      config: {
-        enableComment: false,
-        enableFieldAddition: true,
-        allowFieldsAdditionAt: ["body"],
-        enableSectionAddition: false,
-        allowCommentsAdditionAt: ["body"]
-      },
-      parent: "REGISTRATIONFLOW",
-      navigateTo: {
-        name: "nextScreen",
-        type: "form"
-      },
-      actionLabel: "NEXT"
+      header: "Applicant Details",
+      description: "Applicant Information",
+      headerFields: [
+        {
+          type: "text",
+          label: "SCREEN_HEADING",
+          value: "Applicant Details",
+          active: true,
+          jsonPath: "ScreenHeading",
+          metaData: {},
+          required: true
+        },
+        {
+          type: "text",
+          label: "SCREEN_DESCRIPTION",
+          value: "Please provide your personal information",
+          active: true,
+          jsonPath: "Description",
+          metaData: {},
+          required: true
+        }
+      ]
     };
   };
 
@@ -490,29 +427,35 @@ const LandingPage = () => {
   const convertFieldsToUiforms = (fields, newModule, newService, boundary = null, applicant = null) => {
     // Create a default form configuration
     const defaultForm = {
-      formName: `${newModule} ${newService} Form`,
+      formName: "New Form",
       isActive: true,
       formConfig: {
         screens: []
       },
       localization: {},
-      formDescription: `Form for ${newModule} ${newService} service`
+      formDescription: "New Form"
     };
 
-    // Convert each field to a screen
-    const screens = fields.map((field, index) => {
-      const screen = {
-        name: field.name || `screen_${index}`,
-        type: field.type || "object",
-        cards: []
-      };
+    // Generate a unique UUID for this screen
+    const screenUUID = crypto.randomUUID();
+    const screenName = "beneficiaryLocation";
 
+    // Create a single screen with multiple cards
+    const screen = {
+      name: screenName,
+      type: "object",
+      cards: []
+    };
+
+    // Convert each field to a card within the single screen
+    fields.forEach((field, index) => {
       // Convert field properties to form fields
       if (field.properties && field.properties.length > 0) {
         const card = {
-          fields: field.properties.map(prop => convertPropertyToField(prop)),
-          header: field.label || field.name,
-          description: field.label || field.name,
+          fields: field.properties.map((prop, propIndex) => 
+            convertPropertyToField(prop, screenName, screenUUID, propIndex)
+          ),
+          header: screenUUID,
           headerFields: [
             {
               type: "text",
@@ -527,7 +470,7 @@ const LandingPage = () => {
             {
               type: "textarea",
               label: "SCREEN_DESCRIPTION",
-              value: field.label || field.name,
+              value: `Description for ${field.label || field.name}`,
               active: true,
               jsonPath: "Description",
               metaData: {},
@@ -540,9 +483,8 @@ const LandingPage = () => {
       } else {
         // If no properties, create a simple field
         const card = {
-          fields: [convertPropertyToField(field)],
-          header: field.label || field.name,
-          description: field.label || field.name,
+          fields: [convertPropertyToField(field, screenName, screenUUID, index)],
+          header: screenUUID,
           headerFields: [
             {
               type: "text",
@@ -557,7 +499,7 @@ const LandingPage = () => {
             {
               type: "textarea",
               label: "SCREEN_DESCRIPTION",
-              value: field.label || field.name,
+              value: `Description for ${field.label || field.name}`,
               active: true,
               jsonPath: "Description",
               metaData: {},
@@ -568,99 +510,131 @@ const LandingPage = () => {
         };
         screen.cards.push(card);
       }
-
-      // Add screen configuration
-      screen.order = index + 1;
-      screen.config = {
-        enableComment: false,
-        enableFieldAddition: true,
-        allowFieldsAdditionAt: ["body"],
-        enableSectionAddition: false,
-        allowCommentsAdditionAt: ["body"]
-      };
-      screen.parent = "REGISTRATIONFLOW";
-      screen.navigateTo = {
-        name: "nextScreen",
-        type: "form"
-      };
-      screen.actionLabel = "NEXT";
-
-      return screen;
     });
 
     // Add address section if boundary data exists
     if (boundary) {
-      const addressSection = createAddressSection();
-      addressSection.order = screens.length + 1;
-      screens.push(addressSection);
+      const addressCard = createAddressCard(screenName, screenUUID);
+      screen.cards.push(addressCard);
     }
 
     // Add applicant section if applicant data exists
     if (applicant) {
-      const applicantSection = createApplicantSection();
-      applicantSection.order = screens.length + 1;
-      screens.push(applicantSection);
+      const applicantCard = createApplicantCard(screenName, screenUUID);
+      screen.cards.push(applicantCard);
     }
 
-    defaultForm.formConfig.screens = screens;
+    // Add screen configuration
+    screen.order = 1;
+    screen.config = {
+      enableComment: false,
+      enableFieldAddition: true,
+      allowFieldsAdditionAt: ["body"],
+      enableSectionAddition: false,
+      allowCommentsAdditionAt: ["body"]
+    };
+    screen.parent = "REGISTRATIONFLOW";
+    screen.navigateTo = {
+      name: "householdDetails",
+      type: "form"
+    };
+    screen.actionLabel = "APPONE_REGISTRATION_BENEFICIARY_LOCATION_ACTION_BUTTON_LABEL_1";
+
+    defaultForm.formConfig.screens = [screen];
     return [defaultForm];
   };
 
   // Function to convert a property to a form field
-  const convertPropertyToField = (property) => {
+  const convertPropertyToField = (property, screenName, screenUUID, fieldIndex) => {
+    // Generate unique jsonPath with UUID
+    const jsonPath = `${screenName}_${screenUUID}_newField${fieldIndex + 1}`;
+    
     const field = {
       type: getFieldType(property),
       label: property.label || property.name,
+      regex: property.validation?.regex || "",
       active: true,
-      tooltip: "",
-      helpText: "",
-      jsonPath: property.name,
-      metaData: {},
-      readOnly: false,
+      appType: property.format || property.type,
+      tooltip: property.tooltip || "",
+      helpText: property.helpText || "",
+      jsonPath: jsonPath,
       required: property.required || false,
       deleteFlag: true,
-      innerLabel: "",
       defaultValue: property.defaultValue || "",
-      errorMessage: ""
+      errorMessage: property.errorMessage || ""
     };
 
     // Add type-specific properties
     switch (property.format) {
       case "text":
-        field.maxLength = property.maxLength || 128;
-        field.minLength = property.minLength || 2;
+      case "textInput":
+        field.type = "textInput";
+        field.appType = "text";
+        field.charCount = true;
+        field.maxLength = property.maxLength ? String(property.maxLength) : "10";
+        field.minLength = property.minLength ? String(property.minLength) : "20";
+        if (property.validation?.regex) {
+          field.regex = property.validation.regex;
+        }
         break;
       case "number":
-        field.maxLength = property.maxLength || 10;
-        field.minLength = property.minLength || 1;
+      case "integer":
+        field.type = "number";
+        field.appType = "number";
+        field.charCount = true;
+        field.maxLength = property.maxLength ? String(property.maxLength) : "10";
+        field.minLength = property.minLength ? String(property.minLength) : "20";
+        if (property.validation?.regex) {
+          field.regex = property.validation.regex;
+        }
         break;
       case "mobileNumber":
-        field.maxLength = property.maxLength || 256;
-        field.minLength = property.minLength || 0;
-        field.prefix = property.prefix || "91";
+        field.type = "mobileNumber";
+        field.appType = "mobileNumber";
         field.hideSpan = true;
         field.populators = { hideSpan: true };
+        field.isdCodePrefix = property.prefix || "+91";
+        if (property.validation?.regex) {
+          field.regex = property.validation.regex;
+        }
         break;
+      case "date":
+        field.type = "datePicker";
+        field.appType = "date";
+        break;
+      case "dropdown":
       case "radioordropdown":
-        if (property.reference === "mdms") {
-          field.schemaCode = property.schema;
-          field.reference = "mdms";
-        } else if (property.values && property.values.length > 0) {
-          field.dropDownOptions = property.values.map(value => ({
-            name: value,
-            value: value.toLowerCase()
+        field.type = "dropdown";
+        field.appType = "dropdown";
+        if (property.values && property.values.length > 0) {
+          field.dropDownOptions = property.values.map((value, index) => ({
+            code: crypto.randomUUID(),
+            name: value
           }));
         }
         break;
       case "radio":
-        if (property.reference === "mdms") {
-          field.schemaCode = property.schema;
-          field.reference = "mdms";
-        } else if (property.values && property.values.length > 0) {
-          field.dropDownOptions = property.values.map(value => ({
-            name: value,
-            value: value.toLowerCase()
+        field.type = "radio";
+        field.appType = "radio";
+        if (property.values && property.values.length > 0) {
+          field.dropDownOptions = property.values.map((value, index) => ({
+            code: crypto.randomUUID(),
+            name: value
           }));
+        }
+        break;
+      case "email":
+        field.type = "email";
+        field.appType = "email";
+        if (property.validation?.regex) {
+          field.regex = property.validation.regex;
+        }
+        break;
+      case "textarea":
+        field.type = "textarea";
+        field.appType = "textarea";
+        if (property.validation?.regex) {
+          field.regex = property.validation.regex;
         }
         break;
     }
@@ -672,19 +646,35 @@ const LandingPage = () => {
   const getFieldType = (property) => {
     switch (property.format) {
       case "text":
-        return "text";
+      case "textInput":
+        return "textInput";
       case "number":
+      case "integer":
         return "number";
       case "date":
-        return "date";
+        return "datePicker";
       case "mobileNumber":
         return "mobileNumber";
       case "radioordropdown":
         return "dropdown";
       case "radio":
         return "radio";
+      case "email":
+        return "email";
+      case "textarea":
+        return "textarea";
+      case "checkbox":
+        return "checkbox";
+      case "multiselect":
+        return "multiselect";
+      case "file":
+        return "file";
+      case "url":
+        return "url";
+      case "password":
+        return "password";
       default:
-        return "text";
+        return "textInput";
     }
   };
 
@@ -983,8 +973,6 @@ const LandingPage = () => {
             code: checklist.name,
             name: checklist.name
           }));
-          
-            stateChecklists.map(c => c.name));
         }
       }
 
@@ -1195,8 +1183,11 @@ const LandingPage = () => {
     }
     
     // Handle UI-specific configurations
-    // Convert published service fields to uiforms structure
-    if (publishedConfig.fields && publishedConfig.fields.length > 0) {
+    // Preserve existing uiforms if they exist, otherwise convert from fields
+    if (publishedConfig.uiforms && publishedConfig.uiforms.length > 0) {
+      // If uiforms already exist in the published config, preserve them
+      draftConfig.uiforms = publishedConfig.uiforms;
+    } else if (publishedConfig.fields && publishedConfig.fields.length > 0) {
       // Convert fields to uiforms structure with boundary and applicant data
       draftConfig.uiforms = convertFieldsToUiforms(
         publishedConfig.fields, 
@@ -1209,8 +1200,11 @@ const LandingPage = () => {
       draftConfig.uiforms = [];
     }
     
-    // Convert published service roles to uiroles structure
-    if (publishedConfig.access && publishedConfig.access.roles) {
+    // Preserve existing UI configurations if they exist, otherwise convert from legacy format
+    // Handle uiroles
+    if (publishedConfig.uiroles && publishedConfig.uiroles.length > 0) {
+      draftConfig.uiroles = publishedConfig.uiroles;
+    } else if (publishedConfig.access && publishedConfig.access.roles) {
       draftConfig.uiroles = convertRolesToUiroles(
         publishedConfig.access, 
         publishedConfig.module, 
@@ -1223,8 +1217,10 @@ const LandingPage = () => {
       draftConfig.uiroles = [];
     }
     
-    // Convert published service workflow to uiworkflow structure
-    if (publishedConfig.workflow && publishedConfig.workflow.states) {
+    // Handle uiworkflow
+    if (publishedConfig.uiworkflow && Object.keys(publishedConfig.uiworkflow).length > 0) {
+      draftConfig.uiworkflow = publishedConfig.uiworkflow;
+    } else if (publishedConfig.workflow && publishedConfig.workflow.states) {
       draftConfig.uiworkflow = convertWorkflowToUiworkflow(
         publishedConfig.workflow, 
         newModule, 
@@ -1237,15 +1233,19 @@ const LandingPage = () => {
       draftConfig.uiworkflow = {};
     }
     
-    // Convert published service checklist to uichecklists structure
-    if (publishedConfig.checklist && publishedConfig.checklist.length > 0) {
+    // Handle uichecklists
+    if (publishedConfig.uichecklists && publishedConfig.uichecklists.length > 0) {
+      draftConfig.uichecklists = publishedConfig.uichecklists;
+    } else if (publishedConfig.checklist && publishedConfig.checklist.length > 0) {
       draftConfig.uichecklists = convertChecklistToUichecklists(publishedConfig.checklist, newModule, newService);
     } else {
       draftConfig.uichecklists = [];
     }
     
-    // Convert published service notifications to uinotifications structure
-    if (publishedConfig.notification) {
+    // Handle uinotifications
+    if (publishedConfig.uinotifications && publishedConfig.uinotifications.length > 0) {
+      draftConfig.uinotifications = publishedConfig.uinotifications;
+    } else if (publishedConfig.notification) {
       draftConfig.uinotifications = convertNotificationsToUinotifications(publishedConfig.notification, newModule, newService);
     } else {
       draftConfig.uinotifications = [];

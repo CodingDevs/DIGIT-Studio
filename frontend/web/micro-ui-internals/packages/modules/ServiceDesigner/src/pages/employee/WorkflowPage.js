@@ -273,7 +273,13 @@ const Workflow = () => {
                     creater: roleData.creater
                 };
 
-                if (data?.some(role => role?.data?.code?.toUpperCase() === roleData.name.toUpperCase())) {
+                // Check for duplicate role names in existing roles from API
+                const existingRoleFromAPI = data?.some(role => role?.data?.code?.toUpperCase() === roleData.name.toUpperCase());
+                
+                // Check for duplicate role names in current service configuration draft
+                const existingRoleFromDraft = draft?.data?.uiroles?.some(role => role?.code?.toUpperCase() === roleData.name.toUpperCase());
+
+                if (existingRoleFromAPI || existingRoleFromDraft) {
                     setShowToast({ key: true, type: "error", label: t("ROLE_NAME_EXISTS") });
                 }
                 else {
@@ -1091,7 +1097,7 @@ const Workflow = () => {
             ACTIVE: [],
             states: states,
             INACTIVE: [],
-            business: 'business',
+            business: 'public-services',
             businessService: `${roleModule}.${roleService}`,
             generateDemandAt: [],
             businessServiceSla: 5184000000,
@@ -2333,7 +2339,6 @@ const Workflow = () => {
                     sortFooterChildren={true}
                 >
                     <FieldV1
-                        error={roleData.name == "" ? t("PLEASE_ENTER_ROLE_NAME") : ""}
                         label={t("ROLE_NAME")}
                         onChange={(e) => onRoleChange(e)}
                         populators={{
