@@ -213,7 +213,7 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 	bills, err := s.demandService.fetchBill(application)
 	if err != nil {
 		log.Printf("Error fetching bill for application %s: %v", application.Application.ApplicationNumber, err)
-		return nil, err
+		//return nil, err
 	}
 	var totalAmount float64
 	for _, bill := range bills {
