@@ -28,6 +28,34 @@ const ModulePageComponent = () => {
 
   //  util to transform raw data into UI-friendly structure
   let detailsConfig = data ? transformResponseforModulePage(data?.Services) : [];
+  
+  // Filter cards based on URL parameters if module and/or service are provided
+  const urlModule = queryStrings?.module;
+  const urlService = queryStrings?.service;
+  
+  if (urlModule || urlService) {
+    detailsConfig = detailsConfig.filter(product => {
+      // If both module and service are provided, filter by both
+      if (urlModule && urlService) {
+        return product.module?.toLowerCase() === urlModule.toLowerCase() && 
+               product.businessServices?.some(bs => 
+                 bs.businessService?.toLowerCase() === urlService.toLowerCase()
+               );
+      }
+      // If only module is provided, filter by module
+      else if (urlModule) {
+        return product.module?.toLowerCase() === urlModule.toLowerCase();
+      }
+      // If only service is provided, filter by service
+      else if (urlService) {
+        return product.businessServices?.some(bs => 
+          bs.businessService?.toLowerCase() === urlService.toLowerCase()
+        );
+      }
+      return true;
+    });
+  }
+  
   const hasNoData = detailsConfig.length === 0 && !isLoading;
 
   if (isLoading) {
@@ -63,24 +91,24 @@ const ModulePageComponent = () => {
               key={index}
               className={"module-page-card"}
               moduleName={t(product.heading)}
-              metrics={[
-                {
-                  label: t(product?.cardDescription),
-                },
-              ]}
+              // metrics={[
+              //   {
+              //     label: t(product?.cardDescription),
+              //   },
+              // ]}
               links={links}
               centreChildren={[
-                <Button
-                  variation="teritiary"
-                  label={t(`${product?.module?.toUpperCase()}_HOW_IT_WORKS`)}
-                  type="button"
-                  size={"medium"}
-                  onClick={() => {
-                    history.push({
-                      pathname: `/${window.contextPath}/employee`
-                    });
-                  }}
-                />
+                // <Button
+                //   variation="teritiary"
+                //   label={t(`${product?.module?.toUpperCase()}_HOW_IT_WORKS`)}
+                //   type="button"
+                //   size={"medium"}
+                //   onClick={() => {
+                //     history.push({
+                //       pathname: `/${window.contextPath}/employee`
+                //     });
+                //   }}
+                // />
               ]}
               endChildren={[
                 <Button

@@ -1,4 +1,4 @@
-import { CustomSVG, Button, PopUp, TextInput, TextBlock } from "@egovernments/digit-ui-components";
+import { CustomSVG, Button, PopUp, TextInput, TextBlock, AlertCard } from "@egovernments/digit-ui-components";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
@@ -150,7 +150,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className,
                   style={{ marginBottom: "1rem" }}
                 />
               </div> */}
-              <div style={{ marginTop: "1.5rem" }}>
+              <div style={{ marginTop: "1.5rem", marginBottom: "1.5rem" }}>
                 <div
                   style={{
                     display: "flex",
@@ -187,6 +187,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className,
                   />
                 </div>
               </div>
+              <AlertCard label={t("DUPLICATE_INFO")} text={t("DUPLICATE_INFO_DEFINITION")} />
             </div>,
           ]}
           footerChildren={[

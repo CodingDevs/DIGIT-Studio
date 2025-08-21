@@ -17,18 +17,21 @@ import {
   Button,
   TextBlock,
   TextArea,
+  AlertCard,
 } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
 import { useHistory } from "react-router-dom";
 import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
 
 // Utility to build card data
-export const buildCardData = (drafts = [], published = [], t) => {
+export const buildCardData = (drafts = [], published = [], t, queryStrings) => {
   const publishedCards = published.map((item) => ({
     title: `${item?.module} ${item.businessService}` || item.service || "Unnamed Service",
     description: `Manage ${item.businessService || item.service} services for your citizens`,
-    link: "/employee",
+    link: `employee/publicservices/modules?selectedPath=Apply&module=${item?.module}&service=${item?.businessService || item?.service}`,
     module: item?.module,
+    createdDate:
+      Digit.DateUtils.ConvertEpochToDate(item?.auditDetails?.createdTime) || "N/A",
     service: item?.businessService || item?.service,
   }));
 
@@ -102,6 +105,7 @@ const LandingPage = () => {
   const { t } = useTranslation();
   const history = useHistory();
   const tenantId = Digit.ULBService.getCurrentTenantId();
+  const queryStrings = Digit.Hooks.useQueryParams();
 
   const [isLoading, setIsLoading] = useState(true);
   const [mdmsData, setMdmsData] = useState([]);
@@ -1371,7 +1375,7 @@ const LandingPage = () => {
 
   useEffect(() => {
     const { drafts, published } = extractDraftsAndPublished(mdmsData, publicServices);
-    setCardData(buildCardData(drafts, published, t));
+    setCardData(buildCardData(drafts, published, t, queryStrings));
   }, [publicServices, mdmsData]);
 
   if (isLoading) return <Loader />;
@@ -1611,9 +1615,476 @@ const LandingPage = () => {
                     marginBottom: "1rem",
                   }}
                 >
-                  <label style={{ fontWeight: "500", color: "#333", minWidth: "200px" }}>
-                    {t("IMPORT_DATA")}
-                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", minWidth: "200px" }}>
+                    <label style={{ fontWeight: "500", color: "#333", marginBottom: "4px" }}>
+                      {t("IMPORT_DATA")}
+                    </label>
+                    <Button
+                      variation="teritiary"
+                      label={t("DOWNLOAD_SAMPLE_JSON")}
+                      onClick={() => {
+                        const sampleConfig = {
+                          "pdf": [
+                              {
+                                  "key": "tl-application",
+                                  "type": "application",
+                                  "states": [
+                                      "applied",
+                                      "approved"
+                                  ]
+                              },
+                              {
+                                  "key": "tl-bill",
+                                  "type": "bill",
+                                  "states": [
+                                      "approved"
+                                  ]
+                              },
+                              {
+                                  "key": "tl-receipt",
+                                  "type": "receipt",
+                                  "states": [
+                                      "approved"
+                                  ]
+                              }
+                          ],
+                          "bill": {
+                              "taxHead": [
+                                  {
+                                      "code": "applicationFee",
+                                      "name": "applicationFee",
+                                      "order": "2",
+                                      "isDebit": false,
+                                      "service": "TESTBSONE",
+                                      "category": "TAX",
+                                      "isRequired": false,
+                                      "isActualDemand": true
+                                  }
+                              ],
+                              "taxPeriod": [
+                                  {
+                                      "code": "TEST2018",
+                                      "toDate": 1554076799000,
+                                      "service": "TESTBSONE",
+                                      "fromDate": 1522540800000,
+                                      "periodCycle": "ANNUAL",
+                                      "financialYear": "2018-19"
+                                  }
+                              ],
+                              "BusinessService": {
+                                  "code": "TESTBSONE",
+                                  "businessService": "TESTBSONE",
+                                  "demandUpdateTime": 86400000,
+                                  "isAdvanceAllowed": false,
+                                  "minAmountPayable": 100,
+                                  "partPaymentAllowed": true,
+                                  "isVoucherCreationEnabled": true,
+                                  "collectionModesNotAllowed": [
+                                      "DD",
+                                      "OFFLINE_NEFT",
+                                      "OFFLINE_RTGS",
+                                      "POSTAL_ORDER"
+                                  ]
+                              }
+                          },
+                          "idgen": [
+                              {
+                                  "type": "application",
+                                  "format": "testui4-service5-app-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]",
+                                  "idname": "testui4-service5.application.service5.applicationapp.id"
+                              },
+                              {
+                                  "type": "service",
+                                  "format": "testui4-service5-svc-[cy:yyyy-MM-dd]-[SEQ_PUBLIC_APPLICATION]",
+                                  "idname": "testui4-service5.application.service5.applicationservice.id"
+                              }
+                          ],
+                          "inbox": {
+                              "index": "public-service-index",
+                              "module": "public-service",
+                              "sortBy": {
+                                  "path": "Data.auditDetails.createdTime",
+                                  "defaultOrder": "DESC"
+                              },
+                              "sourceFilterPathList": [
+                                  "Data.businessService",
+                                  "Data.applicationNumber",
+                                  "Data.currentProcessInstance",
+                                  "Data.auditDetails",
+                                  "Data.additionalDetails",
+                                  "Data.module",
+                                  "Data.locality",
+                                  "Data.status"
+                              ],
+                              "allowedSearchCriteria": [
+                                  {
+                                      "name": "tenantId",
+                                      "path": "Data.tenantId.keyword",
+                                      "operator": "EQUAL",
+                                      "isMandatory": true
+                                  },
+                                  {
+                                      "name": "status",
+                                      "path": "Data.workflowStatus",
+                                      "isMandatory": false
+                                  },
+                                  {
+                                      "name": "applicationNumber",
+                                      "path": "Data.applicationNumber.keyword",
+                                      "isMandatory": false
+                                  },
+                                  {
+                                      "name": "module",
+                                      "path": "Data.module.keyword",
+                                      "isMandatory": false
+                                  },
+                                  {
+                                      "name": "businessService",
+                                      "path": "Data.businessService.keyword",
+                                      "isMandatory": false
+                                  },
+                                  {
+                                      "name": "locality",
+                                      "path": "Data.address.locality.keyword",
+                                      "isMandatory": false
+                                  },
+                                  {
+                                      "name": "assignee",
+                                      "path": "Data.currentProcessInstance.assignes.uuid.keyword",
+                                      "isMandatory": false
+                                  }
+                              ]
+                          },
+                          "rules": {
+                              "registry": {
+                                  "type": "api",
+                                  "service": "service5"
+                              },
+                              "calculator": {
+                                  "type": "custom",
+                                  "service": "service5",
+                                  "customFunction": ""
+                              },
+                              "references": [
+                                  {
+                                      "type": "initiate",
+                                      "service": "service5"
+                                  }
+                              ],
+                              "validation": {
+                                  "type": "schema",
+                                  "service": "service5",
+                                  "schemaCode": "service5.apply",
+                                  "customFunction": ""
+                              }
+                          },
+                          "access": {
+                              "roles": {
+                                  "editor": [
+                                      "TESTUI4_SERVICE5_UI_EDITOR"
+                                  ],
+                                  "viewer": [
+                                      "TESTUI4_SERVICE5_VIEWER"
+                                  ],
+                                  "creator": [
+                                      "TESTUI4_SERVICE5_CREATOR"
+                                  ]
+                              },
+                              "actions": [
+                                  {
+                                      "url": "service5-services/v1/create"
+                                  }
+                              ]
+                          },
+                          "fields": [
+                              {
+                                  "name": "TestDetails",
+                                  "type": "object",
+                                  "label": "Test Details",
+                                  "properties": [
+                                      {
+                                          "name": "Texttest",
+                                          "type": "string",
+                                          "label": "Text test",
+                                          "format": "text",
+                                          "disable": false,
+                                          "tooltip": "",
+                                          "helpText": "",
+                                          "required": false,
+                                          "orderNumber": 1,
+                                          "defaultValue": "",
+                                          "errorMessage": ""
+                                      },
+                                      {
+                                          "name": "mobilenumbertest",
+                                          "type": "mobileNumber",
+                                          "label": "mobile number test",
+                                          "format": "mobileNumber",
+                                          "prefix": "+81",
+                                          "disable": false,
+                                          "tooltip": "",
+                                          "helpText": "",
+                                          "required": false,
+                                          "maxLength": 256,
+                                          "minLength": 0,
+                                          "validation": {
+                                              "regex": "^\\d{8}$",
+                                              "message": "mob no is invalid"
+                                          },
+                                          "orderNumber": 2,
+                                          "defaultValue": "",
+                                          "errorMessage": "mob no is invalid"
+                                      },
+                                      {
+                                          "name": "numberfieldtest",
+                                          "type": "integer",
+                                          "label": "number field test",
+                                          "format": "number",
+                                          "disable": false,
+                                          "tooltip": "",
+                                          "helpText": "",
+                                          "required": false,
+                                          "orderNumber": 3,
+                                          "defaultValue": "",
+                                          "errorMessage": ""
+                                      }
+                                  ]
+                              }
+                          ],
+                          "module": "TESTUI4",
+                          "enabled": [
+                              "citizen",
+                              "employee"
+                          ],
+                          "payment": {
+                              "gateway": "TODO"
+                          },
+                          "service": "Service5",
+                          "boundary": {
+                              "lowestLevel": "locality",
+                              "hierarchyType": "REVENUE"
+                          },
+                          "workflow": {
+                              "ACTIVE": [],
+                              "states": [
+                                  {
+                                      "sla": 86400000,
+                                      "state": null,
+                                      "actions": [
+                                          {
+                                              "roles": [
+                                                  "TESTUI4_SERVICE5_CREATOR",
+                                                  "CITIZEN",
+                                                  "STUDIO_ADMIN"
+                                              ],
+                                              "action": "APPLY",
+                                              "nextState": "PENDING_FOR_VERIFICATION"
+                                          }
+                                      ],
+                                      "isStartState": true,
+                                      "isStateUpdatable": true,
+                                      "isTerminateState": false,
+                                      "applicationStatus": null,
+                                      "docUploadRequired": false
+                                  },
+                                  {
+                                      "sla": 86400000,
+                                      "state": "PENDING_FOR_VERIFICATION",
+                                      "actions": [
+                                          {
+                                              "roles": [
+                                                  "TESTUI4_SERVICE5_UI_EDITOR",
+                                                  "CITIZEN",
+                                                  "STUDIO_ADMIN"
+                                              ],
+                                              "action": "VERIFY",
+                                              "nextState": "VERIFIED"
+                                          }
+                                      ],
+                                      "isStartState": false,
+                                      "isStateUpdatable": true,
+                                      "isTerminateState": false,
+                                      "applicationStatus": null,
+                                      "docUploadRequired": false
+                                  },
+                                  {
+                                      "sla": 86400000,
+                                      "state": "VERIFIED",
+                                      "actions": [],
+                                      "isStartState": false,
+                                      "isStateUpdatable": true,
+                                      "isTerminateState": true,
+                                      "applicationStatus": null,
+                                      "docUploadRequired": false
+                                  }
+                              ],
+                              "INACTIVE": [],
+                              "business": "business",
+                              "businessService": "TESTUI4.Service5",
+                              "generateDemandAt": [],
+                              "businessServiceSla": 5184000000,
+                              "nextActionAfterPayment": "",
+                              "autoTransitionEnabledStates": []
+                          },
+                          "apiconfig": [
+                              {
+                                  "host": "https://staging.digit.org",
+                                  "type": "register",
+                                  "method": "post",
+                                  "service": "service5",
+                                  "endpoint": "/service5-services/v1/create"
+                              },
+                              {
+                                  "host": "https://staging.digit.org",
+                                  "type": "search",
+                                  "method": "post",
+                                  "service": "service5",
+                                  "endpoint": "/service5-services/v1/search"
+                              }
+                          ],
+                          "applicant": {
+                              "types": [
+                                  "individual",
+                                  "organisation"
+                              ],
+                              "config": {
+                                  "systemUser": true,
+                                  "systemRoles": [
+                                      "CITIZEN"
+                                  ],
+                                  "systemUserType": "CITIZEN"
+                              },
+                              "maximum": 3,
+                              "minimum": 1
+                          },
+                          "checklist": [
+                              {
+                                  "name": "checklist 1",
+                                  "state": "PENDING_FOR_VERIFICATION",
+                                  "checklistData": {
+                                      "data": [
+                                          {
+                                              "id": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c",
+                                              "key": 1,
+                                              "type": {
+                                                  "code": "SingleValueList"
+                                              },
+                                              "level": 1,
+                                              "title": "is the check done?",
+                                              "value": null,
+                                              "options": [
+                                                  {
+                                                      "id": "0cff9846-03a2-4453-bf0e-200cdda5f390",
+                                                      "key": 1,
+                                                      "label": "Yes",
+                                                      "subQuestions": [],
+                                                      "optionComment": false,
+                                                      "optionDependency": false,
+                                                      "parentQuestionId": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c"
+                                                  },
+                                                  {
+                                                      "id": "7161cfb2-69bc-4eb5-8623-c33ab4104f39",
+                                                      "key": 2,
+                                                      "label": "No",
+                                                      "subQuestions": [],
+                                                      "optionDependency": false,
+                                                      "parentQuestionId": "2d4a7b1e-1f2f-4a8a-9672-43396c6c9a1c"
+                                                  }
+                                              ],
+                                              "isActive": true,
+                                              "parentId": null,
+                                              "isRequired": false,
+                                              "subQuestions": []
+                                          }
+                                      ],
+                                      "name": "checklist 1",
+                                      "isActive": true,
+                                      "description": "checklist description"
+                                  }
+                              }
+                          ],
+                          "documents": [
+                              {
+                                  "module": "TESTUI4Service5",
+                                  "actions": [
+                                      {
+                                          "action": "APPLY",
+                                          "assignee": {
+                                              "show": false,
+                                              "isMandatory": false
+                                          },
+                                          "comments": {
+                                              "show": true,
+                                              "isMandatory": false
+                                          },
+                                          "documents": []
+                                      },
+                                      {
+                                          "action": "VERIFY",
+                                          "assignee": {
+                                              "show": false,
+                                              "isMandatory": false
+                                          },
+                                          "comments": {
+                                              "show": true,
+                                              "isMandatory": false
+                                          },
+                                          "documents": []
+                                      }
+                                  ],
+                                  "bannerLabel": "OBPS_BANNER",
+                                  "maxSizeInMB": 5,
+                                  "allowedFileTypes": [
+                                      "pdf",
+                                      "doc",
+                                      "docx",
+                                      "xlsx",
+                                      "xls",
+                                      "jpeg",
+                                      "jpg",
+                                      "png"
+                                  ]
+                              }
+                          ],
+                          "calculator": {
+                              "type": "custom",
+                              "billingSlabs": [
+                                  {
+                                      "key": "applicationFee",
+                                      "value": 2000
+                                  }
+                              ]
+                          },
+                          "localization": {
+                              "modules": [
+                                  "digit-studio"
+                              ]
+                          },
+                          "notification": {
+                              "sms": [],
+                              "push": [],
+                              "email": []
+                          }
+                      };
+                        
+                        const blob = new Blob([JSON.stringify(sampleConfig, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'sample-service-configuration.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }}
+                      size="small"
+                      style={{ 
+                        fontSize: "12px",  
+                        height: "auto",
+                        alignSelf: "flex-start"
+                      }}
+                    />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <TextArea
                       value={importData}
@@ -1717,6 +2188,7 @@ const LandingPage = () => {
                   </div>
                 </div>
               </div>
+              <AlertCard label={t("IMPORT_INFO")} text={t("IMPORT_INFO_DEFINITION")} />
             </div>,
           ]}
           footerChildren={[
