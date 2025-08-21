@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"public-service/config"
 	producer "public-service/kafka/producer"
 	"public-service/model"
@@ -13,8 +15,6 @@ import (
 	"public-service/repository"
 	"strconv"
 	"strings"
-	"os"
-	"errors"
 )
 
 type SMSService struct {
@@ -27,15 +27,14 @@ type SMSService struct {
 }
 
 func NewSMSService(repo repository.RestCallRepository, localizationService *LocalizationService, kafkaProducer *producer.PublicServiceProducer, demandService *DemandService,
-	workflowIntegrator *WorkflowIntegrator,mdmsV2Service *MDMSV2Service) *SMSService {
+	workflowIntegrator *WorkflowIntegrator, mdmsV2Service *MDMSV2Service) *SMSService {
 	return &SMSService{
 		restCallRepo:        repo,
 		localizationService: localizationService,
 		kafkaProducer:       kafkaProducer,
 		demandService:       demandService,
-		workflowIntegrator: workflowIntegrator,
-		mdmsV2Service: mdmsV2Service,
-
+		workflowIntegrator:  workflowIntegrator,
+		mdmsV2Service:       mdmsV2Service,
 	}
 }
 
@@ -72,7 +71,7 @@ func (s *SMSService) SendSMSOld(application model.ApplicationRequest, tenantId s
 		totalAmount += bill.TotalAmount
 	}
 	amountStr := strconv.FormatFloat(totalAmount, 'f', 2, 64)
-    log.Println("amtStr::::",amountStr)
+	log.Println("amtStr::::", amountStr)
 	// Loop over all owners to send SMS
 	for _, owner := range owners {
 		msg := templateMsg
@@ -121,14 +120,14 @@ func (s *SMSService) SendSMSOld(application model.ApplicationRequest, tenantId s
 func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId string, owners []model.Applicant) (map[string]interface{}, error) {
 	err := s.workflowIntegrator.SearchWorkflow(&application.Application, application.RequestInfo)
 	if err != nil {
-		return nil, fmt.Errorf("error while calling search ProcessInstance  %v",err)
+		return nil, fmt.Errorf("error while calling search ProcessInstance  %v", err)
 	}
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": application.Application.BusinessService,
-        "module":  application.Application.Module,
-    }
+		"service": application.Application.BusinessService,
+		"module":  application.Application.Module,
+	}
 	mdmsData, _ := s.mdmsV2Service.SearchMDMS(
 		application.Application.TenantId,
 		schemaCode,
@@ -163,7 +162,6 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 	if application.Application.ProcessInstance != nil && len(*application.Application.ProcessInstance) > 0 {
 		currentState = (*application.Application.ProcessInstance)[0].State.State
 	}
-	
 
 	// Find matching code based on current state
 	for _, smsItem := range smsList {
@@ -176,9 +174,11 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 		if !ok {
 			continue
 		}
-
+		log.Println("States in SMS item:", states)
 		for _, state := range states {
 			stateStr, _ := state.(string)
+			log.Println("Current state:", currentState)
+			log.Println("State in SMS item:", stateStr)
 			if strings.EqualFold(stateStr, currentState) {
 				matchedCode, _ = itemMap["code"].(string)
 				break
@@ -255,7 +255,6 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 	}, nil
 }
 
-
 func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId string, owners []model.Applicant) (map[string]interface{}, error) {
 	err := s.workflowIntegrator.SearchWorkflow(&application.Application, application.RequestInfo)
 	if err != nil {
@@ -264,9 +263,9 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 
 	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
 	filters := map[string]string{
-        "service": application.Application.BusinessService,
-        "module":  application.Application.Module,
-    }
+		"service": application.Application.BusinessService,
+		"module":  application.Application.Module,
+	}
 	mdmsData, _ := s.mdmsV2Service.SearchMDMS(
 		application.Application.TenantId,
 		schemaCode,

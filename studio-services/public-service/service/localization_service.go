@@ -61,7 +61,7 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 	} else {
 		log.Printf("Failed to format request body: %v", err)
 	}
-
+	log.Printf("Calling Localization Service URL: %s", url)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		log.Printf("Error calling localization service: %v", err)
@@ -182,7 +182,7 @@ func (l *LocalizationService) SendLocalizationMessageOne(messages []model.Messag
 		TenantID:    tenantId,
 		Messages:    messages,
 	}
-
+	logJSON("Localization Payload", payload)
 	var result map[string]interface{}
 	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
 	if err != nil {
