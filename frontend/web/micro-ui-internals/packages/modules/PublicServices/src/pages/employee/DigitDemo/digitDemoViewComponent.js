@@ -101,9 +101,8 @@ useEffect(() => {
 }, [matchedBusinessServices, selectedBusinessService]);
 
   // To get the checklist codes for the application
-  let checklistObjects =  serviceConfig?.data?.checklist?.length > 0 && workflowDetails ? serviceConfig?.data?.checklist.filter((ob) => ob?.state === "PENDING_FOR_VERIFIECATION") : [];
-  let checkListCodes = serviceConfig?.data?.checklist?.length > 0 && workflowDetails ? checklistObjects?.map((ob) => `${response?.businessService}.${ob?.name}.${workflowDetails?.processInstances?.[0].state?.state}`) : [];
-  
+  let checklistObjects =  serviceConfig?.data?.checklist?.length > 0 && workflowDetails ? serviceConfig?.data?.checklist.filter((ob) => ob?.state === workflowDetails?.actionState?.state) : [];
+  let checkListCodes = serviceConfig?.data?.checklist?.length > 0 && workflowDetails ? checklistObjects?.map((ob) => `${response?.businessService}.${workflowDetails?.processInstances?.[0].state?.state}.${ob?.name}`) : [];
   if (isLoading || workflowLoading || ServiceConfigLoading) {
     return <Loader />;
   }

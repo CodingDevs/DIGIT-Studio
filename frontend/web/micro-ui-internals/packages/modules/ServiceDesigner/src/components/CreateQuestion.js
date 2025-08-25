@@ -268,12 +268,12 @@ const CreateQuestion = ({ onSelect, className, level = 1, initialQuestionData, p
   const dataType = useMemo(() => {
     if (!mdmsData) return [
       { code: "SingleValueList", i18nKey:"STUDIO_SINGLE_VALUE" },
-      { code: "MultiValueList", i18nKey:"STUDIO_MULTI_VALUE" },
+      // { code: "MultiValueList", i18nKey:"STUDIO_MULTI_VALUE" },
       { code: "Text", i18nKey:"STUDIO_TEXT" }
     ];
     const apiTypes = mdmsData.mdms?.map(role => ({
       code: role?.data?.code
-    })) || [];
+    })).filter(type => type.code !== "MultiValueList") || [];
     // Add Text option if not already present
     const hasText = apiTypes.some(type => type.code === "Text");
     return hasText ? apiTypes : [...apiTypes, { code: "Text" }];

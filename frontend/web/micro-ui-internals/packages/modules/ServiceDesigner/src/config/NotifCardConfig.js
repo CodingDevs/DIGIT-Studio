@@ -11,12 +11,12 @@ const NotifCardConfig = [
         desc: "NOTIFICATION_SMS_DESC",
         icon: "SmsIcon"
     },
-    {
-        key:"push",
-        title: "NOTIFICATION_PUSH_HEADER",
-        desc: "NOTIFICATION_PUSH_DESC",
-        icon: "PushNotifIcon"
-    },
+    // {
+    //     key:"push",
+    //     title: "NOTIFICATION_PUSH_HEADER",
+    //     desc: "NOTIFICATION_PUSH_DESC",
+    //     icon: "PushNotifIcon"
+    // },
   ];
   
   export default NotifCardConfig;

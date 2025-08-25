@@ -100,7 +100,7 @@ const ServiceCard = ({ icon, cardHeader, cardBody, createdDate, link, className,
               }}
               onClick={handleConfigClick}
               title="Duplicate Service"
-              label={<CustomSVG.ArrowDown height="20" width="20" styles={{fill :"#c84c0e"}} />}
+              label={<CustomSVG.DuplicateIcon height="20" width="20" styles={{fill :"#c84c0e"}} fill="#c84c0e" viewBox="0 0 40 40" />}
             />
           </div>
         )}

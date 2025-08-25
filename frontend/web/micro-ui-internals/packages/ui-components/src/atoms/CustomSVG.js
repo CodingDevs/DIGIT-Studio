@@ -97,6 +97,22 @@ const ArrowDown = ({ className, onClick, styles, disable,width="18",height="18",
   </svg>
 );
 
+const DuplicateIcon = ({ className, onClick, styles, disable,width="18",height="18",fill="black", viewBox}) => (
+  <svg
+    style={{ ...styles }}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox={viewBox ? viewBox : "0 0 24 24"}
+    fill={disable ? "#9E9E9E" : fill}
+    className={className}
+    onClick={onClick}
+    width={width}
+    height={height}
+  >
+    <path d="M20.832 18.3327H24.1654V14.9993H27.4987V11.666H24.1654V8.33268H20.832V11.666H17.4987V14.9993H20.832V18.3327ZM17.4987 24.9993H27.4987V21.666H17.4987V24.9993ZM13.332 31.666C12.4154 31.666 11.6306 31.3396 10.9779 30.6869C10.3251 30.0341 9.9987 29.2493 9.9987 28.3327V4.99935C9.9987 4.08268 10.3251 3.29796 10.9779 2.64518C11.6306 1.9924 12.4154 1.66602 13.332 1.66602H24.9987L34.9987 11.666V28.3327C34.9987 29.2493 34.6723 30.0341 34.0195 30.6869C33.3668 31.3396 32.582 31.666 31.6654 31.666H13.332ZM13.332 28.3327H31.6654V13.3327L23.332 4.99935H13.332V28.3327ZM6.66536 38.3327C5.7487 38.3327 4.96398 38.0063 4.3112 37.3535C3.65842 36.7007 3.33203 35.916 3.33203 34.9994V11.666H6.66536V34.9994H24.9987V38.3327H6.66536Z" fill={fill}/>
+  </svg>
+);
+
+
 const ArrowBack = ({ className, onClick ,width="18",height="18",fill="black"}) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -3488,6 +3504,7 @@ export const CustomSVG = {
     GotoInboxIcon,
     ArrowLeft,
     ArrowDown,
+    DuplicateIcon,
     CameraSvg,
     DeleteBtn,
     DownloadIcon,

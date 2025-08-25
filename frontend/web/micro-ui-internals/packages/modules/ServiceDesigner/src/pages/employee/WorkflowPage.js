@@ -783,25 +783,25 @@ const Workflow = () => {
                 infoMessage={t("DESC_INFO")}
                 value={stateData.desc}
             />,
-            <FieldV1
-                label={t("ROLES")}
-                onChange={(e) => onDataChange(e)}
-                populators={{
-                    name: "roles",
-                    isSearchable: true,
-                    alignFieldPairVerically: true,
-                    fieldPairClassName: "workflow-field-pair",
-                    optionsKey: "code",
-                    isSearchable: true,
-                    options: isLoading ? [] : data?.map((role) => ({ code: role?.data?.code, name: role?.data?.description || role?.data?.code })),
-                }}
-                props={{
-                    fieldStyle: { width: "100%" }
-                }}
-                type="multiselectdropdown"
-                infoMessage={t("ROLES_INFO")}
-                value={stateData.roles}
-            />,
+            // <FieldV1
+            //     label={t("ROLES")}
+            //     onChange={(e) => onDataChange(e)}
+            //     populators={{
+            //         name: "roles",
+            //         isSearchable: true,
+            //         alignFieldPairVerically: true,
+            //         fieldPairClassName: "workflow-field-pair",
+            //         optionsKey: "code",
+            //         isSearchable: true,
+            //         options: isLoading ? [] : data?.map((role) => ({ code: role?.data?.code, name: role?.data?.description || role?.data?.code })),
+            //     }}
+            //     props={{
+            //         fieldStyle: { width: "100%" }
+            //     }}
+            //     type="multiselectdropdown"
+            //     infoMessage={t("ROLES_INFO")}
+            //     value={stateData.roles}
+            // />,
             <span
                 onClick={(e) => setRolePopup(true)}
                 style={{
@@ -1910,15 +1910,15 @@ const Workflow = () => {
             }
     
             // 2. Check if all nodes have roles assigned
-            const nodesWithoutRoles = canvasElements.filter(node => !node.roles || node.roles.length === 0);
+            // const nodesWithoutRoles = canvasElements.filter(node => !node.roles || node.roles.length === 0);
 
-            if (nodesWithoutRoles.length > 0) {
-                setShowToast({
-                    type: "error",
-                    label: t("STUDIO_NODES_WITHOUT_ROLES_ERR")
-                });
-                return;
-            }
+            // if (nodesWithoutRoles.length > 0) {
+            //     setShowToast({
+            //         type: "error",
+            //         label: t("STUDIO_NODES_WITHOUT_ROLES_ERR")
+            //     });
+            //     return;
+            // }
     
             // 3. Check if a valid form is selected
             const formDataFromStartState = getFormDataFromStartState();

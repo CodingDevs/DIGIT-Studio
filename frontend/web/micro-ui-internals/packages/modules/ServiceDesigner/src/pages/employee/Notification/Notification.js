@@ -32,12 +32,12 @@ const Notification = () => {
     // Filter notifications by type
     const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
     const emailData = notificationConfigs?.filter(item => item.additionalDetails?.type === "email" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
-    const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
+    // const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
 
     const toggleOptions = [
         { name: t("EMAIL"), code: "email" },
         { name: t("SMS"), code: "sms" },
-        { name: t("PUSH"), code: "push" },
+        // { name: t("PUSH"), code: "push" },
     ]
 
     // Refetch data when component mounts or when navigating back
@@ -89,17 +89,18 @@ const Notification = () => {
                 createdDate: "N/A", // Since we don't have auditDetails in the new structure
                 data: item
             }));
-        } else if (selectedToggle === "push" && pushData) {
-            currentData = pushData.map((item, index) => ({
-                id: index,
-                title: item.title,
-                messageBody: item.messageBody,
-                subject: "-",
-                type: item.additionalDetails?.type,
-                createdDate: "N/A", // Since we don't have auditDetails in the new structure
-                data: item
-            }));
         }
+        // } else if (selectedToggle === "push" && pushData) {
+        //     currentData = pushData.map((item, index) => ({
+        //         id: index,
+        //         title: item.title,
+        //         messageBody: item.messageBody,
+        //         subject: "-",
+        //         type: item.additionalDetails?.type,
+        //         createdDate: "N/A", // Since we don't have auditDetails in the new structure
+        //         data: item
+        //     }));
+        // }
         setNotificationData(currentData);
     }, [selectedToggle, notificationConfigs]);
 
