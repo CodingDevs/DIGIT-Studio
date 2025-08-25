@@ -598,7 +598,7 @@ func removeDuplicateCodes(messages []model.Message) []model.Message {
 func (l LocalizationService) ChecklistLocalization(data map[string]interface{}, req model.ServiceRequest) {
 	var messages []model.Message
 	locale := os.Getenv("NOTIFICATION_LOCALE")
-	module := (req.Service.Module)
+	module := (req.Service.BusinessService)
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + module
 
 	// Extract checklist data
