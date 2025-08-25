@@ -2030,9 +2030,9 @@ const Workflow = () => {
             setIsPublishing(true);
             
             // Parse the service configuration
-            let serviceConfigData;
+            let formatserviceConfigData;
             try {
-                serviceConfigData = JSON.parse(editableServiceConfig);
+                formatserviceConfigData = JSON.parse(editableServiceConfig);
             } catch (error) {
                 setShowToast({
                     type: "error",
@@ -2044,12 +2044,36 @@ const Workflow = () => {
             // Get current user info and tenant ID
             const tenantId = Digit.ULBService.getCurrentTenantId();
             
-            // Prepare MDMS create payload following the same pattern as useServiceConfigAPI
+            // STEP 1: Save UI workflow data to Studio.ServiceConfigurationDrafts (same as save button)
+            const fullServiceConfig = serviceConfigData;
+            
+            try {
+                if (existingServiceConfigId) {
+                    // Update existing service config draft
+                    await updateServiceConfig.mutateAsync({
+                        serviceConfigData: fullServiceConfig,
+                        existingConfig: existingServiceConfig
+                    });
+                } else {
+                    // Create new service config draft
+                    await saveServiceConfig.mutateAsync(fullServiceConfig);
+                }
+                console.log("Successfully saved UI workflow data to drafts");
+            } catch (draftError) {
+                console.error("Error saving to drafts:", draftError);
+                setShowToast({
+                    type: "error",
+                    label: "DRAFT_SAVE_FAILED"
+                });
+                return;
+            }
+            
+            // STEP 2: Publish to Studio.ServiceConfiguration
             const mdmsPayload = {
                 Mdms: {
                     tenantId: tenantId,
                     schemaCode: "Studio.ServiceConfiguration",
-                    data: serviceConfigData
+                    data: formatserviceConfigData
                 }
             };
 
@@ -2061,13 +2085,13 @@ const Workflow = () => {
             });
 
             if (mdmsResponse) {
-                // Make service API call using mutation hook
+                // STEP 3: Make service API call using mutation hook
                 await serviceCreationMutation.mutateAsync({
                     body: {
                         service: {
                             tenantId: tenantId,
-                            businessService: serviceConfigData.service,
-                            module: serviceConfigData.module,
+                            businessService: formatserviceConfigData.service,
+                            module: formatserviceConfigData.module,
                             status: "ACTIVE",
                             additionalDetails: {
                                 note: "initial creation"

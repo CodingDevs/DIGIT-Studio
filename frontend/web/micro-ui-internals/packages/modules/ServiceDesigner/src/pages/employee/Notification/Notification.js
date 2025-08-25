@@ -30,8 +30,23 @@ const Notification = () => {
     const { data: notificationConfigs, isLoading, refetch } = searchNotificationConfigs(roleModule, roleService);
     
     // Filter notifications by type
-    const smsData = notificationConfigs?.filter(item => item.additionalDetails?.type === "sms" && (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
-    const emailData = notificationConfigs?.filter(item => item.additionalDetails?.type === "email" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
+    
+    // Temporary: Show all notifications for debugging
+    const smsData = notificationConfigs?.filter(item => {
+        const isSMS = item.additionalDetails?.type === "sms";
+        const categoryMatch = item.additionalDetails?.category?.toUpperCase() === Category.toUpperCase();
+        // Temporarily show all SMS notifications for debugging
+        return isSMS;
+    }) || [];
+    
+    const emailData = notificationConfigs?.filter(item => {
+        const isEmail = item.additionalDetails?.type === "email";
+        const categoryMatch = item.additionalDetails?.category?.toUpperCase() === Category.toUpperCase();
+        console.log(`Email Item: ${item.title}, category: ${item.additionalDetails?.category}, expected: ${Category}, match: ${categoryMatch}`);
+        // Temporarily show all email notifications for debugging
+        return isEmail;
+    }) || [];
+    
     // const pushData = notificationConfigs?.filter(item => item.additionalDetails?.type === "push" &&  (item.additionalDetails?.category === Category || item.additionalDetails?.category?.toUpperCase() === Category)) || [];
 
     const toggleOptions = [

@@ -46,6 +46,10 @@ import cloneDeep from "lodash/cloneDeep";
       if (fieldName && config) {
         const fieldConfig = getFieldConfig(fieldName);
         if (fieldConfig) {
+          // Keep mobile numbers as strings
+          if (fieldConfig.type === "mobileNumber" || fieldConfig.format === "mobileNumber") {
+            return String(val);
+          }
           // Convert to number if field type is integer/number
           if (fieldConfig.type === "integer" || fieldConfig.type === "number" || fieldConfig.format === "number") {
             if (typeof val === "string" && !isNaN(val) && val.trim() !== "") {
@@ -63,7 +67,12 @@ import cloneDeep from "lodash/cloneDeep";
       }
       
       // Fallback: convert string numbers to actual numbers for any numeric string
+      // But preserve mobile numbers as strings
       if (typeof val === "string" && !isNaN(val) && val.trim() !== "") {
+        // Check if it looks like a mobile number (10 digits starting with 6-9)
+        if (/^[6-9]\d{9}$/.test(val)) {
+          return val; // Keep mobile numbers as strings
+        }
         const numVal = Number(val);
         if (!isNaN(numVal)) {
           return numVal;
