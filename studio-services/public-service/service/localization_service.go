@@ -435,21 +435,21 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 	}
 	messages = append(messages, message)
 	message = model.Message{
-		Code:    strings.ToUpper(req.Service.Module) + "_" + "AUG_IMPORT_ASSIGNED_TO_ALL",
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "ASSIGNED_TO_ALL",
 		Message:  " Assigned To All",
 		Locale:  locale,
 		Module:  localizationModule,
 	}
 	messages = append(messages, message) 
     message = model.Message{
-		Code:    strings.ToUpper(req.Service.Module) + "_" + "AUG_IMPORT_COMMON_WORKFLOW_STATES",
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "COMMON_WORKFLOW_STATES",
 		Message:  " Workflow States",
 		Locale:  locale,
 		Module:  localizationModule,
 	}
 	messages = append(messages, message)
 	 message = model.Message{
-		Code:    strings.ToUpper(req.Service.Module) + "_" + "AUG_IMPORT_FILTER",
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "FILTER",
 		Message:  " Filter",
 		Locale:  locale,
 		Module:  localizationModule,
