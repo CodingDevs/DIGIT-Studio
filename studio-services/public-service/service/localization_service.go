@@ -155,13 +155,14 @@ func (l *LocalizationService) SendLocalizationMessage(messages []model.Message, 
 	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
 
 	// Convert all message content to Title Case
-	titleCaseMessages := convertMessagesToTitleCase(messages)
+	titleCaseMessages := removeDuplicateCodes(convertMessagesToTitleCase(messages))
 
 	payload := model.Localization{
 		RequestInfo: req.RequestInfo,
 		TenantID:    tenantId,
 		Messages:    titleCaseMessages,
 	}
+	logJSON("Localization Payload", payload)
 
 	var result map[string]interface{}
 	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
@@ -309,7 +310,7 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 		item := val.(map[string]interface{})
 		code := item["code"].(string)
 		message := item["template"].(string)
-        // Replace spaces with underscores in code
+		// Replace spaces with underscores in code
 		code = strings.ReplaceAll(code, " ", "_")
 
 		// Build composite key: locale|module|code
@@ -361,7 +362,7 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 	messages = append(messages, message)
 
 	field := []string{"NEXT", "ADD", "SUBMIT", "OWNERNAME", "DOWNLOAD", "ADDRESS", "DOCUMENTS", "PINCODE", "STREETNAME", "CITY", "ACTIONS", "VIEW_APPLICATION", "APPLICANTDETAILS",
-		"TENANTID", "LATITUDE", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS"}
+		"TENANTID", "LATITUDE", "APPLICANT", "LONGITUDE", "ADDRESSNUMBER", "ADDRESSLINE1", "HIERARCHYTYPE", "BOUNDARYLEVEL", "BOUNDARYCODE", "TYPE", "USERID", "ACTIVE", "ADDRESS_DETAILS"}
 	for key := range field {
 		message := model.Message{
 			Code:    module + "_" + field[key],
@@ -433,7 +434,12 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 		Module:  localizationModule,
 	}
 	messages = append(messages, message)
-
+	message = model.Message{
+		Code:    module + "_" + "APPLICANT_DETAILS",
+		Message: "APPLICANTS DETAILS",
+		Locale:  locale,
+		Module:  localizationModule,
+	}
 	field1 := []string{"APPLICATION_NUMBER", "STATUS", "TODATE", "FROMDATE", "BUSINESS_SERVICE"}
 	for key := range field1 {
 		message := model.Message{
@@ -542,4 +548,121 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 	resp, err := l.SendLocalizationMessage(messages, req)
 	log.Println(resp)
 	log.Println(err)
+}
+
+func removeDuplicateCodes(messages []model.Message) []model.Message {
+	seen := make(map[string]bool)
+	var uniqueMessages []model.Message
+
+	for _, message := range messages {
+		if !seen[message.Code] {
+			seen[message.Code] = true
+			uniqueMessages = append(uniqueMessages, message)
+		}
+	}
+
+	return uniqueMessages
+}
+func (l LocalizationService) ChecklistLocalization(data map[string]interface{}, req model.ServiceRequest) {
+	var messages []model.Message
+	locale := os.Getenv("NOTIFICATION_LOCALE")
+	module := strings.ToLower(req.Service.Module)
+	localizationModule := os.Getenv("LOCALIZATION_MODULE") + module
+
+	// Extract checklist data
+	checklists, exists := data["checklist"]
+	if !exists {
+		log.Println("No checklist data found")
+		return
+	}
+
+	checklistArray, ok := checklists.([]interface{})
+	if !ok {
+		log.Println("Checklist data is not in expected array format")
+		return
+	}
+
+	// Process each checklist item
+	for _, checklistItem := range checklistArray {
+		checklist := checklistItem.(map[string]interface{})
+
+		// Extract state and checklist name
+		state := checklist["state"].(string)
+		checklistData := checklist["checklistData"].(map[string]interface{})
+		checklistName := checklistData["name"].(string)
+
+		// Extract questions data
+		questionsData := checklistData["data"].([]interface{})
+
+		// Process each question
+		for _, questionItem := range questionsData {
+			question := questionItem.(map[string]interface{})
+
+			// Create localization for question title
+			questionTitle := question["title"].(string)
+			questionCode := module + "." + state + "." + checklistName + "." + questionTitle
+
+			questionMessage := model.Message{
+				Code:    questionCode,
+				Message: questionTitle,
+				Locale:  locale,
+				Module:  localizationModule,
+			}
+			messages = append(messages, questionMessage)
+
+			// Process options if they exist
+			options, hasOptions := question["options"]
+			if hasOptions {
+				optionsArray := options.([]interface{})
+
+				for _, optionItem := range optionsArray {
+					option := optionItem.(map[string]interface{})
+
+					// Create localization for option label
+					optionLabel := option["label"].(string)
+					optionCode := module + "." + state + "." + checklistName + "." + optionLabel
+
+					optionMessage := model.Message{
+						Code:    optionCode,
+						Message: optionLabel,
+						Locale:  locale,
+						Module:  localizationModule,
+					}
+					messages = append(messages, optionMessage)
+				}
+			}
+		}
+
+		// Create localization for checklist name itself
+		checklistNameCode := module + "." + state + "." + checklistName
+		checklistNameMessage := model.Message{
+			Code:    checklistNameCode,
+			Message: checklistName,
+			Locale:  locale,
+			Module:  localizationModule,
+		}
+		messages = append(messages, checklistNameMessage)
+
+		// Create localization for checklist description if it exists
+		if description, hasDesc := checklistData["description"]; hasDesc {
+			descriptionCode := module + "." + state + "." + checklistName + ".description"
+			descriptionMessage := model.Message{
+				Code:    descriptionCode,
+				Message: description.(string),
+				Locale:  locale,
+				Module:  localizationModule,
+			}
+			messages = append(messages, descriptionMessage)
+		}
+	}
+
+	log.Println("Generated checklist localization messages:")
+
+	// Send localization messages
+	resp, err := l.SendLocalizationMessage(messages, req)
+	if err != nil {
+		log.Printf("Error sending localization messages: %v", err)
+	} else {
+		log.Printf("Successfully sent localization messages: %v", resp)
+	}
 }

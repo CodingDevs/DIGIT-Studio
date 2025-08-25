@@ -232,6 +232,7 @@ func (v ValidateService) ValidateServices(tenantId string, business_service stri
 	// localization of workflow action and states
 	v.localization_service.WorkflowLocalization(data, req)
 	v.localization_service.SMSLocalization(data, req)
+	v.localization_service.ChecklistLocalization(data, req)
 
 	return true, nil
 }
