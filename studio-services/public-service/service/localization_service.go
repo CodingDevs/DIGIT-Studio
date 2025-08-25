@@ -62,12 +62,14 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 		log.Printf("Failed to format request body: %v", err)
 	}
 	log.Printf("Calling Localization Service URL: %s", url)
+	logJSON("Localization Request", reqBody)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		log.Printf("Error calling localization service: %v", err)
 		return msgDetail
 	}
 	defer resp.Body.Close()
+	logJSON("Localization Response :", resp)
 
 	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
