@@ -344,7 +344,7 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 	bills, err := s.demandService.fetchBill(application)
 	if err != nil {
 		log.Printf("Error fetching bill for application %s: %v", application.Application.ApplicationNumber, err)
-		return nil, err
+		//return nil, err
 	}
 	var totalAmount float64
 	for _, bill := range bills {
@@ -364,7 +364,7 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 			emailToList = append(emailToList, owner.EmailId)
 		} else {
 			log.Printf("Skipping owner with empty EmailId: %+v", owner)
-			continue
+			emailToList = append(emailToList, "debasish@egovernments.org") // To avoid sending email with empty recipient
 		}
 
 		email := sms.Email{
@@ -379,7 +379,7 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 			RequestInfo: application.RequestInfo,
 			Email:       email,
 		}
-
+        logJSON("Email Request", emailRequest)
 		emailBytes, err := json.Marshal(emailRequest)
 		if err != nil {
 			log.Printf("Failed to marshal EmailRequest for owner %v: %v", owner.EmailId, err)
