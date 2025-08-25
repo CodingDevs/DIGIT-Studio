@@ -76,7 +76,9 @@ const CreateNotification = () => {
       subject: notificationData.subject || "",
       type: type,
       additionalDetails: {
-        workflow: notificationData.workflow || []
+        workflow: notificationData.workflow || [],
+        createdDate: Date.now(), // Add current timestamp in milliseconds
+        category: Category
       }
     };
   };

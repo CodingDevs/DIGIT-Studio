@@ -24,6 +24,11 @@ const SampleBreadCrumbs = ({ location }) => {
       show: true,
     },
     {
+      internalLink: `/${window?.contextPath}/employee/servicedesigner/LandingPage`,
+      content: t("SERVICE_DESIGNER"),
+      show: window.location.href.includes("module="),
+    },
+    {
       content: t(location.pathname.split("/").pop().toUpperCase()),
       show: true,
     }

@@ -26,7 +26,7 @@ import { useServiceConfigAPI } from "../../hooks/useServiceConfigAPI";
 // Utility to build card data
 export const buildCardData = (drafts = [], published = [], t, queryStrings) => {
   const publishedCards = published.map((item) => ({
-    title: `${item?.module} ${item.businessService}` || item.service || "Unnamed Service",
+    title: `${item?.module.replaceAll("_"," ")} ${item.businessService.replaceAll("_"," ")}` || item.service || "Unnamed Service",
     description: `Manage ${item.businessService || item.service} services for your citizens`,
     link: `employee/publicservices/modules?selectedPath=Apply&module=${item?.module}&service=${item?.businessService || item?.service}`,
     module: item?.module,
@@ -425,15 +425,15 @@ const LandingPage = () => {
 
   // Function to convert published service fields to uiforms structure
   const convertFieldsToUiforms = (fields, newModule, newService, boundary = null, applicant = null) => {
-    // Create a default form configuration
+    // Create a default form configuration with proper naming
     const defaultForm = {
-      formName: "New Form",
+      formName: `${newModule} ${newService} Form`,
       isActive: true,
       formConfig: {
         screens: []
       },
       localization: {},
-      formDescription: "New Form"
+      formDescription: `Form for ${newModule} ${newService}`
     };
 
     // Generate a unique UUID for this screen
@@ -606,7 +606,13 @@ const LandingPage = () => {
       case "radioordropdown":
         field.type = "dropdown";
         field.appType = "dropdown";
-        if (property.values && property.values.length > 0) {
+        // Check if this is an MDMS field (has schema property or reference is mdms)
+        if (property.schema || property.reference === "mdms") {
+          field.isMdms = true;
+          field.schemaCode = property.schema;
+          field.MdmsDropdown = true;
+          // Don't set dropDownOptions for MDMS fields as they will be populated from database
+        } else if (property.values && property.values.length > 0) {
           field.dropDownOptions = property.values.map((value, index) => ({
             code: crypto.randomUUID(),
             name: value
@@ -616,7 +622,13 @@ const LandingPage = () => {
       case "radio":
         field.type = "radio";
         field.appType = "radio";
-        if (property.values && property.values.length > 0) {
+        // Check if this is an MDMS field (has schema property or reference is mdms)
+        if (property.schema || property.reference === "mdms") {
+          field.isMdms = true;
+          field.schemaCode = property.schema;
+          field.MdmsDropdown = true;
+          // Don't set dropDownOptions for MDMS fields as they will be populated from database
+        } else if (property.values && property.values.length > 0) {
           field.dropDownOptions = property.values.map((value, index) => ({
             code: crypto.randomUUID(),
             name: value
@@ -882,7 +894,7 @@ const LandingPage = () => {
   };
 
   // Function to convert published service workflow to uiworkflow structure
-  const convertWorkflowToUiworkflow = (workflow, newModule, newService, checklistConfig = [], oldModule, oldService) => {
+  const convertWorkflowToUiworkflow = (workflow, newModule, newService, checklistConfig = [], oldModule, oldService, notificationConfig = []) => {
     if (!workflow || !workflow.states) {
       return {};
     }
@@ -922,6 +934,50 @@ const LandingPage = () => {
         sendnotif: [],
         generatedoc: []
       };
+
+      // Set notifications based on notification configuration
+      if (notificationConfig && notificationConfig.length > 0) {
+        // Handle different state name formats for matching
+        const stateName = state.state || (state.isStartState ? "START" : null);
+        const stateNameUpper = stateName ? stateName.toUpperCase() : null;
+        
+        const stateNotifications = notificationConfig.filter(notification => {
+          const notificationStates = notification.states || [];
+          
+          // Match exact state name
+          if (notificationStates.some(ns => ns.toUpperCase() === stateNameUpper)) {
+            return true;
+          }
+          
+          // Handle special cases for start state (null state or isStartState = true)
+          if ((state.isStartState || !state.state) && 
+              notificationStates.some(ns => ns.toUpperCase() === "START" || ns.toUpperCase() === "APPLY" || ns.toUpperCase() === "CREATE")) {
+            return true;
+          }
+          
+          // Handle intermediate states
+          if (state.state && !state.isStartState && !state.isTerminateState) {
+            // For intermediate states, match exact state name or common variations
+            if (notificationStates.some(ns => ns.toUpperCase() === stateNameUpper || ns.toUpperCase() === state.state.toUpperCase())) {
+              return true;
+            }
+          }
+          
+          // Handle end state
+          if (state.isTerminateState && notificationStates.some(ns => ns.toUpperCase() === "END" || ns.toUpperCase() === "APPROVED")) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        if (stateNotifications.length > 0) {
+          canvasElement.sendnotif = stateNotifications.map(notification => ({
+            code: notification.code,
+            name: notification.code
+          }));
+        }
+      }
 
       // Set form for start state
       if (nodeType === "start") {
@@ -976,26 +1032,8 @@ const LandingPage = () => {
         }
       }
 
-      // Add roles if available
-      if (state.actions && state.actions.length > 0) {
-        state.actions.forEach(action => {
-          if (action.roles) {
-            action.roles.forEach(role => {
-              // Only include roles that have the module/service prefix (filter out hardcoded roles)
-              if (filterHardcodedRoles(role, moduleServicePrefix)) {
-                // Convert role to the format expected by uiworkflow
-                const roleObj = {
-                  code: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, ""),
-                  name: role.replace(`${oldModule.toUpperCase()}_${oldService.toUpperCase()}_`, "")
-                };
-                if (!canvasElement.roles.some(r => r.code === roleObj.code)) {
-                  canvasElement.roles.push(roleObj);
-                }
-              }
-            });
-          }
-        });
-      }
+      // Roles should only be assigned to actions (connections), not to states
+      // The roles array for canvas elements should remain empty
 
       canvasElements.push(canvasElement);
 
@@ -1221,13 +1259,28 @@ const LandingPage = () => {
     if (publishedConfig.uiworkflow && Object.keys(publishedConfig.uiworkflow).length > 0) {
       draftConfig.uiworkflow = publishedConfig.uiworkflow;
     } else if (publishedConfig.workflow && publishedConfig.workflow.states) {
+      // Extract notification configuration for workflow mapping
+      const notificationConfig = [];
+      if (publishedConfig.notification) {
+        if (publishedConfig.notification.sms) {
+          notificationConfig.push(...publishedConfig.notification.sms);
+        }
+        if (publishedConfig.notification.email) {
+          notificationConfig.push(...publishedConfig.notification.email);
+        }
+        if (publishedConfig.notification.push) {
+          notificationConfig.push(...publishedConfig.notification.push);
+        }
+      }
+      
       draftConfig.uiworkflow = convertWorkflowToUiworkflow(
         publishedConfig.workflow, 
         newModule, 
         newService, 
         publishedConfig.checklist || [],
         publishedConfig.module, 
-        publishedConfig.service, 
+        publishedConfig.service,
+        notificationConfig
       );
     } else {
       draftConfig.uiworkflow = {};

@@ -101,6 +101,7 @@ const SampleBreadCrumbs = ({ location }) => {
     }
 
     // Add current page
+    if(lastSegment !== "LandingPage")
     baseCrumbs.push({
       internalLink: `/${window?.contextPath}/employee/servicedesigner/${lastSegment}`,
       content: getBreadcrumbContent(pathname),

@@ -91,7 +91,8 @@ const Notification = () => {
                 messageBody: item.messageBody,
                 subject: item.subject || "-",
                 type: item.additionalDetails?.type,
-                createdDate: "N/A", // Since we don't have auditDetails in the new structure
+                createdDate: item.additionalDetails?.createdDate ? 
+                    Digit.DateUtils.ConvertEpochToDate(item.additionalDetails.createdDate) : "N/A",
                 data: item
             }));
         } else if (selectedToggle === "sms" && smsData) {
@@ -101,7 +102,8 @@ const Notification = () => {
                 messageBody: item.messageBody,
                 subject: "-",
                 type: item.additionalDetails?.type,
-                createdDate: "N/A", // Since we don't have auditDetails in the new structure
+                createdDate: item.additionalDetails?.createdDate ? 
+                    Digit.DateUtils.ConvertEpochToDate(item.additionalDetails.createdDate) : "N/A",
                 data: item
             }));
         }

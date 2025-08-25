@@ -1,4 +1,4 @@
-import React, { createContext, Fragment, useContext, useEffect, useReducer, useState } from "react";
+import React, { createContext, useContext, useEffect, useReducer, useState, useCallback, useMemo } from "react";
 import AppFieldScreenWrapper from "./AppFieldScreenWrapper";
 import { Footer, Button, Loader, PopUp, SidePanel, Toast, FieldV1, Tag } from "@egovernments/digit-ui-components";
 import { useTranslation } from "react-i18next";
@@ -537,11 +537,23 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
   // State for form name and description (will be updated from side panel)
   const [currentFormName, setCurrentFormName] = useState(formName || "");
   const [currentFormDescription, setCurrentFormDescription] = useState(formDescription || "");
-  const [showFormNamePopup, setShowFormNamePopup] = useState(!currentFormName && !editMode); // Show popup if no form name and not in edit mode
+  
+  // Local state for popup form name to prevent re-renders
+  const [popupFormName, setPopupFormName] = useState(formName || "");
+  const [popupFormDescription, setPopupFormDescription] = useState(formDescription || "");
+  
+  const [showFormNamePopup, setShowFormNamePopup] = useState(() => {
+    // Use a function to compute initial state to avoid re-computation on every render
+    // In edit mode, don't show popup if we have a form name
+    const isEditMode = searchParams.get("editMode") === "true";
+    return !(formName || "") && !isEditMode;
+  });
   const [showSectionPopup, setShowSectionPopup] = useState(false);
 
   // Fetch existing form data if in edit mode (using formName as unique identifier)
-  const { data: existingFormData, isLoading: isLoadingExistingForm } = fetchFormConfigByName(formName);
+  // Use a stable reference to prevent re-fetching when form name changes
+  const originalFormName = useMemo(() => formName, []); // Store the original form name from URL - stable reference
+  const { data: existingFormData, isLoading: isLoadingExistingForm } = fetchFormConfigByName(originalFormName);
   const { isLoading: isLoadingAppConfigMdmsData, data: AppConfigMdmsData } = Digit.Hooks.useCustomMDMS(
     Digit.ULBService.getCurrentTenantId(),
     MODULE_CONSTANTS,
@@ -696,6 +708,27 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
     return hasUnsavedChanges;
   };
 
+  // Memoized onChange handler for form description to prevent unnecessary re-renders
+  const handleFormDescriptionChange = useCallback((event) => {
+    const newValue = event.target.value;
+    setCurrentFormDescription(newValue);
+    // Call parent's onChange function only if it exists and is different
+    if (onFormDescriptionChange && typeof onFormDescriptionChange === 'function') {
+      onFormDescriptionChange(newValue);
+    }
+  }, [onFormDescriptionChange]);
+
+  // Memoized onChange handlers for popup form fields (separate from main form fields)
+  const handlePopupFormNameChange = useCallback((event) => {
+    const newValue = event.target.value;
+    setPopupFormName(newValue);
+  }, []);
+
+  const handlePopupFormDescriptionChange = useCallback((event) => {
+    const newValue = event.target.value;
+    setPopupFormDescription(newValue);
+  }, []);
+
   // Function to handle window beforeunload event
   // const handleBeforeUnload = (e) => {
   //   if (checkForUnsavedChanges()) {
@@ -716,6 +749,9 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
   // Add event listener for opening form name popup
   useEffect(() => {
     const handleOpenFormNamePopup = () => {
+      // Initialize popup form name with current form name when opening
+      setPopupFormName(currentFormName);
+      setPopupFormDescription(currentFormDescription);
       setShowFormNamePopup(true);
     };
 
@@ -723,7 +759,14 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
     return () => {
       window.removeEventListener('openFormNamePopup', handleOpenFormNamePopup);
     };
-  }, []);
+  }, [currentFormName, currentFormDescription]);
+
+  // Prevent popup from showing in edit mode when we have existing data
+  useEffect(() => {
+    if (editMode && existingFormData && !isLoadingExistingForm && showFormNamePopup) {
+      setShowFormNamePopup(false);
+    }
+  }, [editMode, existingFormData, isLoadingExistingForm]); // Removed showFormNamePopup from dependencies
 
   // Track changes to mark unsaved changes
   useEffect(() => {
@@ -763,11 +806,16 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
     if (editMode && existingFormData && !isLoadingExistingForm) {
       
       // Set form name and description from existing data
-      const existingFormName = existingFormData?.data?.formName || formName;
+      // Use the original form name from URL to prevent re-triggering when form name changes
+      const existingFormName = existingFormData?.data?.formName || originalFormName;
       const existingFormDescription = existingFormData?.data?.formDescription || formDescription;
       
       setCurrentFormName(existingFormName);
       setCurrentFormDescription(existingFormDescription);
+      
+      // Also set popup form name and description
+      setPopupFormName(existingFormName);
+      setPopupFormDescription(existingFormDescription);
       
       // Transform MDMS data back to form builder format
       const formConfig = existingFormData?.data?.formConfig;
@@ -813,7 +861,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
         }
       }
     }
-  }, [editMode, existingFormData, isLoadingExistingForm]);
+  }, [editMode, existingFormData, isLoadingExistingForm, originalFormName, formDescription]);
 
   if (isLoadingAppConfigMdmsData || (editMode && isLoadingExistingForm)) {
     return <Loader page={true} variant={"PageLoader"} />;
@@ -1672,34 +1720,22 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                 required={true}
                 type={"text"}
                 label={t("FORM_NAME")}
-                value={currentFormName}
+                value={popupFormName}
                 config={{
                   step: "",
                 }}
-                onChange={(event) => {
-                  setCurrentFormName(event.target.value);
-                  // Call parent's onChange function
-                  if (onFormNameChange) {
-                    onFormNameChange(event.target.value);
-                  }
-                }}
+                onChange={handlePopupFormNameChange}
                 populators={{ fieldPairClassName: "" }}
                 error={validationErrors.formName ? t(validationErrors.formName) : null}
               />
               <FieldV1
                 type={"textarea"}
                 label={t("FORM_DESCRIPTION")}
-                value={currentFormDescription}
+                value={popupFormDescription}
                 config={{
                   step: "",
                 }}
-                onChange={(event) => {
-                  setCurrentFormDescription(event.target.value);
-                  // Call parent's onChange function
-                  if (onFormDescriptionChange) {
-                    onFormDescriptionChange(event.target.value);
-                  }
-                }}
+                onChange={handlePopupFormDescriptionChange}
                 populators={{ fieldPairClassName: "" }}
               />
             </div>,
@@ -1727,7 +1763,19 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
               variation={"primary"}
               label={t("CREATE_FORM")}
               onClick={() => {
-                if (currentFormName?.trim()) {
+                if (popupFormName?.trim()) {
+                  // Update the main form name and description with popup values
+                  setCurrentFormName(popupFormName);
+                  setCurrentFormDescription(popupFormDescription);
+                  
+                  // Call parent's onChange functions if they exist
+                  if (onFormNameChange && typeof onFormNameChange === 'function') {
+                    onFormNameChange(popupFormName);
+                  }
+                  if (onFormDescriptionChange && typeof onFormDescriptionChange === 'function') {
+                    onFormDescriptionChange(popupFormDescription);
+                  }
+                  
                   setShowFormNamePopup(false);
                   setValidationErrors({}); // Clear any existing validation errors
                 } else {

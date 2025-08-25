@@ -11,7 +11,7 @@ const ServiceBuilderCard = () => {
   //To show the card at main page
   const propsForModuleCard = {
     Icon: "BeenHere",
-    moduleName: t(service),
+    moduleName: t(service.replaceAll("_"," ")),
     kpis: [
 
     ],

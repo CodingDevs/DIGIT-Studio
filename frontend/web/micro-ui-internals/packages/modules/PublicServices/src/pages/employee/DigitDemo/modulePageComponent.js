@@ -74,16 +74,16 @@ const ModulePageComponent = () => {
   return (
     <div className="products-container">
       {/* Header Section */}
-      <HeaderComponent className="products-title">{t("DIGIT_STUDIO_HEADER")}</HeaderComponent>
+      {/* <HeaderComponent className="products-title">{t("DIGIT_STUDIO_HEADER")}</HeaderComponent>
       <CardText className="products-description">
         {t("DIGIT_STUDIO_HEADER_DESCRIPTION")}
-      </CardText>
+      </CardText> */}
 
       {/* Product Cards Section */}
       <div className="products-list">
         {detailsConfig?.map((product, index) => {
           const links = queryStrings?.selectedPath === "Apply" && product?.businessServices.map((bs) => ({
-                  label: bs.businessService,
+                  label: bs.businessService?.replaceAll("_"," "),
                   link: `/${window.contextPath}/employee/publicservices/${product.module}/${bs.businessService}/Apply?serviceCode=${bs?.serviceCode}`,
           }));
           return (

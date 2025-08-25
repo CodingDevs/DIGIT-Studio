@@ -802,17 +802,6 @@ const Workflow = () => {
             //     infoMessage={t("ROLES_INFO")}
             //     value={stateData.roles}
             // />,
-            <span
-                onClick={(e) => setRolePopup(true)}
-                style={{
-                    color: "#C84C0E",
-                    cursor: "pointer",
-                    fontWeight: "500",
-                    textAlign: "right"
-                }}
-            >
-                {t("ADD_NEW_ROLE")}
-            </span>,
             <FieldV1
                 error={stateData.sla < 1 ? t("PLEASE_ENTER_VALID_SLA_IN_HOURS(MIN 1)") : ""}
                 label="SLA_TIMER(HOURS)"
@@ -962,9 +951,21 @@ const Workflow = () => {
                 infoMessage={t("ACTION_ROLES_INFO")}
                 value={actionData.aroles}
             />,
+            <span
+                onClick={(e) => setRolePopup(true)}
+                style={{
+                    color: "#C84C0E",
+                    cursor: "pointer",
+                    fontWeight: "500",
+                    textAlign: "right",
+                    marginBottom: "1rem"
+                }}
+            >
+                {t("ADD_NEW_ROLE")}
+            </span>,
             <StageActions label={t("ADD_COMMENTS")} type="switch" name="acomments" desc={t("COMMENTS_DESC")} onClick={(data) => onActionDataChange(data)} value={actionData.acomments} />,
             <StageActions label={t("ASSIGN_TO_USER")} type="switch" name="aassign" desc={t("ASSIGN_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aassign} />,
-            <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="aaskfordoc" desc={t("DOC_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aaskfordoc} />,
+            // <StageActions label={t("ASK_FOR_DOCUMENTS")} type="switch" name="aaskfordoc" desc={t("DOC_DESC")} onClick={(e) => onActionDataChange(e)} value={actionData.aaskfordoc} />,
             <Button
                 variation="primary"
                 label={t("UPDATE_ACTION")}
