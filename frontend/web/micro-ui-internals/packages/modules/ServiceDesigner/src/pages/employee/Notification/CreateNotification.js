@@ -85,7 +85,7 @@ const CreateNotification = () => {
 
   const updateworkflowNodes = () => {
     const updated = workflowNodes?.map((node) => {
-      const match = stateData.workflow.find(w => w.name === node.name);
+      const match = stateData.workflow?.find(w => w.name === node.name);
       if (match) {
         const alreadyExists = node.sendnotif.some(n => n.code === stateData.title && n.name === stateData.title);
         if (!alreadyExists) {
@@ -100,7 +100,7 @@ const CreateNotification = () => {
   const onSubmit = async (e) => {
     if (stateData.title != "" && stateData.messageBody != "") {
       try {
-        if (isUpdate == false) {
+        if (isUpdate === false || isUpdate === "false") {
           // Check for duplicate title only when creating new notification
           const existingNotification = notificationConfigs?.find(notification => 
             notification.title === stateData.title && 
@@ -121,6 +121,7 @@ const CreateNotification = () => {
             setTimeout(() => {
               history.push(`/${window.contextPath}/employee/servicedesigner/notifications?module=${roleModule}&service=${roleService}`);
             }, 3000);
+            return;
           } else {
             setShowToast({ key: true, type: "error", label: t("ERROR_OCCURED_DURING_NOTIF_CREATION") });
             setTimeout(() => {
@@ -183,7 +184,7 @@ const CreateNotification = () => {
                     // Get section name from headerFields
                     if (card.headerFields && card.headerFields.length > 0) {
                       // Look for the screen heading field
-                      const screenHeadingField = card.headerFields.find(hf => 
+                      const screenHeadingField = card.headerFields?.find(hf => 
                         hf.label === "SCREEN_HEADING" || hf.jsonPath === "ScreenHeading"
                       );
                       if (screenHeadingField && screenHeadingField.value) {

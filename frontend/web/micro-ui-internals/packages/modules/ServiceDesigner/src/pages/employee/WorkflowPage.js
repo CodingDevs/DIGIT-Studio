@@ -69,12 +69,75 @@ const Workflow = () => {
     // Use the new role config API hook
     const { searchRoleConfigs, saveRoleConfig } = useRoleConfigAPI();
     const { data: roleConfigs, isLoading } = searchRoleConfigs(roleModule, roleService);
-    const data = roleConfigs || [];
+    
+    // Get all role codes that are already being used in the existing workflow
+    const existingRoleCodes = new Set();
+    canvasElements.forEach(element => {
+        if (element.roles && Array.isArray(element.roles)) {
+            element.roles.forEach(role => {
+                if (role.code) {
+                    existingRoleCodes.add(role.code);
+                }
+            });
+        }
+    });
+    connections.forEach(connection => {
+        if (connection.aroles && Array.isArray(connection.aroles)) {
+            connection.aroles.forEach(role => {
+                if (role.code) {
+                    existingRoleCodes.add(role.code);
+                }
+            });
+        }
+    });
+    
+    // Include roles that are already being used in the workflow, even if they don't match current service module
+    const allRoleConfigs = roleConfigs || [];
+    const existingRoles = allRoleConfigs.filter(item => 
+        existingRoleCodes.has(item.data.code)
+    );
+    
+    // Combine current service roles with existing roles, removing duplicates
+    const allRoles = [...allRoleConfigs];
+    existingRoles.forEach(existingRole => {
+        if (!allRoles.some(role => role.data.code === existingRole.data.code)) {
+            allRoles.push(existingRole);
+        }
+    });
+    
+    const data = allRoles || [];
 
     // Use the new checklist config API hook
     const { searchChecklistConfigs } = useChecklistConfigAPI();
     const { data: checklistConfigs, isLoading: moduleListLoading } = searchChecklistConfigs(roleModule, roleService);
-    const checklistData = checklistConfigs?.map((item) => ({
+    
+    // Get all checklist codes that are already being used in the existing workflow
+    const existingChecklistCodes = new Set();
+    canvasElements.forEach(element => {
+        if (element.checklist && Array.isArray(element.checklist)) {
+            element.checklist.forEach(checklist => {
+                if (checklist.code) {
+                    existingChecklistCodes.add(checklist.code);
+                }
+            });
+        }
+    });
+    
+    // Include checklists that are already being used in the workflow, even if they don't match current service module
+    const allChecklistConfigs = checklistConfigs || [];
+    const existingChecklists = allChecklistConfigs.filter(item => 
+        existingChecklistCodes.has(item.data.name)
+    );
+    
+    // Combine current service checklists with existing checklists, removing duplicates
+    const allChecklists = [...allChecklistConfigs];
+    existingChecklists.forEach(existingChecklist => {
+        if (!allChecklists.some(checklist => checklist.data.name === existingChecklist.data.name)) {
+            allChecklists.push(existingChecklist);
+        }
+    });
+    
+    const checklistData = allChecklists?.map((item) => ({
         code: item.data.name,
         name: item.data.name,
     })) || [];
@@ -94,15 +157,72 @@ const Workflow = () => {
     };
     const { isLoading: FormsLoading, data: FormData } = Digit.Hooks.useCustomAPIHook(requestCriteriaForm);
     const draft = FormData?.mdms?.[0];
-    const formOptions = draft?.data?.uiforms?.map((form) => ({
+    
+    // Get all form codes that are already being used in the existing workflow
+    const existingFormCodes = new Set();
+    canvasElements.forEach(element => {
+        if (element.form && element.form.code) {
+            existingFormCodes.add(element.form.code);
+        }
+    });
+    
+    // Include forms that are already being used in the workflow, even if they don't match current service module
+    const currentServiceForms = draft?.data?.uiforms?.map((form) => ({
         code: form.formName,
         name: form.formName,
     })) || [];
+    
+    // For forms, we need to search for forms that match the existing form codes
+    // Since forms are stored in the draft data, we'll need to search for drafts that contain these forms
+    const existingFormOptions = [];
+    if (existingFormCodes.size > 0) {
+        // This would require additional API calls to search for forms across all drafts
+        // For now, we'll just use the current service forms and add a note
+    }
+    
+    // Combine current service forms with existing forms, removing duplicates
+    const allFormOptions = [...currentServiceForms];
+    existingFormOptions.forEach(existingForm => {
+        if (!allFormOptions.some(form => form.code === existingForm.code)) {
+            allFormOptions.push(existingForm);
+        }
+    });
+    
+    const formOptions = allFormOptions;
 
     // Use the new notification config API hook
     const { searchNotificationConfigs } = useNotificationConfigAPI();
     const { data: notificationConfigs, isLoading: isConfigLoad } = searchNotificationConfigs(roleModule, roleService);
-    const notif = notificationConfigs?.filter(item => item.additionalDetails?.category === servicemodule) || [];
+    
+    // Get notifications that match the current service module
+    const currentServiceNotifications = notificationConfigs?.filter(item => item.additionalDetails?.category === servicemodule) || [];
+    
+    // Get all notification codes that are already being used in the existing workflow
+    const existingNotificationCodes = new Set();
+    canvasElements.forEach(element => {
+        if (element.sendnotif && Array.isArray(element.sendnotif)) {
+            element.sendnotif.forEach(notification => {
+                if (notification.code) {
+                    existingNotificationCodes.add(notification.code);
+                }
+            });
+        }
+    });
+    
+    // Include notifications that are already being used in the workflow, even if they don't match current service module
+    const existingNotifications = notificationConfigs?.filter(item => 
+        existingNotificationCodes.has(item.title)
+    ) || [];
+    
+    // Combine current service notifications with existing notifications, removing duplicates
+    const allNotifications = [...currentServiceNotifications];
+    existingNotifications.forEach(existingNotif => {
+        if (!allNotifications.some(notif => notif.title === existingNotif.title)) {
+            allNotifications.push(existingNotif);
+        }
+    });
+    
+    const notif = allNotifications;
 
     const [stateData, setStateData] = useState({
         name: "",

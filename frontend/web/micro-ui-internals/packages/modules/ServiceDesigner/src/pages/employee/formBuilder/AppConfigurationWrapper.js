@@ -1297,7 +1297,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
           type="static"
         >
           {state?.drawerField ? (
-            <>
+            <React.Fragment>
               <Button
                 className=""
                 variation="secondary"
@@ -1312,7 +1312,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                 }
               />
               <DrawerFieldComposer />
-            </>
+            </React.Fragment>
           ) : (
             <DndProvider backend={HTML5Backend}>
               <AppFieldScreenWrapper />

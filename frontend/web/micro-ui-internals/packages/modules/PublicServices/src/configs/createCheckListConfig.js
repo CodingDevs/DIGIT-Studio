@@ -32,7 +32,7 @@ export const CreateCheckListConfig = (item) => {
                     optionsKey: "name",
                     hideInForm: hide, // Dynamic hiding for conditional fields
                     alignVertical: true,
-                    options: field.values?.slice(0, -1).map(item => ({
+                    options: field.values?.map(item => ({
                         code: item,
                         name: `${label}.${item}`, // Translatable option label
                     }))

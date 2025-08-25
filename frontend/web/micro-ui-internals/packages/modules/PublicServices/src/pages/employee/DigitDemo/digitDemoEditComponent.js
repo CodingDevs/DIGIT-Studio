@@ -59,15 +59,31 @@ const generateFormDataFromSearch = (config = [], searchData = {}, module, servic
           return entry;
         });
       } else if (section.type === "childform") {
+        // const child = {};
+        // section.body?.forEach((field) => {
+        //   const fieldName = field?.populators?.name;
+        //   const fieldType = field?.type;
+        //   const responseKey = fieldNameMap[fieldName] || fieldName;
+        //   const schema = field?.populators?.mdmsConfig?.localePrefix;
+        //   const rawValue = searchData[sectionName]?.[responseKey];
+        //   if (fieldName) {
+        //     child[fieldName] = transformValue(fieldType, rawValue, schema ? schema : `${module}_${service}`);
+        //   }
+        // });
+        // formData[sectionName] = child;
+
         const child = {};
+        const sectionData = Array.isArray(searchData[sectionName]) 
+          ? searchData[sectionName][0]   // pick first entry if it's array
+          : searchData[sectionName];
+      
         section.body?.forEach((field) => {
           const fieldName = field?.populators?.name;
-          const fieldType = field?.type;
           const responseKey = fieldNameMap[fieldName] || fieldName;
           const schema = field?.populators?.mdmsConfig?.localePrefix;
-          const rawValue = searchData[sectionName]?.[responseKey];
+          const rawValue = sectionData?.[responseKey];
           if (fieldName) {
-            child[fieldName] = transformValue(fieldType, rawValue, schema ? schema : `${module}_${service}`);
+            child[fieldName] = transformValue(field?.type, rawValue, schema ? schema : `${module}_${service}_${fieldName?.toUpperCase()}`);
           }
         });
         formData[sectionName] = child;
@@ -89,6 +105,9 @@ const generateFormDataFromSearch = (config = [], searchData = {}, module, servic
     switch (type) {
       case "radioordropdown":
         return { code: rawValue, name: `${prefix.replaceAll(".", "_").toUpperCase()}_${rawValue.toUpperCase()}` };
+      case "boundary":
+        // For boundary fields, return the raw value as is, since BoundaryFilter expects boundary codes
+        return [rawValue];
       case "number":
         // Convert string numbers to actual numbers for number type fields
         if (typeof rawValue === "string" && !isNaN(rawValue) && rawValue.trim() !== "") {
