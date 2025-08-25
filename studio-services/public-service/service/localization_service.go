@@ -309,6 +309,8 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 		item := val.(map[string]interface{})
 		code := item["code"].(string)
 		message := item["template"].(string)
+        // Replace spaces with underscores in code
+		code = strings.ReplaceAll(code, " ", "_")
 
 		// Build composite key: locale|module|code
 		uniqueKey := fmt.Sprintf("%s|%s|%s", locale, module, code)

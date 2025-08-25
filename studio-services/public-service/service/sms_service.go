@@ -180,7 +180,9 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 			log.Println("Current state:", currentState)
 			log.Println("State in SMS item:", stateStr)
 			if strings.EqualFold(stateStr, currentState) {
-				matchedCode, _ = itemMap["code"].(string)
+				code, _ := itemMap["code"].(string)
+				// Replace spaces with underscores in code
+				matchedCode = strings.ReplaceAll(code, " ", "_")
 				break
 			}
 		}
@@ -313,7 +315,9 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 		for _, state := range states {
 			stateStr, _ := state.(string)
 			if strings.EqualFold(stateStr, currentState) {
-				matchedCode, _ = itemMap["code"].(string)
+				code, _ := itemMap["code"].(string)
+				// Replace spaces with underscores in code
+				matchedCode = strings.ReplaceAll(code, " ", "_")
 				break
 			}
 		}
@@ -379,7 +383,7 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 			RequestInfo: application.RequestInfo,
 			Email:       email,
 		}
-        logJSON("Email Request", emailRequest)
+		logJSON("Email Request", emailRequest)
 		emailBytes, err := json.Marshal(emailRequest)
 		if err != nil {
 			log.Printf("Failed to marshal EmailRequest for owner %v: %v", owner.EmailId, err)
