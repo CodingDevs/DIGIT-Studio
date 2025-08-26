@@ -448,15 +448,21 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 		Module:  localizationModule,
 	}
 	messages = append(messages, message)
-	 message = model.Message{
+	
+	message = model.Message{
 		Code:    strings.ToUpper(req.Service.Module) + "_" + "FILTER",
 		Message:  " Filter",
 		Locale:  locale,
 		Module:  localizationModule,
 	}
 	messages = append(messages, message)
-
-
+    message = model.Message{
+		Code:    strings.ToUpper(req.Service.Module) + "_" + "COMMON_WARD",
+		Message:  "  Ward",
+		Locale:  locale,
+		Module:  localizationModule,
+	}
+	messages = append(messages, message)
 
 	message = model.Message{
 		Code:    module + "_" + "APPLICATION_DETAILS",
@@ -472,6 +478,7 @@ func (l *LocalizationService) Localization(data map[string]interface{}, req mode
 		Module:  localizationModule,
 	}
 	messages = append(messages, message)
+	module= strings.ToUpper(req.Service.Module)
 	field1 := []string{"APPLICATION_NUMBER", "STATUS", "TODATE", "FROMDATE", "BUSINESS_SERVICE"}
 	for key := range field1 {
 		message := model.Message{
