@@ -126,6 +126,21 @@ export const ApplicantFields =  [{
           "orderNumber": 1
         },
         {
+          "name": "email",
+          "label": "Email",
+          "disable" : false,
+          "type": "string",
+          "format": "text",
+          "maxLength": 256,
+          "minLength": 0,
+          "validation": {
+            "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+            "message": "email format not valid"
+          },
+          "required": false,
+          "orderNumber": 1
+        },
+        {
           "name": "gender",
           "label": "Gender ",
           "disable" : false,

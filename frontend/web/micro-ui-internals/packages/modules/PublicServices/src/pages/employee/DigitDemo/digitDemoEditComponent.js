@@ -6,7 +6,8 @@ import { Loader } from '@egovernments/digit-ui-react-components';
 
 //field map to map the formdata unique identified and response unique identifier
 const fieldNameMap = {
-  streetName : "addressLine1"
+  streetName : "addressLine1",
+  email : "emailId"  // Map email field to emailId in response
 };
 
 //creating formdata documents array to prefill document data
