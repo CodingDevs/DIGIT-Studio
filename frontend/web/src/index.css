@@ -852,3 +852,23 @@
   overflow-wrap: break-word;
   max-width: 13rem;
 }
+
+.tooltiptextrm {
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  max-width: 250px;
+  white-space: normal;
+  text-align: center;
+  pointer-events: none;
+  display: block;
+  line-height: 1.4em;
+}

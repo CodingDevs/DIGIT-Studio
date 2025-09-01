@@ -63,11 +63,11 @@ const ChecklistHomePage = () => {
       ),
       sortable: true,
     },
-    {
-      name: t("STUDIO_QUESTIONS"),
-      selector: (row) => row.questions,
-      sortable: true,
-    },
+    // {
+    //   name: t("STUDIO_QUESTIONS"),
+    //   selector: (row) => row.questions,
+    //   sortable: true,
+    // },
     {
       name: t("STUDIO_CREATED_DATE"),
       selector: (row) => row.createdDate,

@@ -1558,9 +1558,42 @@ const LandingPage = () => {
                     />
                   ))
                 ) : (
-                  <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
-                    {t("STUDIO_NO_CARDS_AVAILABLE")}{" "}
-                    {t(`STUDIO_${selectedToggle.toUpperCase()}`)}
+                  <div style={{ 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    alignItems: "center", 
+                    justifyContent: "center", 
+                    padding: "4rem 2rem", 
+                    backgroundColor: "#f8f9fa",
+                    borderRadius: "12px",
+                    margin: "2rem auto",
+                    gap:"1.5rem",
+                    textAlign: "center"
+                  }}>
+                    {/* Document with pencil icon */}
+                    <CustomSVG.AddIcon height="30" width="30" fill="#C84C0E" style={{
+                      backgroundColor: "beige",
+                      border: "1px solid beige",
+                      borderRadius: "5px",
+                      padding: "3px",
+                    }}/>
+              <div className="typography heading-m">{t("NO_DRAFTS_AVAILABLE_HEADER")}</div>
+              <div className="typography body-s-dt">{t("NO_DRAFTS_AVAILABLE_HEADER")}</div>
+                    
+                    {/* Create button */}
+                    <Button
+                      variation="primary"
+                      label={t("CREATE_NEW_SERVICE_DRAFTS")}
+                      onClick={handleCreateCardClick}
+                      // style={{
+                      //   backgroundColor: "#fd7e14",
+                      //   borderColor: "#fd7e14",
+                      //   borderRadius: "8px",
+                      //   padding: "12px 24px",
+                      //   fontSize: "1rem",
+                      //   fontWeight: "500"
+                      // }}
+                    />
                   </div>
                 )}
               </div>

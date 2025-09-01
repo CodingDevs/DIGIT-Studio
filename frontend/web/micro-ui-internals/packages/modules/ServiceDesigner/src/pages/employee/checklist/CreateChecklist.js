@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SummaryCardFieldPair, Toast, Card, Button, PopUp, TextInput, Loader } from "@egovernments/digit-ui-components";
+import { SummaryCardFieldPair, Toast, Card, Button, PopUp, TextInput, Loader, CustomSVG } from "@egovernments/digit-ui-components";
 import { FormComposerV2 } from "@egovernments/digit-ui-react-components";
 import { useHistory } from "react-router-dom";
 import { checklistCreateConfig } from "../../../config/checklistCreateConfig";
@@ -56,6 +56,8 @@ const CreateChecklist = ({isUpdate}) => {
 
   const [showLocalisationPopup, setShowLocalisationPopup] = useState(false);
   const [localisationData, setLocalisationData] = useState([]);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [showHelpTextTooltip, setShowHelpTextTooltip] = useState(false);
   const { data: storeData, isLoading } = Digit.Hooks.useStore.getInitData();
   const { languages, stateInfo } = storeData || {};
   const currentLocales = languages?.map(locale => locale.value);
@@ -777,6 +779,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               className={"custom-pop-up"}
               type={"default"}
               heading={t("CHECKLIST_PREVIEW")}
+              style={{ zIndex: 9999 }}
               children={[
               ]}
               onOverlayClick={() => {
@@ -836,7 +839,44 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               <hr style={{ width: "100%", borderTop: "1px solid #ccc" }} />
             } */}
             <div style={{ display: "flex" }}>
-              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem" }}>{t("NAME_OF_CHECKLIST")} *</div>
+              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {t("NAME_OF_CHECKLIST")} *
+                                <div 
+                  style={{ position: "relative", display: "inline-block"}}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                >
+                  <CustomSVG.InfoIcon 
+                    height="16" 
+                    width="16" 
+                    fill="#666"
+                  />
+                                      {showTooltip && (
+                      <span style={{
+                        position: "absolute",
+                        bottom: "125%",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        backgroundColor: "#333",
+                        color: "white",
+                        padding: "8px 12px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                        width: "200px",
+                        maxWidth: "350px",
+                        whiteSpace: "normal",
+                        textAlign: "center",
+                        pointerEvents: "none",
+                        display: "block",
+                        lineHeight: "1.4em"
+                      }}>
+                        {t("NAME_OF_CHECKLIST_TOOLTIP")}
+                      </span>
+                    )}
+                </div>
+              </div>
               <TextInput
                 disabled={false}
                 className="tetxinput-example"
@@ -850,7 +890,44 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               />
             </div>
             <div style={{ display: "flex" }}>
-              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem" }}>{t("CHECKLIST_HELP_TEXT")}</div>
+              <div style={{ width: "26%", fontWeight: "500", marginTop: "0.7rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {t("CHECKLIST_HELP_TEXT")}
+                <div
+                  style={{ position: "relative", display: "inline-block", cursor: "help" }}
+                  onMouseEnter={() => setShowHelpTextTooltip(true)}
+                  onMouseLeave={() => setShowHelpTextTooltip(false)}
+                >
+                  <CustomSVG.InfoIcon
+                    height="16"
+                    width="16"
+                    fill="#666"
+                  />
+                  {showHelpTextTooltip && (
+                    <span style={{
+                      position: "absolute",
+                      bottom: "125%",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      backgroundColor: "#333",
+                      color: "white",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      zIndex: 1000,
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                      width: "200px",
+                      maxWidth: "350px",
+                      whiteSpace: "normal",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      display: "block",
+                      lineHeight: "1.4em"
+                    }}>
+                      {t("CHECKLIST_HELP_TEXT_TOOLTIP")}
+                    </span>
+                  )}
+                </div>
+              </div>
               <TextInput
                 disabled={false}
                 className="tetxinput-example"
@@ -886,6 +963,7 @@ function getFilteredLocaleEntries(quesArray, localeArray, helpText = "") {
               label={t(showToast?.label)}
               isDleteBtn={"true"}
               onClose={() => closeToast()}
+              style={{ zIndex: 99999 }}
             />
           )}
           {/* {showLocalisationPopup && (

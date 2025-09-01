@@ -2346,7 +2346,7 @@ const Workflow = () => {
                         setShowToast(null);
                     }}
                     isDleteBtn={showToast?.isDleteBtn}
-                    style={{ zIndex: 9999 }}
+                    style={{ zIndex: 99999 }}
                 />
             )}
             
@@ -2451,7 +2451,7 @@ const Workflow = () => {
                     type={"default"}
                     heading={t("CREATE_NEW_ROLE")}
                     children={[]}
-                    style={{ width: "40rem" }}
+                    style={{ width: "40rem", zIndex: 9999 }}
                     onOverlayClick={() => {
                         setRoleData({
                             name: "",
@@ -2522,7 +2522,7 @@ const Workflow = () => {
                     type={"default"}
                     heading={t("LOAD_SAMPLE_HEADER")}
                     children={[]}
-                    style={{ width: "40rem" }}
+                    style={{ width: "40rem", zIndex: 9999 }}
                     onOverlayClick={() => { setLoadSamplePopup(false); }}
                     onClose={() => { setLoadSamplePopup(false); }}
                     footerChildren={{}}

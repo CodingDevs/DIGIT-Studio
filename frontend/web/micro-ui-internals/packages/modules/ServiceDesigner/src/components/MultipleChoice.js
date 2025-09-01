@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useEffect, useRef } from "react";
-import { CheckBox, Tooltip } from "@egovernments/digit-ui-components";
+import { CheckBox, Tooltip, CustomSVG } from "@egovernments/digit-ui-components";
 import CreateQuestion from "./CreateQuestion";
 // import { DustbinIcon } from "./icons/DustbinIcon";
 import { FieldV1, Button } from "@egovernments/digit-ui-components";
@@ -150,6 +150,7 @@ export const RadioButtonOption = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false); // State to control tooltip visibility
+  const [showNestedChecklistTooltip, setShowNestedChecklistTooltip] = useState(false);
   const optionInputRef = useRef(null); // Reference to the option input element
   const inputContainerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -256,15 +257,52 @@ export const RadioButtonOption = ({
           )}
           {!dis && (
             <>
-              <CheckBox
-                key={field.key}
-                mainClassName={"checkboxOptionVariant"}
-                disabled={optionComment ? true : false || subQlevel>=maxDepth+1}
-                label={t("LINK_NESTED_CHECKLIST")}
-                checked={optionDependency}
-                onChange={(event) => handleOptionDependency(optionId)}
-                index={field.key}
-              />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <CheckBox
+                  key={field.key}
+                  mainClassName={"checkboxOptionVariant"}
+                  disabled={optionComment ? true : false || subQlevel>=maxDepth+1}
+                  label={t("LINK_NESTED_CHECKLIST")}
+                  checked={optionDependency}
+                  onChange={(event) => handleOptionDependency(optionId)}
+                  index={field.key}
+                />
+                <div
+                  style={{ position: "relative", display: "inline-block", cursor: "help" }}
+                  onMouseEnter={() => setShowNestedChecklistTooltip(true)}
+                  onMouseLeave={() => setShowNestedChecklistTooltip(false)}
+                >
+                  <CustomSVG.InfoIcon
+                    height="16"
+                    width="16"
+                    fill="#666"
+                  />
+                  {showNestedChecklistTooltip && (
+                    <span style={{
+                      position: "absolute",
+                      bottom: "125%",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      backgroundColor: "#333",
+                      color: "white",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      zIndex: 1000,
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+                      width: "200px",
+                      maxWidth: "350px",
+                      whiteSpace: "normal",
+                      textAlign: "center",
+                      pointerEvents: "none",
+                      display: "block",
+                      lineHeight: "1.4em"
+                    }}>
+                      {t("LINK_NESTED_CHECKLIST_TOOLTIP")}
+                    </span>
+                  )}
+                </div>
+              </div>
             </>
           )}
           {!dis && !disableDelete && (

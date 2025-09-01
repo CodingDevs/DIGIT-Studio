@@ -309,7 +309,7 @@ const Roles = () => {
                     type={"default"}
                     heading={t("CREATE_NEW_ROLE")}
                     children={[]}
-                    style={{ width: "30rem" }}
+                    style={{ width: "30rem", zIndex: 9999 }}
                     footerStyles={{ width: "100%" }}
                     onOverlayClick={() => {
                         setStateData({
@@ -400,7 +400,7 @@ const Roles = () => {
                         setShowToast(null);
                     }}
                     isDleteBtn={showToast?.isDleteBtn}
-                    style={{ zIndex: 9999 }}
+                    style={{ zIndex: 99999 }}
                 />
             )}
         </React.Fragment>
