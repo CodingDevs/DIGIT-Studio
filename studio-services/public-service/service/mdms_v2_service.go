@@ -126,74 +126,145 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			}
 		}
 	}
-	// Always create RoleActionMapping for STUDIO_ADMIN first
-	studioAdminPayload := model.MDMSCreateV2Request{
-		RequestInfo: apps.RequestInfo,
-		MDMS: model.Mdms{
-			TenantID:   tenantId,
-			SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
-			Data: model.MdmsRoleActionData{
-				RoleCode:   "STUDIO_ADMIN",
-				ActionID:   actionid,
-				ActionCode: "",
-				TenantID:   tenantId,
-			},
-			IsActive: true,
+
+	// Define URL mappings for each role type
+	// Add new URLs here as needed for each role type
+	roleUrlMappings := map[string][]string{
+		"creator": {
+			"/egov-mdms-service/v2/_search",
+			"/public-service/v1/service",
+			"/egov-workflow-v2/egov-wf/process/_search",
+			"/egov-workflow-v2/egov-wf/businessservice/_search",
+			"/health-service-request/service/definition/v1/_search",
+			"/egov-mdms-service/v1/_search",
+			"/health-service-request/service/v1/_search",
+			"/health-service-request/service/v1/_create",
+			"/inbox/v2/_search",
+			// Add more URLs for creator roles here
+		},
+		"editor": {
+			"/egov-mdms-service/v2/_search",
+			"/public-service/v1/service",
+			"/egov-workflow-v2/egov-wf/process/_search",
+			"/egov-workflow-v2/egov-wf/businessservice/_search",
+			"/health-service-request/service/definition/v1/_search",
+			"/egov-mdms-service/v1/_search",
+			"/health-service-request/service/v1/_search",
+			"/health-service-request/service/v1/_create", 
+			"/health-service-request/service/v1/_update", 
+			"/inbox/v2/_search",
+
+			// Add URLs specific to editor roles here
+		},
+		"viewer": {
+			"/egov-mdms-service/v2/_search",
+			"/public-service/v1/service",
+			"/egov-workflow-v2/egov-wf/process/_search",
+			"/egov-workflow-v2/egov-wf/businessservice/_search",
+			"/health-service-request/service/definition/v1/_search",
+			"/egov-mdms-service/v1/_search",
+			"/inbox/v2/_search",
+			// Add more URLs for viewer roles here
 		},
 	}
 
-	log.Println("[INIT] Posting RoleActionMapping for role: STUDIO_ADMIN")
-	b, _ := json.MarshalIndent(studioAdminPayload, "", "  ")
-	fmt.Println("Payload:\n", string(b))
-
-	if err := s.restCallRepo.Post(url, studioAdminPayload, &resp); err != nil {
-		if isDuplicateError(err) {
-			log.Println("[SKIPPED - DUPLICATE] RoleActionMapping already exists for STUDIO_ADMIN")
-		} else {
-			log.Printf("Error posting RoleActionMapping for STUDIO_ADMIN: %v", err)
-			return nil, err
+	// Function to search MDMS and extract action ID
+	getActionIdFromUrl := func(searchUrl string) (string, error) {
+		filter := map[string]string{
+			"url": searchUrl,
 		}
+
+		res, err := s.SearchMDMS(tenantId, "ACCESSCONTROL-ACTIONS-TEST.actions-test", filter, apps.RequestInfo)
+		if err != nil {
+			log.Printf("Error calling MDMS search for URL %s: %v", searchUrl, err)
+			return "", err
+		}
+
+		// Extract action ID from the response
+		if mdmsActionList, ok := res["mdms"].([]interface{}); ok && len(mdmsActionList) > 0 {
+			if firstActionEntry, ok := mdmsActionList[0].(map[string]interface{}); ok {
+				if actionData, ok := firstActionEntry["data"].(map[string]interface{}); ok {
+					if actionIdFloat, ok := actionData["id"].(float64); ok {
+						return fmt.Sprintf("%.0f", actionIdFloat), nil
+					} else if actionIdInt, ok := actionData["id"].(int); ok {
+						return fmt.Sprintf("%d", actionIdInt), nil
+					}
+				}
+			}
+		}
+
+		return "", fmt.Errorf("could not extract action ID for URL: %s", searchUrl)
 	}
 
-	respJSON, _ := json.MarshalIndent(resp, "", "  ")
-	log.Println("Response:\n", string(respJSON))
+	// Function to create role action mapping
+	createRoleActionMapping := func(roleCode, actionId, mappingType string) error {
+		payload := model.MDMSCreateV2Request{
+			RequestInfo: apps.RequestInfo,
+			MDMS: model.Mdms{
+				TenantID:   tenantId,
+				SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
+				Data: model.MdmsRoleActionData{
+					RoleCode:   roleCode,
+					ActionID:   actionId,
+					ActionCode: "",
+					TenantID:   tenantId,
+				},
+				IsActive: true,
+			},
+		}
 
-	// Helper function to post for each role
+		log.Printf("[%s] Posting RoleActionMapping for role: %s with actionId: %s", mappingType, roleCode, actionId)
+		b, _ := json.MarshalIndent(payload, "", "  ")
+		fmt.Println("Payload:\n", string(b))
+
+		var postResp map[string]interface{}
+		err := s.restCallRepo.Post(url, payload, &postResp)
+		if err != nil {
+			if isDuplicateError(err) {
+				log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s with actionId %s", roleCode, actionId)
+				return nil
+			}
+			log.Printf("Error posting RoleActionMapping for role %s with actionId %s: %v", roleCode, actionId, err)
+			return err
+		}
+
+		respJSON, _ := json.MarshalIndent(postResp, "", "  ")
+		log.Println("Response:\n", string(respJSON))
+		return nil
+	}
+
+	// Always create RoleActionMapping for STUDIO_ADMIN first
+	if err := createRoleActionMapping("STUDIO_ADMIN", actionid, "INIT"); err != nil {
+		return nil, err
+	}
+
+	// Generic function to post mappings for a role type
 	postRoleMappings := func(roleList []string, roleType string) error {
 		for _, roleCode := range roleList {
-			payload := model.MDMSCreateV2Request{
-				RequestInfo: apps.RequestInfo,
-				MDMS: model.Mdms{
-					TenantID:   tenantId,
-					SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
-					Data: model.MdmsRoleActionData{
-						RoleCode:   roleCode,
-						ActionID:   actionid,
-						ActionCode: "",
-						TenantID:   tenantId,
-					},
-					IsActive: true,
-				},
-			}
-
-			log.Printf("[%s] Posting RoleActionMapping for role: %s", roleType, roleCode)
-			b, _ := json.MarshalIndent(payload, "", "  ")
-			fmt.Println("Payload:\n", string(b))
-
-			var postResp map[string]interface{}
-			err := s.restCallRepo.Post(url, payload, &postResp)
-			if err != nil {
-				// Check if the error is a duplicate record error
-				if isDuplicateError(err) {
-					log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s", roleCode)
-					continue
-				}
-				log.Printf("Error posting RoleActionMapping for role %s: %v", roleCode, err)
+			// Create mapping with original actionid
+			if err := createRoleActionMapping(roleCode, actionid, roleType+" (original)"); err != nil {
 				return err
 			}
 
-			respJSON, _ := json.MarshalIndent(postResp, "", "  ")
-			log.Println("Response:\n", string(respJSON))
+			// Create additional mappings based on role type URL configuration
+			if urls, exists := roleUrlMappings[roleType]; exists {
+				for _, searchUrl := range urls {
+					additionalActionId, err := getActionIdFromUrl(searchUrl)
+					if err != nil {
+						log.Printf("Failed to get action ID for URL %s and role %s: %v", searchUrl, roleCode, err)
+						continue // Continue with other URLs instead of failing completely
+					}
+
+					log.Printf("Extracted Action ID: %s for URL: %s", additionalActionId, searchUrl)
+					
+					mappingType := fmt.Sprintf("%s (URL: %s)", roleType, searchUrl)
+					if err := createRoleActionMapping(roleCode, additionalActionId, mappingType); err != nil {
+						log.Printf("Failed to create mapping for role %s with URL %s: %v", roleCode, searchUrl, err)
+						// Continue with other URLs instead of failing completely
+						continue
+					}
+				}
+			}
 		}
 		return nil
 	}

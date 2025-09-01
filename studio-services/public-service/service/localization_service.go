@@ -25,7 +25,7 @@ func NewLocalizationService(repo repository.RestCallRepository, mdms_service MDM
 		mdms_service: mdms_service,
 	}
 }
-func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestInfo, code string, tenantID string) map[string]string {
+func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestInfo, module, code string, tenantID string) map[string]string {
 	msgDetail := make(map[string]string)
 	locale := os.Getenv("NOTIFICATION_LOCALE")
 
@@ -35,13 +35,15 @@ func (l *LocalizationService) GetLocalizationMessage(requestInfo model.RequestIn
 			locale = parts[1]
 		}
 	}
+
 	//TODO: use module specified in the config
-	url := fmt.Sprintf("%s%s%s?locale=%s&tenantId=%s&module=digit-studio&codes=%s",
+	url := fmt.Sprintf("%s%s%s?locale=%s&tenantId=%s&module=%s&codes=%s",
 		os.Getenv("LOCALIZATION_SERVICE_HOST"),
 		os.Getenv("LOCALIZATION_CONTEXT_PATH"),
 		os.Getenv("LOCALIZATION_SEARCH_ENDPOINT"),
 		locale,
 		tenantID,
+		module,
 		code,
 	)
 

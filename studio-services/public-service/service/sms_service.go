@@ -38,84 +38,6 @@ func NewSMSService(repo repository.RestCallRepository, localizationService *Loca
 	}
 }
 
-func (s *SMSService) SendSMSOld(application model.ApplicationRequest, tenantId string, templateCode string, owners []model.Applicant) (map[string]interface{}, error) {
-	localizationMessage := s.localizationService.GetLocalizationMessage(
-		application.RequestInfo,
-		templateCode,
-		tenantId,
-	)
-
-	templateMsg := localizationMessage["message"]
-	if templateMsg == "" {
-		log.Println("Localization message not found for template:", templateCode)
-		return nil, fmt.Errorf("template message not found")
-	}
-
-	if s.kafkaProducer == nil {
-		return nil, fmt.Errorf("Kafka producer is not initialized")
-	}
-
-	// Fetch bills and calculate total amount
-	bills, err := s.demandService.fetchBill(application)
-	if err != nil {
-		log.Printf("Error fetching bill for application %s: %v", application.Application.ApplicationNumber, err)
-		return nil, err
-	}
-	if jsonBytes, err := json.MarshalIndent(bills, "", "  "); err == nil {
-		log.Printf("FetchBill Request JSON:\n%s", string(jsonBytes))
-	} else {
-		log.Printf("Failed to marshal billRequest: %v", err)
-	}
-	var totalAmount float64
-	for _, bill := range bills {
-		totalAmount += bill.TotalAmount
-	}
-	amountStr := strconv.FormatFloat(totalAmount, 'f', 2, 64)
-	log.Println("amtStr::::", amountStr)
-	// Loop over all owners to send SMS
-	for _, owner := range owners {
-		msg := templateMsg
-
-		if owner.Name != "" {
-			msg = strings.ReplaceAll(msg, "{PublicService.applicants[0].name}", owner.Name)
-		}
-		if application.Application.ApplicationNumber != "" {
-			msg = strings.ReplaceAll(msg, "{PublicService.applicationNo}", application.Application.ApplicationNumber)
-		}
-		msg = strings.ReplaceAll(msg, "{Bill.totalAmount}", amountStr)
-
-		smsRequest := sms.SMSRequest{
-			MobileNumber: strconv.FormatInt(owner.MobileNumber, 10),
-			Message:      msg,
-			Category:     sms.CategoryNotification,
-			TenantID:     tenantId,
-		}
-
-		smsBytes, err := json.Marshal(smsRequest)
-		if err != nil {
-			log.Printf("Failed to marshal SMSRequest for owner %v: %v", owner.MobileNumber, err)
-			continue
-		}
-
-		ctx := context.Background()
-		err = s.kafkaProducer.Push(ctx, config.GetEnv("SEND_SMS_TOPIC"), smsBytes)
-		if err != nil {
-			log.Printf("Failed to push Kafka message for owner %v: %v", owner.MobileNumber, err)
-			continue
-		}
-
-		//err = s.kafkaProducer.Push(ctx, config.GetEnv("SEND_NOTIFICATION_TOPIC"), smsBytes)
-		//if err != nil {
-		//	log.Printf("Failed to push Kafka message for owner %v: %v", owner.MobileNumber, err)
-		//	continue
-		//}
-	}
-
-	return map[string]interface{}{
-		"status":  "success",
-		"message": "Messages sent",
-	}, nil
-}
 
 func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId string, owners []model.Applicant) (map[string]interface{}, error) {
 	err := s.workflowIntegrator.SearchWorkflow(&application.Application, application.RequestInfo)
@@ -148,7 +70,24 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 		log.Println("No 'notification' section in MDMS data")
 		return nil, errors.New("No 'notification' section in MDMS data")
 	}
+    localizations, ok := data["localization"].(map[string]interface{})
+	if !ok {
+		log.Println("No 'localization' section in MDMS data")
+		return nil, errors.New("No 'localization' section in MDMS data")
+	}
+	modules, ok := localizations["modules"].([]interface{})
+	if !ok || len(modules) == 0 {
+		log.Println("No 'modules' section or it's empty in MDMS localization data")
+		return nil, errors.New("No 'modules' section or it's empty in MDMS localization data")
+	}
 
+	// Extract localizationModule from modules[0] assuming it's a string
+	localizationModule, ok := modules[0].(string)
+	if !ok {
+		log.Println("First 'module' is not a valid string")
+		return nil, errors.New("First 'module' is not a valid string")
+}
+	
 	smsList, ok := notification["sms"].([]interface{})
 	if !ok {
 		log.Println("No 'sms' section in MDMS notification data")
@@ -200,6 +139,7 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 	// Fetch localized message for matchedCode
 	localizationMessage := s.localizationService.GetLocalizationMessage(
 		application.RequestInfo,
+		localizationModule,
 		matchedCode,
 		tenantId,
 	)
@@ -288,6 +228,24 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 		log.Println("No 'notification' section in MDMS data")
 		return nil, errors.New("No 'notification' section in MDMS data")
 	}
+	localizations, ok := data["localization"].(map[string]interface{})
+	if !ok {
+		log.Println("No 'localization' section in MDMS data")
+		return nil, errors.New("No 'localization' section in MDMS data")
+	}
+
+	modules, ok := localizations["modules"].([]interface{})
+	if !ok || len(modules) == 0 {
+		log.Println("No 'modules' section or it's empty in MDMS localization data")
+		return nil, errors.New("No 'modules' section or it's empty in MDMS localization data")
+	}
+
+	// Extract localizationModule from modules[0] assuming it's a string
+	localizationModule, ok := modules[0].(string)
+	if !ok {
+		log.Println("First 'module' is not a valid string")
+		return nil, errors.New("First 'module' is not a valid string")
+	}
 
 	emailList, ok := notification["email"].([]interface{})
 	if !ok {
@@ -333,6 +291,7 @@ func (s *SMSService) SendEmail(application model.ApplicationRequest, tenantId st
 	}
 	localizationMessage := s.localizationService.GetLocalizationMessage(
 		application.RequestInfo,
+		localizationModule,
 		matchedCode,
 		tenantId,
 	)
