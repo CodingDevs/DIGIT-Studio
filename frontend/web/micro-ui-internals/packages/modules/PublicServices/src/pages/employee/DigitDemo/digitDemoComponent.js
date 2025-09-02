@@ -28,6 +28,8 @@ const DigitDemoComponent = ({editdata}) => {
   const [sessionData, setSessionData] = useState(savedFormData);
   const [showToast, setShowToast] = useState(null);
 
+  const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
+
   useEffect(() => {
     //useEffect to set the prevfilled data
     if(window.location.href.includes("Edit")) 
@@ -39,7 +41,7 @@ const DigitDemoComponent = ({editdata}) => {
 
   //Fetch service configuration from MDMS
   const requestCriteria = {
-    url: "/egov-mdms-service/v2/_search",
+    url: `/${mdms_context_path}/v2/_search`,
     body: {
       MdmsCriteria: {
         tenantId: tenantId,

@@ -128,6 +128,7 @@ const DigitDemoEditComponent = () => {
     const { module, service } = useParams();
     const tenantId = Digit.ULBService.getCurrentTenantId();
     const queryStrings = Digit.Hooks.useQueryParams();
+    const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
 
 
      //to get the fetched application details
@@ -381,7 +382,7 @@ const DigitDemoEditComponent = () => {
 
    // Fetch service configuration from MDMS
    const requestCriteria = {
-    url: "/egov-mdms-service/v2/_search",
+    url: `/${mdms_context_path}/v2/_search`,
     body: {
       MdmsCriteria: {
         tenantId: tenantId,

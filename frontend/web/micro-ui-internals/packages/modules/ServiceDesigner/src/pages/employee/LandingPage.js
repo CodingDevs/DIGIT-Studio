@@ -1352,10 +1352,11 @@ const LandingPage = () => {
   };
 
   const checkServiceExists = async (moduleName, serviceName) => {
+    const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
     try {
       // Check in drafts
       const draftsResponse = await axios.post(
-        "/egov-mdms-service/v2/_search",
+        `/${mdms_context_path}/v2/_search`,
         {
           MdmsCriteria: {
             tenantId,
@@ -1414,12 +1415,14 @@ const LandingPage = () => {
     setShowCreatePopup(true);
   };
 
+  const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [mdmsResponse, publicServiceResponse] = await Promise.all([
           axios.post(
-            "/egov-mdms-service/v2/_search",
+            `/${mdms_context_path}/v2/_search`,
             {
               MdmsCriteria: {
                 tenantId,

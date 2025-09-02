@@ -142,8 +142,10 @@ const Workflow = () => {
         name: item.data.name,
     })) || [];
 
+    const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
+
     const requestCriteriaForm = {
-        url: "/egov-mdms-service/v2/_search",
+        url: `/${mdms_context_path}/v2/_search`,
         body: {
             MdmsCriteria: {
                 tenantId: tenantId,

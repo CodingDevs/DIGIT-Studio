@@ -33,10 +33,11 @@ const DigitDemoViewComponent = () => {
   }
   const {isLoading, data} = Digit.Hooks.useCustomAPIHook(request);
   let response =  data ? data?.Application?.[0] : {};
+  const mdms_context_path = window?.globalConfigs?.getConfig("MDMS_V2_CONTEXT_PATH") || "mdms-v2";
 
   //To fetch the service config for the module and service
   const requestCriteria = {
-    url: "/egov-mdms-service/v2/_search",
+    url: `/${mdms_context_path}/v2/_search`,
     body: {
       MdmsCriteria: {
         tenantId: tenantId,
