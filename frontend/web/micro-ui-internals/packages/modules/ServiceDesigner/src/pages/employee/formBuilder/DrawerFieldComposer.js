@@ -44,6 +44,7 @@ const disableFieldForMandatory = (drawerState, panelItem, resourceData) => {
 function getRequiredFieldNames(data, projectType, flowName, screenName) {
   const result = [];
 
+  if(data)
   for (const flow of data) {
     if (flow.project !== projectType || flow.name !== flowName) continue;
     const page = flow.pages.find((p) => p.page === screenName);

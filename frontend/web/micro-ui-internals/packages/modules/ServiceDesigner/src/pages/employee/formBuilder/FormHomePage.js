@@ -100,7 +100,7 @@ const FormHomePage = () => {
       cell: (row) => (
         <button
           style={{ color: "#c84c0e", fontSize: "14px", width: "4rem" }}
-          onClick={() => window.location.href = `/${window.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${row?.item?.data?.module}&service=${row?.item?.data?.service}&formName=${row?.name}&editMode=true`}
+          onClick={() => window.location.href = `/${window.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=${tenantId}&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${row?.item?.data?.module}&service=${row?.item?.data?.service}&formName=${row?.name}&editMode=true`}
         >
           {t("STUDIO_EDIT")}
         </button>
@@ -133,7 +133,7 @@ const FormHomePage = () => {
               //iconFill=""
               label={t(`STUDIO_CREATE_NEW_FORMS_SUB_HEADER`)}
               onClick={() =>
-                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=dev&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${module}&service=${service}`)
+                (window.location.href = `/${window?.contextPath}/employee/servicedesigner/form-builder?variant=app&masterName=FormBuilder&fieldType=FieldTypeMappingConfig&prefix=CMP-2025-07-24-006759&localeModule=APPONE&tenantId=${tenantId}&campaignNumber=CMP-2025-07-24-006759&formId=default&projectType=Bednet&module=${module}&service=${service}`)
               }
               size="medium"
               style={{width: "100%", height: "5rem", border:"1px dashed #c84c0e", backgroundColor:"#fff", color:"#c84c0e", fontWeight:"500"}}
