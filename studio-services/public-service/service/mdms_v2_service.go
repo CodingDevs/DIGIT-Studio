@@ -140,6 +140,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/health-service-request/service/v1/_search",
 			"/health-service-request/service/v1/_create",
 			"/inbox/v2/_search",
+			"/billing-service/bill/v2/_fetchbill",
+			"/collection-services/payments/_create",
 			// Add more URLs for creator roles here
 		},
 		"editor": {
@@ -153,7 +155,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/health-service-request/service/v1/_create", 
 			"/health-service-request/service/v1/_update", 
 			"/inbox/v2/_search",
-
+			"/billing-service/bill/v2/_fetchbill",
+			"/collection-services/payments/_create",
 			// Add URLs specific to editor roles here
 		},
 		"viewer": {
@@ -164,6 +167,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/health-service-request/service/definition/v1/_search",
 			"/egov-mdms-service/v1/_search",
 			"/inbox/v2/_search",
+			
 			// Add more URLs for viewer roles here
 		},
 	}

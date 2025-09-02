@@ -11,6 +11,7 @@ import (
 	"public-service/model"
 	"public-service/model/payment"
 	"public-service/service"
+
 	"github.com/segmentio/kafka-go"
 )
 
@@ -36,7 +37,7 @@ func ConsumePayments(workflowIntegrator *service.WorkflowIntegrator, application
 
 		m, err := r.FetchMessage(ctx)
 		if err != nil {
-			log.Printf("❌ Error reading message: %v", err)
+			//log.Printf("❌ Error reading message: %v", err)
 			continue
 		}
 
@@ -73,7 +74,7 @@ func ConsumePayments(workflowIntegrator *service.WorkflowIntegrator, application
 		filters := map[string]string{
 			"service": application.BusinessService,
 			"module":  application.Module,
-    	}
+		}
 		mdmsData, _ := workflowIntegrator.MDMSV2Service.SearchMDMS(
 			application.TenantId,
 			schemaCode,
