@@ -9,6 +9,7 @@ type Application struct {
 	BusinessService   string                 `json:"businessService"`
 	Status            Status                 `json:"status"`
 	Channel           string                 `json:"channel"`
+	Version           int                    `json:"version"`
 	ApplicationNumber string                 `json:"applicationNumber"` // ✅ corrected spelling
 	Reference         []Reference            `json:"reference"`
 	WorkflowStatus    string                 `json:"workflowStatus"` // ✅ only once, not duplicated

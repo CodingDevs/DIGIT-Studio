@@ -9,6 +9,7 @@ type Service struct {
 	Module            string                 `json:"module"`
 	ServiceCode       string                 `json:"serviceCode"`
 	Status            Status                 `json:"status"`
+	Version           int                    `json:"version"`
 	AdditionalDetails map[string]interface{} `json:"additionalDetails"`
 	AuditDetails      AuditDetails           `json:"auditDetails"`
 }

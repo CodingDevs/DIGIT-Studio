@@ -31,7 +31,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 	var args []interface{}
 	var conditions []string
 	argPos := 1
-
+	var existingService model.ServiceResponse
 	// Check if service exists
 	if criteria.ServiceCode != "" {
 		searchServiceCriteria := model.SearchCriteria{
@@ -55,7 +55,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		SELECT 
 			a.id, a.tenant_id, a.module, a.business_service, a.status, a.channel, a.application_number,
 			a.workflow_status, a.service_code, a.service_details, a.additional_details, a.address, a.workflow,
-			a.createdby, a.last_modifiedby, a.created_at, a.updated_at,
+			a.createdby, a.last_modifiedby, a.created_at, a.updated_at, a.version,
 			r.id, r.reference_type, r.module, r.tenant_id, r.reference_no, r.active,
 			ap.id, ap.type, ap.user_id, ap.active,
 			ad.id, ad.document_type, ad.file_store_id, ad.document_uid, ad.additional_details,
@@ -100,6 +100,11 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 	if criteria.Status != "" {
 		conditions = append(conditions, fmt.Sprintf("a.status = $%d", argPos))
 		args = append(args, criteria.Status)
+		argPos++
+	}
+	if existingService.Services[0].Version 	> 0 {
+		conditions = append(conditions, fmt.Sprintf("a.version = $%d", argPos))
+		args = append(args, existingService.Services[0].Version)
 		argPos++
 	}
 
@@ -153,7 +158,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 			serviceDetailsJSON, additionalDetailsJSON, addressJSON, workflowJSON                               []byte
 			createdBy, lastModifiedBy                                                                          uuid.UUID
 			createdAt, updatedAt                                                                               time.Time
-
+            version                                                                                           int
 			refId, refType, refModule, refTenantId, refNo sql.NullString
 			refActive                                     sql.NullBool
 
@@ -166,12 +171,13 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 			docAdditionalDetailsJSON        []byte
 			docCreatedBy, docLastModifiedBy uuid.UUID
 			docCreatedAt, docUpdatedAt      sql.NullTime
+		
 		)
 
 		err := rows.Scan(
 			&appId, &tenantId, &module, &businessService, &status, &channel, &applicationNumber,
 			&workflowStatus, &serviceCode, &serviceDetailsJSON, &additionalDetailsJSON, &addressJSON, &workflowJSON,
-			&createdBy, &lastModifiedBy, &createdAt, &updatedAt,
+			&createdBy, &lastModifiedBy, &createdAt, &updatedAt,&version,
 			&refId, &refType, &refModule, &refTenantId, &refNo, &refActive,
 			&applicantId, &applicantType, &applicantUserId, &applicantActive,
 			&docId, &docType, &fileStoreId, &docUid, &docAdditionalDetailsJSON,
@@ -199,6 +205,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 					CreatedTime:      createdAt.UnixMilli(),
 					LastModifiedTime: updatedAt.UnixMilli(),
 				},
+				Version:          version,
 			}
 
 			_ = json.Unmarshal(serviceDetailsJSON, &app.ServiceDetails)
@@ -319,6 +326,7 @@ func (r *ApplicationRepository) CreateUsingKafka(ctx context.Context, req model.
 		CreatedTime:      nowMillis,
 		LastModifiedTime: nowMillis,
 	}
+	req.Application.Version = 1
 
 	// Enrich documents with ID and audit info
 	for i := range req.Application.Documents {
@@ -391,7 +399,7 @@ func (r *ApplicationRepository) UpdateUsingKafka(ctx context.Context, req model.
 	// Enrich application with audit info
 	req.Application.AuditDetails.LastModifiedBy = modifiedBy
 	req.Application.AuditDetails.LastModifiedTime = nowMillis
-
+    req.Application.Version = existingService.Application[0].Version + 1
 	// Enrich documents with ID and audit info
 	for i := range req.Application.Documents {
 		if req.Application.Documents[i].ID == "" {

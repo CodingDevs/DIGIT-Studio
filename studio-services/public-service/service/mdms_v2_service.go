@@ -14,11 +14,7 @@ import (
 	"time"
 )
 
-const (
-	RoleActionCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLEACTIONS.roleactions"
-	ActionTestCreatePath = "egov-mdms-service/v2/_create/ACCESSCONTROL-ACTIONS-TEST.actions-test"
-	DocumentCreatePath   = "egov-mdms-service/v2/_create/DigitStudio.DocumentConfig2"
-)
+
 
 type MDMSV2Service struct {
 	restCallRepo repository.RestCallRepository
@@ -58,7 +54,7 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[stri
 
 func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid string, apps model.ServiceRequest) (map[string]interface{}, error) {
 	var resp map[string]interface{}
-
+    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ROLEACTIONS.roleactions"
 	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
 
@@ -288,6 +284,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 }
 
 func (s *MDMSV2Service) createRoleIfNotExists(tenantId, roleCode string, reqInfo model.RequestInfo) error {
+	log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ROLES.roles"
 	payload := map[string]interface{}{
 		"RequestInfo": reqInfo,
@@ -342,7 +339,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	if err != nil {
 		return nil, err
 	}
-
+    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ACTIONS-TEST.actions-test"
 
 	payload := model.MDMSCreateV2Request{
@@ -406,7 +403,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 func (s *MDMSV2Service) CreateMDMS(tenantId, schemaCode string, data interface{}, requestInfo model.RequestInfo) (map[string]interface{}, error) {
 
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + schemaCode
-
+    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	payload := model.MDMSCreateV2Request{
 		RequestInfo: requestInfo,
 		MDMS: model.Mdms{

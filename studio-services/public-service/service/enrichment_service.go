@@ -355,9 +355,14 @@ func (s *EnrichmentService) EnrichServiceWithIdGen(apps model.ServiceRequest, ty
 	if name == "" || format == "" {
 		return apps, errors.New("id name or format is empty")
 	}
+	s.MDMSV2Service.CreateMDMS(apps.Service.TenantId, "common-masters.IdFormat", map[string]interface{}{
+		"idname": name,
+		"format": format,
+	}, apps.RequestInfo)
 
 	// Count should be at least 1
 	ids, err := s.IdGenService.GetId(apps.RequestInfo, apps.Service.TenantId, name, format, 1)
+	log.Printf("IDGenService returned IDs: %+v, error: %v", ids, err)
 	if err != nil {
 		log.Printf("Error getting ID from IDGenService: %v", err)
 		return apps, fmt.Errorf("error getting ID from IDGenService: %w", err)

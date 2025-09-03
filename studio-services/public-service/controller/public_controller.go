@@ -8,7 +8,7 @@ import (
 	"public-service/model"
 	"public-service/service"
 	"public-service/utils"
-
+	"os"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -74,7 +74,30 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 		http.Error(w, "Failed to fetch checklist: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	res, err := c.service.CreateService(ctx, req, tenantID)
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+		"service": req.Service.BusinessService,
+		"module":  req.Service.Module}
+
+	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(req.Service.ServiceCode, schemaCode, filters, req.RequestInfo)
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
+		return
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: first entry is not a map")
+		return
+	}
+
+	data, ok := firstEntry["data"].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: missing or invalid 'data'")
+		return
+	}
+	res, err := c.service.CreateService(ctx, req, tenantID, data)
 	if err != nil {
 		log.Printf("CreateService error: %v", err)
 		http.Error(w, "Failed to create service: "+err.Error(), http.StatusInternalServerError)
@@ -108,9 +131,33 @@ func (c *PublicController) UpdateServiceHandler(w http.ResponseWriter, r *http.R
 	if serviceRequest.Service.ServiceCode == "" {
 		serviceRequest.Service.ServiceCode = serviceCode
 	}
+	schemaCode := os.Getenv("SERVICE_MODULE_NAME") + "." + os.Getenv("SERVICE_MASTER_NAME")
+	filters := map[string]string{
+		"service": serviceRequest.Service.BusinessService,
+		"module":  serviceRequest.Service.Module}
+
+	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(serviceRequest.Service.ServiceCode, schemaCode, filters, serviceRequest.RequestInfo)
+	mdmsList, ok := mdmsData["mdms"].([]interface{})
+	if !ok || len(mdmsList) == 0 {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
+		return
+	}
+
+	firstEntry, ok := mdmsList[0].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: first entry is not a map")
+		return
+	}
+
+	data, ok := firstEntry["data"].(map[string]interface{})
+	if !ok {
+		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: missing or invalid 'data'")
+		return
+	}
+	
 
 	ctx := context.Background()
-	res, err := c.service.UpdateService(ctx, serviceRequest, serviceCode)
+	res, err := c.service.UpdateService(ctx, serviceRequest, serviceCode, data)
 	if err != nil {
 		log.Printf("Update Service error: %v", err)
 		http.Error(w, "Failed to update service: "+err.Error(), http.StatusInternalServerError)

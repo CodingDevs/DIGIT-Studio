@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"log"
+	"public-service/config"
+	producer "public-service/kafka/producer"
 	"public-service/model"
 	"strings"
 	"time"
-	"public-service/config"
-	producer "public-service/kafka/producer"
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type PublicRepository struct {
@@ -24,7 +24,7 @@ type PublicRepository struct {
 func NewPublicRepository(db *sql.DB, kafkaProducer *producer.PublicServiceProducer) *PublicRepository {
 	return &PublicRepository{db: db,kafkaProducer: kafkaProducer}
 }
-func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRequest, tenantId string) (model.ServiceResponse, error) {
+func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRequest, tenantId string, mdmsConfigData map[string]interface{}) (model.ServiceResponse, error) {
 	searchCriteria := model.SearchCriteria{
 		TenantId:        tenantId,
 		Module:          req.Service.Module,
@@ -56,6 +56,7 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 		CreatedTime:      now.UnixMilli(),
 		LastModifiedTime: now.UnixMilli(),
 	}
+	req.Service.Version = 1
 
 	// Marshal request into JSON
 	kafkaPayload, err := json.Marshal(req)
@@ -66,6 +67,41 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 	// Publish to Kafka topic
 	if r.kafkaProducer != nil {
 		err = r.kafkaProducer.Push(ctx, config.GetEnv("SAVE_PUBLIC_SERVICE"), kafkaPayload)
+		if err != nil {
+			log.Printf("failed to push kafka message: %v", err)
+			return model.ServiceResponse{}, err
+		}
+	} else {
+		return model.ServiceResponse{}, errors.New("Kafka producer is not initialized")
+	}
+	type ServiceVersionConfigMapping struct {
+		ID           uuid.UUID              `json:"id"`
+		ServiceCode  string                 `json:"serviceCode"`
+		Version      int                    `json:"version"`
+		Config       map[string]interface{} `json:"config"`
+		AuditDetails model.AuditDetails     `json:"auditDetails"`
+   }
+	
+	ServiceVersionConfigMappingData := ServiceVersionConfigMapping{
+		ID:              uuid.New(),
+		ServiceCode:     req.Service.ServiceCode,
+		Version:         req.Service.Version,
+		Config:          mdmsConfigData,
+		AuditDetails:    model.AuditDetails{
+			CreatedBy:        createdBy,
+			LastModifiedBy:   createdBy,
+			CreatedTime:      now.UnixMilli(),
+			LastModifiedTime: now.UnixMilli(),
+		},
+	}
+	
+    kafkaPayload2, err := json.Marshal(ServiceVersionConfigMappingData)
+	if err != nil {
+		return model.ServiceResponse{}, fmt.Errorf("failed to  marshal ServiceVersionConfigMapping request for  for Kafka: %w", err)
+	}
+
+	if r.kafkaProducer != nil {
+		err = r.kafkaProducer.Push(ctx, config.GetEnv("SAVE_SERVICE_VERSION_CONFIG_MAPPING"), kafkaPayload2)
 		if err != nil {
 			log.Printf("failed to push kafka message: %v", err)
 			return model.ServiceResponse{}, err
@@ -90,6 +126,7 @@ func (r PublicRepository) CreateService(ctx context.Context, req model.ServiceRe
 				Status:            req.Service.Status,
 				ServiceCode:       req.Service.ServiceCode,
 				AdditionalDetails: req.Service.AdditionalDetails,
+				Version:           req.Service.Version,
 				AuditDetails: model.AuditDetails{
 					CreatedBy:        createdBy,
 					LastModifiedBy:   createdBy,
@@ -111,7 +148,7 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 	queryBuilder.WriteString(`
 		SELECT 
 			id, tenant_id, module, business_service, status, service_code, additional_details,
-			createdby, last_modifiedby, created_at, updated_at
+			createdby, last_modifiedby, created_at, updated_at, version
 		FROM service
 	`)
 
@@ -170,6 +207,7 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 			additionalDetailsJSON                                  []byte
 			createdBy, lastModifiedBy                              uuid.UUID
 			createdAt, updatedAt                                   time.Time
+			version                                                int
 		)
 
 		err := rows.Scan(
@@ -184,6 +222,7 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 			&lastModifiedBy,
 			&createdAt,
 			&updatedAt,
+			&version,
 		)
 		if err != nil {
 			return model.ServiceResponse{}, err
@@ -202,6 +241,7 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 				CreatedTime:      createdAt.UnixMilli(),
 				LastModifiedTime: updatedAt.UnixMilli(),
 			},
+			Version: version,
 		}
 
 		// Unmarshal JSON fields
@@ -224,7 +264,7 @@ func (r PublicRepository) SearchService(ctx context.Context, criteria model.Sear
 }
 
 
-func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceRequest, serviceCode string) (model.ServiceResponse, error) {
+func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceRequest, serviceCode string, mdmsConfigData map[string]interface{}) (model.ServiceResponse, error) {
 	searchCriteria := model.SearchCriteria{
 		TenantId:    req.Service.TenantId,
 		ServiceCode: serviceCode,
@@ -250,6 +290,8 @@ func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceR
 		LastModifiedBy:   modifiedBy,
 		LastModifiedTime: nowMillis,
 	}
+	
+	req.Service.Version = existingService.Services[0].Version + 1
 	// Marshal request into JSON
 	kafkaPayload, err := json.Marshal(req)
 	if err != nil {
@@ -260,6 +302,40 @@ func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceR
 	if r.kafkaProducer != nil {
 		log.Println("request", string(kafkaPayload))
 		err = r.kafkaProducer.Push(ctx, config.GetEnv("UPDATE_PUBLIC_SERVICE"), kafkaPayload)
+		if err != nil {
+			log.Printf("failed to push kafka message: %v", err)
+			return model.ServiceResponse{}, err
+		}
+	} else {
+		return model.ServiceResponse{}, errors.New("Kafka producer is not initialized")
+	}
+	type ServiceVersionConfigMapping struct {
+		ID           uuid.UUID              `json:"id"`
+		ServiceCode  string                 `json:"serviceCode"`
+		Version      int                    `json:"version"`
+		Config       map[string]interface{} `json:"config"`
+		AuditDetails model.AuditDetails     `json:"auditDetails"`
+   }
+	now := time.Now()
+	ServiceVersionConfigMappingData := ServiceVersionConfigMapping{
+		ID:              uuid.New(),
+		ServiceCode:     req.Service.ServiceCode,
+		Version:         req.Service.Version,
+		Config:          mdmsConfigData,
+		AuditDetails:    model.AuditDetails{
+	
+			CreatedTime:      now.UnixMilli(),
+			LastModifiedTime: now.UnixMilli(),
+		},
+	}
+	
+    kafkaPayload2, err := json.Marshal(ServiceVersionConfigMappingData)
+	if err != nil {
+		return model.ServiceResponse{}, fmt.Errorf("failed to  marshal ServiceVersionConfigMapping request for  for Kafka: %w", err)
+	}
+
+	if r.kafkaProducer != nil {
+		err = r.kafkaProducer.Push(ctx, config.GetEnv("SAVE_SERVICE_VERSION_CONFIG_MAPPING"), kafkaPayload2)
 		if err != nil {
 			log.Printf("failed to push kafka message: %v", err)
 			return model.ServiceResponse{}, err
