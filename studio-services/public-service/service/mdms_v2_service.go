@@ -198,6 +198,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 
 	// Function to create role action mapping
 	createRoleActionMapping := func(roleCode, actionId, mappingType string) error {
+		actionIDInt,_:= strconv.Atoi(actionId)
 		payload := model.MDMSCreateV2Request{
 			RequestInfo: apps.RequestInfo,
 			MDMS: model.Mdms{
@@ -205,7 +206,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 				SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
 				Data: model.MdmsRoleActionData{
 					RoleCode:   roleCode,
-					ActionID:   actionId,
+					ActionID:   actionIDInt,
 					ActionCode: "",
 					TenantID:   tenantId,
 				},

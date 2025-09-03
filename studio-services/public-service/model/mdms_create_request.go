@@ -41,7 +41,7 @@ type MdmsDocumentData struct{
 // Schema Type: ACCESSCONTROL-ROLEACTIONS.roleactions
 type MdmsRoleActionData struct {
 	RoleCode   string `json:"rolecode"`
-	ActionID   string `json:"actionid"`
+	ActionID   int    `json:"actionid"`
 	ActionCode string `json:"actioncode"`
 	TenantID   string `json:"tenantId"`
 }
