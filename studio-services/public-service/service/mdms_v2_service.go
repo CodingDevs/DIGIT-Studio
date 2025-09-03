@@ -59,7 +59,7 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[stri
 func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid string, apps model.ServiceRequest) (map[string]interface{}, error) {
 	var resp map[string]interface{}
 
-	url := os.Getenv("MDMS_SERVICE_HOST") + RoleActionCreatePath
+	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ROLEACTIONS.roleactions"
 	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
 
 	filters := map[string]string{
@@ -131,12 +131,12 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 	// Add new URLs here as needed for each role type
 	roleUrlMappings := map[string][]string{
 		"creator": {
-			"/egov-mdms-service/v2/_search",
+			"/" + os.Getenv("MDMS_V2_SEARCH_ENDPOINT"),
 			"/public-service/v1/service",
 			"/egov-workflow-v2/egov-wf/process/_search",
 			"/egov-workflow-v2/egov-wf/businessservice/_search",
 			"/health-service-request/service/definition/v1/_search",
-			"/egov-mdms-service/v1/_search",
+			"/" + os.Getenv("MDMS_SEARCH_ENDPOINT"),
 			"/health-service-request/service/v1/_search",
 			"/health-service-request/service/v1/_create",
 			"/inbox/v2/_search",
@@ -145,12 +145,12 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			// Add more URLs for creator roles here
 		},
 		"editor": {
-			"/egov-mdms-service/v2/_search",
+			"/" + os.Getenv("MDMS_V2_SEARCH_ENDPOINT"),
 			"/public-service/v1/service",
 			"/egov-workflow-v2/egov-wf/process/_search",
 			"/egov-workflow-v2/egov-wf/businessservice/_search",
 			"/health-service-request/service/definition/v1/_search",
-			"/egov-mdms-service/v1/_search",
+			"/" + os.Getenv("MDMS_SEARCH_ENDPOINT"),
 			"/health-service-request/service/v1/_search",
 			"/health-service-request/service/v1/_create", 
 			"/health-service-request/service/v1/_update", 
@@ -160,12 +160,12 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			// Add URLs specific to editor roles here
 		},
 		"viewer": {
-			"/egov-mdms-service/v2/_search",
+			"/" + os.Getenv("MDMS_V2_SEARCH_ENDPOINT"),
 			"/public-service/v1/service",
 			"/egov-workflow-v2/egov-wf/process/_search",
 			"/egov-workflow-v2/egov-wf/businessservice/_search",
 			"/health-service-request/service/definition/v1/_search",
-			"/egov-mdms-service/v1/_search",
+			"/" + os.Getenv("MDMS_SEARCH_ENDPOINT"),
 			"/inbox/v2/_search",
 			
 			// Add more URLs for viewer roles here
@@ -288,7 +288,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 }
 
 func (s *MDMSV2Service) createRoleIfNotExists(tenantId, roleCode string, reqInfo model.RequestInfo) error {
-	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + "egov-mdms-service/v2/_create/ACCESSCONTROL-ROLES.roles"
+	roleCreateURL := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ROLES.roles"
 	payload := map[string]interface{}{
 		"RequestInfo": reqInfo,
 		"Mdms": map[string]interface{}{
@@ -343,7 +343,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 		return nil, err
 	}
 
-	url := os.Getenv("MDMS_SERVICE_HOST") + ActionTestCreatePath
+	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ACTIONS-TEST.actions-test"
 
 	payload := model.MDMSCreateV2Request{
 		RequestInfo: apps.RequestInfo,
