@@ -211,7 +211,7 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 	set[""] = struct{}{}
 	set[""] = struct{}{}
 	set[""] = struct{}{}
-	field := []string{"NAME", "MOBILENUMBER", "GENDER", "EMAILID"}
+	field := []string{"NAME", "MOBILENUMBER", "GENDER", "EMAILID","EMAIL"}
 	for key := range field {
 		message := model.Message{
 			Code:    module + "_" + field[key],

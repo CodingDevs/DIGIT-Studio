@@ -32,6 +32,8 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 	var conditions []string
 	argPos := 1
 	var existingService model.ServiceResponse
+	log.Printf("Search criteria ServiceCode: %+v", criteria.ServiceCode)
+	var serviceExists bool = false 
 	// Check if service exists
 	if criteria.ServiceCode != "" {
 		searchServiceCriteria := model.SearchCriteria{
@@ -47,6 +49,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		if len(existingService.Services) == 0 {
 			return model.SearchResponse{}, errors.New("Service with given serviceCode not present in the application. Please create the service.")
 		}
+		serviceExists = true
 	}	
 	
 	
@@ -102,7 +105,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		args = append(args, criteria.Status)
 		argPos++
 	}
-	if existingService.Services[0].Version 	> 0 {
+	if serviceExists && len(existingService.Services) > 0 && existingService.Services[0].Version > 0 {
 		conditions = append(conditions, fmt.Sprintf("a.version = $%d", argPos))
 		args = append(args, existingService.Services[0].Version)
 		argPos++
