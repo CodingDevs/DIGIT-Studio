@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"log"
 	"public-service/config"
 	producer "public-service/kafka/producer"
 	"public-service/model"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type ApplicationRepository struct {
@@ -33,7 +34,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 	argPos := 1
 	var existingService model.ServiceResponse
 	log.Printf("Search criteria ServiceCode: %+v", criteria.ServiceCode)
-	var serviceExists bool = false 
+	var serviceExists bool = false
 	// Check if service exists
 	if criteria.ServiceCode != "" {
 		searchServiceCriteria := model.SearchCriteria{
@@ -41,19 +42,21 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 			ServiceCode: criteria.ServiceCode,
 		}
 
-		existingService, err := r.publicRepo.SearchService(ctx, searchServiceCriteria)
+		existingServiceResult, err := r.publicRepo.SearchService(ctx, searchServiceCriteria)
+		logJSON("Existing Service in SearchWithIndividual: %+v", existingService)
 		if err != nil {
 			return model.SearchResponse{}, err
 		}
 
-		if len(existingService.Services) == 0 {
+		if len(existingServiceResult.Services) == 0 {
 			return model.SearchResponse{}, errors.New("Service with given serviceCode not present in the application. Please create the service.")
 		}
+		existingService = existingServiceResult
 		serviceExists = true
-	}	
-	
-	
+	}
 
+	log.Println("Service exists: ", serviceExists)
+	logJSON("Existing Service: %+v", existingService)
 	queryBuilder.WriteString(`
 		SELECT 
 			a.id, a.tenant_id, a.module, a.business_service, a.status, a.channel, a.application_number,
@@ -111,7 +114,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 		argPos++
 	}
 
-	//TODO: need to see this process 
+	//TODO: need to see this process
 	if criteria.UserId != "" {
 		conditions = append(conditions, fmt.Sprintf("ap.user_id = $%d", argPos))
 		args = append(args, criteria.UserId)
@@ -161,9 +164,9 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 			serviceDetailsJSON, additionalDetailsJSON, addressJSON, workflowJSON                               []byte
 			createdBy, lastModifiedBy                                                                          uuid.UUID
 			createdAt, updatedAt                                                                               time.Time
-            version                                                                                           int
-			refId, refType, refModule, refTenantId, refNo sql.NullString
-			refActive                                     sql.NullBool
+			version                                                                                            int
+			refId, refType, refModule, refTenantId, refNo                                                      sql.NullString
+			refActive                                                                                          sql.NullBool
 
 			applicantId, applicantType, applicantUserId sql.NullString
 			applicantActive                             sql.NullBool
@@ -174,13 +177,12 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 			docAdditionalDetailsJSON        []byte
 			docCreatedBy, docLastModifiedBy uuid.UUID
 			docCreatedAt, docUpdatedAt      sql.NullTime
-		
 		)
 
 		err := rows.Scan(
 			&appId, &tenantId, &module, &businessService, &status, &channel, &applicationNumber,
 			&workflowStatus, &serviceCode, &serviceDetailsJSON, &additionalDetailsJSON, &addressJSON, &workflowJSON,
-			&createdBy, &lastModifiedBy, &createdAt, &updatedAt,&version,
+			&createdBy, &lastModifiedBy, &createdAt, &updatedAt, &version,
 			&refId, &refType, &refModule, &refTenantId, &refNo, &refActive,
 			&applicantId, &applicantType, &applicantUserId, &applicantActive,
 			&docId, &docType, &fileStoreId, &docUid, &docAdditionalDetailsJSON,
@@ -208,7 +210,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 					CreatedTime:      createdAt.UnixMilli(),
 					LastModifiedTime: updatedAt.UnixMilli(),
 				},
-				Version:          version,
+				Version: version,
 			}
 
 			_ = json.Unmarshal(serviceDetailsJSON, &app.ServiceDetails)
@@ -238,7 +240,7 @@ func (r *ApplicationRepository) SearchWithIndividual(ctx context.Context, criter
 				UserId: applicantUserId.String,
 				Active: applicantActive.Bool,
 			}
-		
+
 			// Prevent duplicate applicants
 			alreadyExists := false
 			for _, existing := range app.Applicants {
@@ -402,7 +404,7 @@ func (r *ApplicationRepository) UpdateUsingKafka(ctx context.Context, req model.
 	// Enrich application with audit info
 	req.Application.AuditDetails.LastModifiedBy = modifiedBy
 	req.Application.AuditDetails.LastModifiedTime = nowMillis
-    req.Application.Version = existingService.Application[0].Version + 1
+	req.Application.Version = existingService.Application[0].Version + 1
 	// Enrich documents with ID and audit info
 	for i := range req.Application.Documents {
 		if req.Application.Documents[i].ID == "" {
@@ -465,3 +467,11 @@ func (r *ApplicationRepository) DeleteMDMSSchema(ctx context.Context, schemaCode
 	return nil
 }
 
+func logJSON(label string, data interface{}) {
+	jsonBytes, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		log.Printf("%s (marshal error): %v", label, err)
+		return
+	}
+	log.Printf("%s\n%s", label, string(jsonBytes))
+}
