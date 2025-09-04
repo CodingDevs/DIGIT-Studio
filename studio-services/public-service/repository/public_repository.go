@@ -295,7 +295,8 @@ func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceR
 	
 	req.Service.Version = existingService.Services[0].Version + 1
 	// Marshal request into JSON
-	r.CompareServiceConfigs(ctx, serviceCode, req.Service.Version, mdmsConfigData)
+	response,_ := r.CompareServiceConfigs(ctx, serviceCode, req.Service.Version, mdmsConfigData)
+	logJSON("Config Comparison Result: ", response)
 	kafkaPayload, err := json.Marshal(req)
 	if err != nil {
 		return model.ServiceResponse{}, fmt.Errorf("failed to marshal application request for Kafka: %w", err)
