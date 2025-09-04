@@ -2150,101 +2150,126 @@ const Workflow = () => {
     //changes for publish
     const handlePublishServiceConfig = async () => {
         try {
-            setIsPublishing(true);
-            
-            // Parse the service configuration
-            let formatserviceConfigData;
-            try {
-                formatserviceConfigData = JSON.parse(editableServiceConfig);
-            } catch (error) {
-                setShowToast({
-                    type: "error",
-                    label: "INVALID_JSON_FORMAT"
-                });
-                return;
-            }
-
-            // Get current user info and tenant ID
-            const tenantId = Digit.ULBService.getCurrentTenantId();
-            
-            // STEP 1: Save UI workflow data to Studio.ServiceConfigurationDrafts (same as save button)
-            const fullServiceConfig = serviceConfigData;
-            
-            try {
-                if (existingServiceConfigId) {
-                    // Update existing service config draft
-                    await updateServiceConfig.mutateAsync({
-                        serviceConfigData: fullServiceConfig,
-                        existingConfig: existingServiceConfig
-                    });
-                } else {
-                    // Create new service config draft
-                    await saveServiceConfig.mutateAsync(fullServiceConfig);
-                }
-                console.log("Successfully saved UI workflow data to drafts");
-            } catch (draftError) {
-                console.error("Error saving to drafts:", draftError);
-                setShowToast({
-                    type: "error",
-                    label: "DRAFT_SAVE_FAILED"
-                });
-                return;
-            }
-            
-            // STEP 2: Publish to Studio.ServiceConfiguration
-            const mdmsPayload = {
-                Mdms: {
-                    tenantId: tenantId,
-                    schemaCode: "Studio.ServiceConfiguration",
-                    data: formatserviceConfigData
-                }
-            };
-
-            // Make MDMS create call using the same pattern as the existing API calls
-            const mdmsContextPath = window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") || "egov-mdms-service";
-            const mdmsResponse = await Digit.CustomService.getResponse({
-                url: `/${mdmsContextPath}/v2/_create/Studio.ServiceConfiguration`,
-                body: mdmsPayload
-            });
-
-            if (mdmsResponse) {
-                // STEP 3: Make service API call using mutation hook
-                await serviceCreationMutation.mutateAsync({
-                    body: {
-                        service: {
-                            tenantId: tenantId,
-                            businessService: formatserviceConfigData.service,
-                            module: formatserviceConfigData.module,
-                            status: "ACTIVE",
-                            additionalDetails: {
-                                note: "initial creation"
-                            }
-                        }
-                    }
-                });
-
-                setShowToast({
-                    type: "success",
-                    label: "SERVICE_CONFIG_PUBLISHED_SUCCESSFULLY"
-                });
-                setTimeout(() => {
-                    history.push(`/${window.contextPath}/employee/servicedesigner/LandingPage`);
-                }, 3000);
-            } else {
-                throw new Error("MDMS API call failed");
-            }
-            
-            setShowServiceConfigPopup(false);
-        } catch (error) {
-            console.error("Error publishing service configuration:", error);
+          setIsPublishing(true);
+      
+          // STEP 0: Parse the service configuration
+          let formatserviceConfigData;
+          try {
+            formatserviceConfigData = JSON.parse(editableServiceConfig);
+          } catch (error) {
             setShowToast({
+              type: "error",
+              label: "INVALID_JSON_FORMAT"
+            });
+            return;
+          }
+      
+          // STEP 1: Save UI workflow data to Studio.ServiceConfigurationDrafts (same as save button)
+          const tenantId = Digit.ULBService.getCurrentTenantId();
+          const fullServiceConfig = serviceConfigData;
+      
+          try {
+            if (existingServiceConfigId) {
+              await updateServiceConfig.mutateAsync({
+                serviceConfigData: fullServiceConfig,
+                existingConfig: existingServiceConfig
+              });
+            } else {
+              await saveServiceConfig.mutateAsync(fullServiceConfig);
+            }
+          } catch (draftError) {
+            console.error("Error saving to drafts:", draftError);
+            setShowToast({
+              type: "error",
+              label: "DRAFT_SAVE_FAILED"
+            });
+            return;
+          }
+      
+          // STEP 2: Publish to Studio.ServiceConfiguration (MDMS)
+          const mdmsPayload = {
+            Mdms: {
+              tenantId: tenantId,
+              schemaCode: "Studio.ServiceConfiguration",
+              data: formatserviceConfigData
+            }
+          };
+      
+          const mdmsContextPath =
+            window?.globalConfigs?.getConfig("MDMS_CONTEXT_PATH") ||
+            "egov-mdms-service";
+      
+          let allowServiceCreation = false;
+      
+          try {
+            const mdmsResponse = await Digit.CustomService.getResponse({
+              url: `/${mdmsContextPath}/v2/_create/Studio.ServiceConfiguration`,
+              body: mdmsPayload
+            });
+            if (mdmsResponse?.response) {
+              allowServiceCreation = true;
+            }
+          } catch (error) {
+            const errorCode = error?.response?.data?.Errors?.[0]?.code;
+            if (errorCode === "DUPLICATE_RECORD") {
+              // silently allow service creation
+              allowServiceCreation = true;
+            } else {
+              setShowToast({
                 type: "error",
                 label: "SERVICE_CONFIG_PUBLISH_FAILED"
-            });
+              });
+              return; // stop here for non-duplicate errors
+            }
+          }
+      
+          // STEP 3: Make service API call using mutation hook
+          if (allowServiceCreation) {
+            try {
+              await serviceCreationMutation.mutateAsync({
+                body: {
+                  service: {
+                    tenantId: tenantId,
+                    businessService: formatserviceConfigData.service,
+                    module: formatserviceConfigData.module,
+                    status: "ACTIVE",
+                    additionalDetails: {
+                      note: "initial creation"
+                    }
+                  }
+                }
+              });
+      
+              setShowToast({
+                type: "success",
+                label: "SERVICE_CONFIG_PUBLISHED_SUCCESSFULLY"
+              });
+              setTimeout(() => {
+                history.push(
+                  `/${window.contextPath}/employee/servicedesigner/LandingPage`
+                );
+              }, 3000);
+            } catch (serviceError) {
+              console.error("Service creation failed:", serviceError);
+              setShowToast({
+                type: "error",
+                label: "SERVICE_CREATION_FAILED"
+              });
+            }
+          }
+      
+          setShowServiceConfigPopup(false);
+        } catch (error) {
+          console.error("Error publishing service configuration:", error);
+          setShowToast({
+            type: "error",
+            label: "SERVICE_CONFIG_PUBLISH_FAILED"
+          });
         } finally {
-            setIsPublishing(false);
+          setIsPublishing(false);
         }
-    };
+      };
+      
 
     const onLoadSample =() =>{
         setLoadSamplePopup(true);
@@ -2324,6 +2349,7 @@ const Workflow = () => {
             />
             { selectedElement && <Card className="Workflow-card">
                 <SidePanel
+                    key={JSON.stringify(stateData)}
                     type="static"
                     position="left"
                     isDraggable={true}
