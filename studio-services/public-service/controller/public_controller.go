@@ -79,7 +79,7 @@ func (c *PublicController) CreateServiceHandler(w http.ResponseWriter, r *http.R
 		"service": req.Service.BusinessService,
 		"module":  req.Service.Module}
 
-	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(req.Service.ServiceCode, schemaCode, filters, req.RequestInfo)
+	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(req.Service.TenantId, schemaCode, filters, req.RequestInfo)
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
 	if !ok || len(mdmsList) == 0 {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
@@ -136,7 +136,7 @@ func (c *PublicController) UpdateServiceHandler(w http.ResponseWriter, r *http.R
 		"service": serviceRequest.Service.BusinessService,
 		"module":  serviceRequest.Service.Module}
 
-	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(serviceRequest.Service.ServiceCode, schemaCode, filters, serviceRequest.RequestInfo)
+	mdmsData, err := c.enrichmentService.MDMSV2Service.SearchMDMS(serviceRequest.Service.TenantId, schemaCode, filters, serviceRequest.RequestInfo)
 	mdmsList, ok := mdmsData["mdms"].([]interface{})
 	if !ok || len(mdmsList) == 0 {
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "MDMS data missing or invalid")
@@ -154,7 +154,7 @@ func (c *PublicController) UpdateServiceHandler(w http.ResponseWriter, r *http.R
 		utils.WriteErrorResponse(w, http.StatusInternalServerError, "Invalid MDMS format: missing or invalid 'data'")
 		return
 	}
-	
+
 
 	ctx := context.Background()
 	res, err := c.service.UpdateService(ctx, serviceRequest, serviceCode, data)

@@ -10,8 +10,10 @@ import (
 	"public-service/config"
 	producer "public-service/kafka/producer"
 	"public-service/model"
+	"reflect"
 	"strings"
 	"time"
+
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -293,6 +295,7 @@ func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceR
 	
 	req.Service.Version = existingService.Services[0].Version + 1
 	// Marshal request into JSON
+	r.CompareServiceConfigs(ctx, serviceCode, req.Service.Version, mdmsConfigData)
 	kafkaPayload, err := json.Marshal(req)
 	if err != nil {
 		return model.ServiceResponse{}, fmt.Errorf("failed to marshal application request for Kafka: %w", err)
@@ -350,4 +353,229 @@ func (r *PublicRepository) UpdateService(ctx context.Context, req model.ServiceR
 		},
 		Services: []model.Service{req.Service},
 	}, nil
+}
+
+func (r *PublicRepository) GetServiceVersionConfig(ctx context.Context, serviceCode string, version int) (map[string]interface{}, error) {
+	// Calculate the previous version
+	previousVersion := version - 1
+	
+	// If previous version is less than 1, return empty config
+	if previousVersion < 1 {
+		return map[string]interface{}{}, nil
+	}
+
+	query := `
+		SELECT config 
+		FROM service_version_config_mapping 
+		WHERE service_code = $1 AND version = $2
+	`
+	
+	var configJSON []byte
+	err := r.db.QueryRowContext(ctx, query, serviceCode, previousVersion).Scan(&configJSON)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No config found for the previous version, return empty map
+			return map[string]interface{}{}, nil
+		}
+		return nil, fmt.Errorf("failed to get service version config: %w", err)
+	}
+
+	// Parse JSONB to map
+	var config map[string]interface{}
+	if len(configJSON) > 0 {
+		err = json.Unmarshal(configJSON, &config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal config JSON: %w", err)
+		}
+	}
+
+	if config == nil {
+		config = map[string]interface{}{}
+	}
+
+	return config, nil
+}
+
+// Add this method to the PublicRepository struct
+func (r *PublicRepository) CompareServiceConfigs(ctx context.Context, serviceCode string, version int, currentConfig map[string]interface{}) (map[string]interface{}, error) {
+	// Get previous version config
+	previousConfig, err := r.GetServiceVersionConfig(ctx, serviceCode, version)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous version config: %w", err)
+	}
+
+	// Compare configurations and identify changes
+	changes := r.identifyConfigChanges(previousConfig, currentConfig, "")
+	
+	return map[string]interface{}{
+		"previousVersion": version - 1,
+		"currentVersion":  version,
+		"changes":         changes,
+		"hasChanges":      len(changes) > 0,
+	}, nil
+}
+
+// Helper method to recursively identify changes between configurations
+func (r *PublicRepository) identifyConfigChanges(previous, current map[string]interface{}, path string) map[string]interface{} {
+	changes := make(map[string]interface{})
+	
+	// Check for modified and added fields
+	for key, currentValue := range current {
+		currentPath := key
+		if path != "" {
+			currentPath = path + "." + key
+		}
+		
+		previousValue, exists := previous[key]
+		
+		if !exists {
+			// New field added
+			changes[currentPath] = map[string]interface{}{
+				"type":     "added",
+				"newValue": currentValue,
+			}
+		} else {
+			// Check if values are different
+			if !r.deepEqual(previousValue, currentValue) {
+				// Handle nested objects
+				if prevMap, isPrevMap := previousValue.(map[string]interface{}); isPrevMap {
+					if currMap, isCurrMap := currentValue.(map[string]interface{}); isCurrMap {
+						nestedChanges := r.identifyConfigChanges(prevMap, currMap, currentPath)
+						for nestedPath, nestedChange := range nestedChanges {
+							changes[nestedPath] = nestedChange
+						}
+						continue
+					}
+				}
+				
+				// Handle arrays/slices
+				if prevArray, isPrevArray := r.toInterfaceSlice(previousValue); isPrevArray {
+					if currArray, isCurrArray := r.toInterfaceSlice(currentValue); isCurrArray {
+						arrayChanges := r.compareArrays(prevArray, currArray, currentPath)
+						for arrayPath, arrayChange := range arrayChanges {
+							changes[arrayPath] = arrayChange
+						}
+						continue
+					}
+				}
+				
+				// Simple value change
+				changes[currentPath] = map[string]interface{}{
+					"type":         "modified",
+					"previousValue": previousValue,
+					"newValue":     currentValue,
+				}
+			}
+		}
+	}
+	
+	// Check for removed fields
+	for key, previousValue := range previous {
+		currentPath := key
+		if path != "" {
+			currentPath = path + "." + key
+		}
+		
+		if _, exists := current[key]; !exists {
+			changes[currentPath] = map[string]interface{}{
+				"type":          "removed",
+				"previousValue": previousValue,
+			}
+		}
+	}
+	
+	return changes
+}
+
+// Helper method to compare arrays/slices
+func (r *PublicRepository) compareArrays(previous, current []interface{}, path string) map[string]interface{} {
+	changes := make(map[string]interface{})
+	
+	// Simple approach: if arrays are different lengths or content, mark as modified
+	if len(previous) != len(current) {
+		changes[path] = map[string]interface{}{
+			"type":         "modified",
+			"previousValue": previous,
+			"newValue":     current,
+			"changeType":   "array_length_changed",
+		}
+		return changes
+	}
+	
+	// Compare each element
+	for i := 0; i < len(current); i++ {
+		elementPath := fmt.Sprintf("%s[%d]", path, i)
+		
+		if !r.deepEqual(previous[i], current[i]) {
+			// Handle nested objects in arrays
+			if prevMap, isPrevMap := previous[i].(map[string]interface{}); isPrevMap {
+				if currMap, isCurrMap := current[i].(map[string]interface{}); isCurrMap {
+					nestedChanges := r.identifyConfigChanges(prevMap, currMap, elementPath)
+					for nestedPath, nestedChange := range nestedChanges {
+						changes[nestedPath] = nestedChange
+					}
+					continue
+				}
+			}
+			
+			changes[elementPath] = map[string]interface{}{
+				"type":         "modified",
+				"previousValue": previous[i],
+				"newValue":     current[i],
+			}
+		}
+	}
+	
+	return changes
+}
+
+// Helper method to convert interface{} to []interface{} if possible
+func (r *PublicRepository) toInterfaceSlice(v interface{}) ([]interface{}, bool) {
+	switch arr := v.(type) {
+	case []interface{}:
+		return arr, true
+	case []map[string]interface{}:
+		result := make([]interface{}, len(arr))
+		for i, item := range arr {
+			result[i] = item
+		}
+		return result, true
+	case []string:
+		result := make([]interface{}, len(arr))
+		for i, item := range arr {
+			result[i] = item
+		}
+		return result, true
+	case []int:
+		result := make([]interface{}, len(arr))
+		for i, item := range arr {
+			result[i] = item
+		}
+		return result, true
+	default:
+		// Try reflection for other slice types
+		val := reflect.ValueOf(v)
+		if val.Kind() == reflect.Slice {
+			result := make([]interface{}, val.Len())
+			for i := 0; i < val.Len(); i++ {
+				result[i] = val.Index(i).Interface()
+			}
+			return result, true
+		}
+		return nil, false
+	}
+}
+
+// Helper method for deep equality comparison
+func (r *PublicRepository) deepEqual(a, b interface{}) bool {
+	// Handle nil cases
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	
+	// Use reflection for deep comparison
+	return reflect.DeepEqual(a, b)
 }
