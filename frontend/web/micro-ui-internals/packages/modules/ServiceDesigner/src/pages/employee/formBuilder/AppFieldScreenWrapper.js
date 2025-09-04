@@ -118,7 +118,7 @@ function AppFieldScreenWrapper() {
                 const customSectionsCount = customSections?.length || 0;
                 
                 // Only show delete button if more than 1 custom section
-                if (customSectionsCount > 1) {
+                if (currentCard?.cards?.length > 1) {
                   return (
                     <button
                       style={{ 
