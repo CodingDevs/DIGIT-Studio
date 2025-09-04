@@ -2349,7 +2349,7 @@ const Workflow = () => {
             />
             { selectedElement && <Card className="Workflow-card">
                 <SidePanel
-                    key={JSON.stringify(stateData)}
+                    key={JSON.stringify({roles:stateData?.roles,sendnotif:stateData?.sendnotif,checklist:stateData?.checklist})} // Force remount when roles or sendnotif change
                     type="static"
                     position="left"
                     isDraggable={true}
