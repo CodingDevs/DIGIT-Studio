@@ -31,7 +31,7 @@ const Workflow = () => {
     const [coords, setCoords] = useState([{ x: 100, y: 300 }]);
     const [showToast, setShowToast] = useState(null);
     const [hasStart, setHasStart] = useState(false);
-    const [hasEnd, setHasEnd] = useState(false);
+    const [endStateCount, setEndStateCount] = useState(0);
     const [connectionStart, setConnectionStart] = useState(null);
     const [connections, setConnections] = useState((localStorage.getItem("connections") !== "undefined" ? JSON.parse(localStorage.getItem("connections")) : []) || []);
     const [connecting, setConnecting] = useState(null);
@@ -836,7 +836,7 @@ const Workflow = () => {
                 type={"end"}
                 State={t("END_STATE")}
                 desc={t("END_STATE_DESC")}
-                disabled={hasEnd}
+                disabled={false}
             />
         ],
         [
@@ -2257,20 +2257,16 @@ const Workflow = () => {
         setConnectionStart(null);
         setConnecting(null);
     }
-
     useEffect(() => {
         const foundStart = canvasElements.some(
             (el) => el.nodetype === "start"
         );
         setHasStart(foundStart);
-        const foundEnd = canvasElements.some(
-            (el) => el.nodetype === "end"
-        );
-        setHasEnd(foundEnd);
+        const foundEnd = canvasElements.filter((el) => el.nodetype === "end").length;
+        setEndStateCount(foundEnd);
         
         // Debug: Log canvas elements and connections
     }, [canvasElements, connections]);
-
     useEffect(() => {
         const handleMouseMove = (e) => {
             if (!connectionStart) return;

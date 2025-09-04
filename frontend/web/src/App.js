@@ -5,6 +5,8 @@ import { UICustomizations } from "./Customisations/UICustomizations";
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
 import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
 import { initServiceDesignerComponents } from "@egovernments/digit-ui-module-service-designer";
+import { initHRMSComponents } from "@egovernments/digit-ui-module-hrms";
+
 window.contextPath = window?.globalConfigs?.getConfig("CONTEXT_PATH");
 
 const enabledModules = [
@@ -17,7 +19,8 @@ const enabledModules = [
   "HCMWORKBENCH",
   "PublicServices",
   "OpenPayment",
-  "ServiceDesigner"
+  "ServiceDesigner",
+  "HRMS"
 
 ];
 
@@ -34,6 +37,7 @@ const initDigitUI = () => {
   initPublicServiceComponents();
   initOpenPaymentComponents();
   initServiceDesignerComponents();
+  initHRMSComponents();
 
 };
 

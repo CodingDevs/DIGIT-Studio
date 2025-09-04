@@ -118,7 +118,7 @@ export const ApplicantFields =  [{
             "regex": "^[6-9]\\d{9}$",
             "message": "Only 9 numbers allowed"
           },
-          "prefix":"91",
+          "prefix":"+253",
           // "populators":{
           //   hideSpan:false
           // },

@@ -1558,6 +1558,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                 backgroundColor: "#fff"
               }}
               onClick={() => {
+                const newSectionIndex = state?.screenData?.[0]?.cards?.length || 0;
                 dispatch({
                   type: "TOGGLE_ADDRESS_DETAILS",
                   payload: {
@@ -1566,6 +1567,7 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                     boundaryData: [],
                   },
                 });
+                setSelectedPreviewSection(newSectionIndex);
                 setShowSectionPopup(false);
               }}
               onMouseEnter={(e) => {
@@ -1607,17 +1609,17 @@ function AppConfigurationWrapper({ screenConfig, localeModule, pageTag, formName
                 border: "1px solid #e9ecef",
                 borderRadius: "8px",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
-                backgroundColor: "#fff"
               }}
               onClick={() => {
+                const newSectionIndex = state?.screenData?.[0]?.cards?.length || 0;
                 dispatch({
                   type: "TOGGLE_APPLICANT_DETAILS",
                   payload: {
                     enabled: true,
                     currentScreen: state?.screenData?.[0],
-                  },
+                  }
                 });
+                setSelectedPreviewSection(newSectionIndex);
                 setShowSectionPopup(false);
               }}
               onMouseEnter={(e) => {

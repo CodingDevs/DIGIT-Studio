@@ -489,7 +489,7 @@ import cloneDeep from "lodash/cloneDeep";
     const moduleData = {}; // Object to store modules and their corresponding business services
   
     // Process each item
-    data.filter((ob) => ob?.status === "ACTIVE").forEach((item) => {
+    data?.filter((ob) => ob?.status === "ACTIVE").forEach((item) => {
       const module = item.module;
   
       // If module is already processed, add the businessService to its list

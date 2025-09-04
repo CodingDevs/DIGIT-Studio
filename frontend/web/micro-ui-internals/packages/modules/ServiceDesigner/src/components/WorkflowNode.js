@@ -25,9 +25,9 @@ const WorkflowNode = ({
   const [showAllRoles, setShowAllRoles] = useState(false);
 
   const iconMap = {
-    START : <CustomSVG.StartStateIcon width={24} height={24}/>,
-    PROCESSING : <CustomSVG.IntermediateStateIcon width={24} height={24}/>,
-    END: <CustomSVG.EndStateIcon width={24} height={24}/>,
+    start : <CustomSVG.StartStateIcon width={24} height={24}/>,
+    intermediate : <CustomSVG.IntermediateStateIcon width={24} height={24}/>,
+    end: <CustomSVG.EndStateIcon width={24} height={24}/>,
   }
 
 
@@ -134,7 +134,7 @@ const WorkflowNode = ({
           <div className="text-section state-desc">
             <h3 className="state-title">
               <div className="state-icon">
-                {iconMap[State] || <CustomSVG.EditIcon />}
+                {iconMap[nodetype] || <CustomSVG.EditIcon />}
               </div>
               {State}
             </h3>

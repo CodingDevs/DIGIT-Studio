@@ -287,7 +287,7 @@ const AppPreview = ({ data = {}, selectedField, onSectionChange, selectedSection
                     options: field?.isMdms ? null : field?.dropDownOptions,
                     optionsKey: field?.isMdms ? "code" : "name",
                     component: getFieldType(field) === "button" || getFieldType(field) === "select" ? renderField(field, t) : null,
-                    prefix: field?.isdCodePrefix || "",
+                    prefix: field?.jsonPath === "ApplicantMobile" ? "+253" : (field?.isdCodePrefix || ""),
                     //hideSpan:true,
                   }}
                   required={field?.["toArray.required"] || false}

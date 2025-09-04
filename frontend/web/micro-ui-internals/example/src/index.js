@@ -14,6 +14,7 @@ import { initUtilitiesComponents } from "@egovernments/digit-ui-module-utilities
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
 import { initServiceDesignerComponents } from "@egovernments/digit-ui-module-service-designer";
 import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
+import { initHRMSComponents } from "@egovernments/digit-ui-module-hrms";
 
 var Digit = window.Digit || {};
 
@@ -28,7 +29,8 @@ const enabledModules = [
   "Sample",
   "PublicServices",
   "OpenPayment",
-  "ServiceDesigner"
+  "ServiceDesigner",
+  "HRMS"
   //added to check fsm
   // "FSM"
 ];
@@ -76,6 +78,7 @@ const initDigitUI = () => {
   initPublicServiceComponents();
   initServiceDesignerComponents();
   initOpenPaymentComponents();
+  initHRMSComponents();
 
   const moduleReducers = (initData) => initData;
 
