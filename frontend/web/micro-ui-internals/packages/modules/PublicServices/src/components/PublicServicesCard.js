@@ -5,6 +5,9 @@ import { useTranslation } from "react-i18next";
 const PublicServicesCard = () => {
  
   const { t } = useTranslation();
+  const user = Digit.UserService.getUser();
+  const userRoles = user?.info?.roles?.map((e) => e.code);
+  const isAccessible = userRoles?.some((role) => role?.includes("STUDIO_ADMIN"))
 
   //To show the card at main page
   const propsForModuleCard = {
@@ -22,7 +25,7 @@ const PublicServicesCard = () => {
   };
 
   //employee module card categorization
-  return <EmployeeModuleCard {...propsForModuleCard} />;
+  return isAccessible ? <EmployeeModuleCard {...propsForModuleCard} /> : null;
 };
 
 export default PublicServicesCard;
