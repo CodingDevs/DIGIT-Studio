@@ -39,7 +39,10 @@ const ViewCheckListCards = ({checkListCodes, applicationId}) => {
             },
             {
                 onSuccess: (res) => {
+                    if(code?.length > 0)
                     setCardItems(res?.ServiceDefinitions);
+                    else
+                    setCardItems([])
                 },
                 onError: () => {
                     console.log("Error occured");
