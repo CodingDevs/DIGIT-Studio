@@ -2206,7 +2206,7 @@ const Workflow = () => {
               url: `/${mdmsContextPath}/v2/_create/Studio.ServiceConfiguration`,
               body: mdmsPayload
             });
-            if (mdmsResponse?.response) {
+            if (mdmsResponse?.mdms) {
               allowServiceCreation = true;
             }
           } catch (error) {
