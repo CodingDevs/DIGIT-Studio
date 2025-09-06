@@ -6,6 +6,8 @@ import { initPublicServiceComponents } from "@egovernments/digit-ui-module-publi
 import { initOpenPaymentComponents } from "@egovernments/digit-ui-module-open-payment";
 import { initServiceDesignerComponents } from "@egovernments/digit-ui-module-service-designer";
 import { initHRMSComponents } from "@egovernments/digit-ui-module-hrms";
+import { initWorkbenchComponents } from "@egovernments/digit-ui-module-workbench";
+
 
 window.contextPath = window?.globalConfigs?.getConfig("CONTEXT_PATH");
 
@@ -38,6 +40,7 @@ const initDigitUI = () => {
   initOpenPaymentComponents();
   initServiceDesignerComponents();
   initHRMSComponents();
+  initWorkbenchComponents();
 
 };
 

@@ -10,6 +10,7 @@ import "@egovernments/digit-ui-sample-css/example/index.css";
 import { pgrCustomizations } from "./pgr";
 import { UICustomizations } from "./UICustomizations";
 import { initUtilitiesComponents } from "@egovernments/digit-ui-module-utilities";
+import { initWorkbenchComponents } from "@egovernments/digit-ui-module-workbench";
 //import {initSampleComponents} from "@egovernments/digit-ui-module-sample";
 import { initPublicServiceComponents } from "@egovernments/digit-ui-module-public-services";
 import { initServiceDesignerComponents } from "@egovernments/digit-ui-module-service-designer";
@@ -79,6 +80,7 @@ const initDigitUI = () => {
   initServiceDesignerComponents();
   initOpenPaymentComponents();
   initHRMSComponents();
+  initWorkbenchComponents();
 
   const moduleReducers = (initData) => initData;
 
