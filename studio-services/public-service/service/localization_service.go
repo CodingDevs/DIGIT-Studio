@@ -724,15 +724,18 @@ func (l LocalizationService) ChecklistLocalization(data map[string]interface{}, 
 		messages = append(messages, checklistNameMessage)
 
 		// Create localization for checklist description if it exists
-		if description, hasDesc := checklistData["description"]; hasDesc {
-			descriptionCode := module + "." + state + "." + checklistName + ".description"
-			descriptionMessage := model.Message{
-				Code:    descriptionCode,
-				Message: description.(string),
-				Locale:  locale,
-				Module:  localizationModule,
+			if description, hasDesc := checklistData["description"]; hasDesc {
+			descStr := description.(string)
+			if strings.TrimSpace(descStr) != "" {
+				descriptionCode := module + "." + state + "." + checklistName + ".description"
+				descriptionMessage := model.Message{
+					Code:    descriptionCode,
+					Message: descStr,
+					Locale:  locale,
+					Module:  localizationModule,
+				}
+				messages = append(messages, descriptionMessage)
 			}
-			messages = append(messages, descriptionMessage)
 		}
 	}
 
