@@ -63,9 +63,11 @@ func main() {
 	mdmsv2sSvc := service.NewMDMSV2Service(restRepo, dbConn)
 	individualSvc := service.NewIndividualService(restRepo, *mdmsv2sSvc)
 	idgenSvc := service.NewIdGenService(restRepo)
+	cklistSvc := service.NewChecklistService(mdmsv2sSvc)
 	demandSvc := service.NewDemandService(restRepo, mdmsv2sSvc)
 	localizationService := service.NewLocalizationService(restRepo, *mdmsv2sSvc)
-	serviceSvc := service.NewPublicService(publicRepo)
+	UpdateServiceHelper := service.NewUpdateServiceHelper(publicRepo, *mdmsv2sSvc, localizationService,cklistSvc)
+	serviceSvc := service.NewPublicService(publicRepo, UpdateServiceHelper)
 	workflowIntegrator := service.NewWorkflowIntegrator(mdmsv2sSvc)
 	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc, workflowIntegrator, mdmsv2sSvc)
 	enrichSvc := service.NewEnrichmentService(individualSvc, demandSvc, mdmsSvc, mdmsv2sSvc, idgenSvc, smsService)
@@ -73,7 +75,7 @@ func main() {
 	indexSvc := service.NewIndexerService(restRepo, kafkaProducer, workflowIntegrator, mdmsv2sSvc)
 	workflowSvc := service.NewWorkflowService(mdmsv2sSvc, restRepo)
 	validSvc := service.NewValidateService(mdmsv2sSvc, dbConn, kafkaProducer, workflowSvc, localizationService)
-	cklistSvc := service.NewChecklistService(mdmsv2sSvc)
+	
 
 	// Start Kafka consumer in a separate goroutine if enabled
 	if os.Getenv("KAFKA_PAYMENT_CONSUMER_ENABLED") == "true" {

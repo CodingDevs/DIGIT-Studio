@@ -616,6 +616,13 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 			Module:  localizationModule,
 		}
 		messages = append(messages, message)
+		message = model.Message {
+		Code:    strings.ToUpper(req.Service.Module) +"_"+strings.ToUpper(req.Service.Module)+ "_" + strings.ToUpper(req.Service.BusinessService)+"_STATE_" + key,		
+		Message:  " " + key,
+		Locale:  locale,
+		Module:  localizationModule,
+	     }
+	    messages = append(messages, message)
 	}
 	log.Println(messages)
 	resp, err := l.SendLocalizationMessage(messages, req)
