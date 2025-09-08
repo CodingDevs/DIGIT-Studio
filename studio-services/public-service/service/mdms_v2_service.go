@@ -37,7 +37,7 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[stri
 			TenantID:   tenantId,
 			Filters:    filters,
 			SchemaCode: schemaCode,
-			Limit:      10,
+			Limit:      1000,
 			Offset:     0,
 		},
 		RequestInfo: requestInfo,
@@ -138,6 +138,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/inbox/v2/_search",
 			"/billing-service/bill/v2/_fetchbill",
 			"/collection-services/payments/_create",
+			"/boundary-service/boundary-hierarchy-definition/_search",
+			"/boundary-service/boundary-relationships/_search",
 			// Add more URLs for creator roles here
 		},
 		"editor": {
@@ -153,6 +155,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/inbox/v2/_search",
 			"/billing-service/bill/v2/_fetchbill",
 			"/collection-services/payments/_create",
+			"/boundary-service/boundary-hierarchy-definition/_search",
+			"/boundary-service/boundary-relationships/_search",
 			// Add URLs specific to editor roles here
 		},
 		"viewer": {
@@ -163,6 +167,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/health-service-request/service/definition/v1/_search",
 			"/" + os.Getenv("MDMS_SEARCH_ENDPOINT"),
 			"/inbox/v2/_search",
+			"/boundary-service/boundary-hierarchy-definition/_search",
+			"/boundary-service/boundary-relationships/_search",
 			
 			// Add more URLs for viewer roles here
 		},
@@ -427,4 +433,25 @@ func (s *MDMSV2Service) CreateMDMS(tenantId, schemaCode string, data interface{}
 	respJSON, _ := json.MarshalIndent(resp, "", "  ")
 	log.Println("MDMS Create Response:\n", string(respJSON))
 	return resp, nil
+}
+func (s *MDMSV2Service) UpdateMDMS(tenantId, schemaCode string, data interface{}, requestInfo model.RequestInfo) error {
+	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_UPDATE_ENDPOINT") + "/" + schemaCode
+	log.Printf("MDMS Update URL: %s", url)
+	
+	payload := map[string]interface{}{
+		"RequestInfo": requestInfo,
+		"Mdms":        data,
+	}
+	
+	log.Printf("MDMS Update Payload: %+v", payload)
+	
+	var resp map[string]interface{}
+	err := s.restCallRepo.Post(url, payload, &resp)
+	if err != nil {
+		log.Printf("Error updating MDMS: %v", err)
+		return err
+	}
+	
+	log.Printf("MDMS Update Response: %+v", resp)
+	return nil
 }

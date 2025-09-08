@@ -685,7 +685,7 @@ func (l LocalizationService) ChecklistLocalization(data map[string]interface{}, 
 
 					// Create localization for option label
 					optionLabel := option["label"].(string)
-					optionCode := module + "." + state + "." + checklistName + "." + optionLabel
+					optionCode := req.Service.BusinessService + "." + state + "." + checklistName + "." + optionLabel
 
 					optionMessage := model.Message{
 						Code:    optionCode,
