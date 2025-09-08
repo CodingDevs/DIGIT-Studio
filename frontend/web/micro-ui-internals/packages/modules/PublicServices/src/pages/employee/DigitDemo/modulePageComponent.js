@@ -118,7 +118,7 @@ const ModulePageComponent = () => {
     );
 
     // If no service config found, check if user has non-admin roles that match the service
-    if (!serviceConfig?.data?.roles) {
+    if (!serviceConfig?.data?.access?.roles) {
       // Check if user has any role that starts with the expected prefix
       const modulePrefix = moduleName.replace(/\s+/g, '_').toUpperCase();
       const servicePrefix = serviceName.replace(/\s+/g, '_').toUpperCase();
@@ -140,7 +140,7 @@ const ModulePageComponent = () => {
       return { creator: false, editor: false, viewer: false };
     }
 
-    const { roles } = serviceConfig.data;
+    const { roles } = serviceConfig?.data?.access;
     const userRoleCodes = userRoles;
 
     // Check which access levels the user has
