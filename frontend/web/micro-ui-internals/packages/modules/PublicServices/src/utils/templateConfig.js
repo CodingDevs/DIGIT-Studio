@@ -30,8 +30,8 @@ export const AddressFields = [
             "disable": false,
             "populators": {
                 "name":"city",
-                "levelConfig": {lowestLevel:"LOCALITY",highestLevel:"LOCALITY", isSingleSelect:["LOCALITY"]} ,
-                "hierarchyType": window?.location.href.includes("unified-uat")? "ADMIN" : "NEWTEST00222" ,
+                "levelConfig":  window?.location.href.includes("unified-uat") ? {lowestLevel:"WARD",highestLevel:"WARD", isSingleSelect:["WARD"]} : {lowestLevel:"LOCALITY",highestLevel:"LOCALITY", isSingleSelect:["LOCALITY"]} ,
+                "hierarchyType": window?.location.href.includes("unified-uat") ? "ADMIN" : "NEWTEST00222" ,
                 "noCardStyle":true,
                 layoutConfig: {
                   // isDropdownLayoutHorizontal: true,

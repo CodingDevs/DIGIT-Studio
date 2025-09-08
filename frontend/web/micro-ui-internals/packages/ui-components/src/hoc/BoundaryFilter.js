@@ -109,7 +109,7 @@ const BoundaryFilter = (props) => {
     changeQueryName: `${hierarchyType}`,
     body: {
       BoundaryTypeHierarchySearchCriteria: {
-        tenantId: 'dev',
+        tenantId: tenantId,
         limit: 2,
         offset: 0,
         hierarchyType: hierarchyType,
