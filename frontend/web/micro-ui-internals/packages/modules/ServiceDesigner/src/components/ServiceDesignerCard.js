@@ -38,7 +38,7 @@ const ServiceDesignerCard = () => {
   };
 
   //employee module card categorization
-  return isAccessible ? <EmployeeModuleCard {...propsForModuleCard} /> : null;
+  return  isAccessible ? <EmployeeModuleCard {...propsForModuleCard} /> : null;
 };
 
 export default ServiceDesignerCard;

@@ -6,8 +6,8 @@ const PublicServicesCard = () => {
  
   const { t } = useTranslation();
   const user = Digit.UserService.getUser();
-  const userRoles = user?.info?.roles?.map((e) => e.code);
-  const isAccessible = userRoles?.some((role) => role?.includes("STUDIO_ADMIN"))
+  //const userRoles = user?.info?.roles?.map((e) => e.code);
+  //const isAccessible = userRoles?.some((role) => role?.includes("STUDIO_ADMIN"))
 
   //To show the card at main page
   const propsForModuleCard = {
@@ -25,7 +25,7 @@ const PublicServicesCard = () => {
   };
 
   //employee module card categorization
-  return isAccessible ? <EmployeeModuleCard {...propsForModuleCard} /> : null;
+  return <EmployeeModuleCard {...propsForModuleCard} />;
 };
 
 export default PublicServicesCard;
