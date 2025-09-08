@@ -39,7 +39,7 @@ export const PublicServicesModule = ({ stateCode, userType, tenants }) => {
   }, [tenantId]);
 
   const moduleList = [...new Set(serviceData?.Services?.map((ob) => ob?.module))] || [];
-  let moduleCode = ["sample", "common", "workflow"];
+  let moduleCode = ["sample", "common", "workflow", "digit-boundary-admin", "digit-boundary-NEWTEST00222"];
   moduleList.forEach((ob) => moduleCode.push(`studio-${ob}`));
   moduleCode.push("studio-newtl-checklist");
 

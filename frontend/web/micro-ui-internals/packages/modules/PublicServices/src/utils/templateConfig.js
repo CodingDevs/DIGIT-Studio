@@ -31,7 +31,7 @@ export const AddressFields = [
             "populators": {
                 "name":"city",
                 "levelConfig": {lowestLevel:"LOCALITY",highestLevel:"LOCALITY", isSingleSelect:["LOCALITY"]} ,
-                "hierarchyType":"NEWTEST00222" ,
+                "hierarchyType": window?.location.href.includes("unified-uat")? "ADMIN" : "NEWTEST00222" ,
                 "noCardStyle":true,
                 layoutConfig: {
                   // isDropdownLayoutHorizontal: true,
