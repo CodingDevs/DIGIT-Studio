@@ -534,6 +534,7 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 	module := "WF_" + strings.ToUpper(req.Service.Module) + "_"
 	moduleWithModalHeader :="WF_MODAL_HEADER_" + strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService) + "_"
 	modalwithSubmit :="WF_MODAL_SUBMIT_" + strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService) + "_"
+	modalwithUpdate :="WF_UPDATE_SUCCESS_" + strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService) + "_"
 
 	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 
@@ -594,6 +595,13 @@ func (l LocalizationService) WorkflowLocalization(data map[string]interface{}, r
 		message = model.Message{
 			Code:    modalwithSubmit + key,
 			Message: "Submit",
+			Locale:  locale,
+			Module:  localizationModule,
+		}	
+		messages = append(messages, message)
+		message = model.Message{
+			Code:    modalwithUpdate + key,
+			Message: key,
 			Locale:  locale,
 			Module:  localizationModule,
 		}	
