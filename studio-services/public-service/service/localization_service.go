@@ -647,7 +647,7 @@ func (l LocalizationService) ChecklistLocalization(data map[string]interface{}, 
 	var messages []model.Message
 	locale := os.Getenv("NOTIFICATION_LOCALE")
 	module := (req.Service.BusinessService)
-	localizationModule := os.Getenv("LOCALIZATION_MODULE") + req.Service.Module
+	localizationModule := os.Getenv("LOCALIZATION_MODULE") + strings.ToLower(req.Service.Module)
 
 	// Extract checklist data
 	checklists, exists := data["checklist"]
