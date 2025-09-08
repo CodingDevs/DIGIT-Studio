@@ -123,6 +123,10 @@ export const UICustomizations = {
                 </Link>
               </span>
             );
+          
+          }
+          if(key === "Status"){
+            return t(`${row?.businessObject?.module.replaceAll(/[./-]/g, "_").toUpperCase()}_${row?.businessObject?.module.replaceAll(/[./-]/g, "_").toUpperCase()}_${row?.businessObject?.businessService?.replaceAll(/[./-]/g, "_")?.toUpperCase()}_STATE_${value}`)
           }
         },
         selectionHandler: (event) => {
