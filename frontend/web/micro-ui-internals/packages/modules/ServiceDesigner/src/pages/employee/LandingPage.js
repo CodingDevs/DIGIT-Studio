@@ -36,7 +36,7 @@ export const buildCardData = (drafts = [], published = [], t, queryStrings) => {
   }));
 
   const draftCards = drafts.map((item) => ({
-    title: item.uniqueIdentifier || "Unnamed Draft Service",
+    title: `${item?.data?.module?.replaceAll("_"," ")} ${item?.data?.service?.replaceAll("_"," ")}` || item.uniqueIdentifier || "Unnamed Draft Service",
     description: "Service group still in draft mode",
     link: `employee/servicedesigner/Service-Builder-Home?module=${item?.data?.module}&service=${item?.data?.service}&edit=true`,
     createdDate:

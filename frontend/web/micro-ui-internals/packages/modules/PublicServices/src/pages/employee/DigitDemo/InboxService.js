@@ -15,7 +15,7 @@ const InboxService = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // To fetch the generic inbox config for inboxSearchComposer
-  const configs = InboxConfig();
+  const configs = InboxConfig(t);
 
   //fetch all the services configured for the tenant
   useEffect(() => {

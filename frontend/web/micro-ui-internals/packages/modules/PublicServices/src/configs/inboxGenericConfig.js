@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom/cjs/react-router-dom";
 
-export const InboxConfig = () => {
+export const InboxConfig = (t) => {
     const { module } = useParams();
     const prefix = `${module?.toUpperCase()}`;
 
@@ -83,7 +83,7 @@ export const InboxConfig = () => {
                 uiConfig: {
                     type: "filter",
                     headerStyle: null,
-                    primaryLabel: `${prefix}_FILTER`,
+                    primaryLabel: t(`${prefix}_FILTER`),
                     secondaryLabel: "",
                     minReqFields: 1,
                     defaultValues: {
