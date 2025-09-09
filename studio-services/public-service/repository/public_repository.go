@@ -16,7 +16,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
-
+type BusinessServiceDeleteRequest struct {
+	TenantID        string `json:"tenantId"`
+	BusinessService string `json:"businessService"`
+}
 type PublicRepository struct {
 	db            *sql.DB
 	kafkaProducer *producer.PublicServiceProducer
@@ -394,4 +397,34 @@ func (r *PublicRepository) GetServiceVersionConfig(ctx context.Context, serviceC
 	}
 
 	return config, nil
+}
+
+func (r *PublicRepository) HandleWorkflowDeletion(ctx context.Context, BusinessService string, req model.ServiceRequest) (model.ServiceResponse, error) {
+	log.Printf("Handling workflow deletion for service: %s", BusinessService)
+
+	// Create the delete request
+	deleteRequest := BusinessServiceDeleteRequest{
+		TenantID:        req.Service.TenantId,
+		BusinessService: BusinessService,
+	}
+	kafkaPayload, err := json.Marshal(deleteRequest)
+	if err != nil {
+		return model.ServiceResponse{}, fmt.Errorf("failed to  marshal ServiceVersionConfigMapping request for  for Kafka: %w", err)
+	}
+	if r.kafkaProducer != nil {
+		err = r.kafkaProducer.Push(ctx, config.GetEnv("DELETE_BUSINESS_SERVICE_TOPIC"), kafkaPayload)
+		if err != nil {
+			log.Printf("failed to push kafka message: %v", err)
+			return model.ServiceResponse{}, err
+		}
+	} else {
+		return model.ServiceResponse{}, errors.New("Kafka producer is not initialized")
+	}
+	return model.ServiceResponse{
+		ResponseInfo: model.ResponseInfo{
+			ApiId: req.RequestInfo.ApiId,
+			Ver:   req.RequestInfo.Ver,
+		},
+		Services: []model.Service{req.Service},
+	}, nil
 }

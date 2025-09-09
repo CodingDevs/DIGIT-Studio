@@ -65,15 +65,16 @@ func main() {
 	idgenSvc := service.NewIdGenService(restRepo)
 	cklistSvc := service.NewChecklistService(mdmsv2sSvc)
 	demandSvc := service.NewDemandService(restRepo, mdmsv2sSvc)
+	workflowSvc := service.NewWorkflowService(mdmsv2sSvc, restRepo)
 	localizationService := service.NewLocalizationService(restRepo, *mdmsv2sSvc)
-	UpdateServiceHelper := service.NewUpdateServiceHelper(publicRepo, *mdmsv2sSvc, localizationService,cklistSvc)
+	UpdateServiceHelper := service.NewUpdateServiceHelper(publicRepo, *mdmsv2sSvc, localizationService,cklistSvc,workflowSvc)
 	serviceSvc := service.NewPublicService(publicRepo, UpdateServiceHelper)
 	workflowIntegrator := service.NewWorkflowIntegrator(mdmsv2sSvc)
 	smsService := service.NewSMSService(restRepo, localizationService, kafkaProducer, demandSvc, workflowIntegrator, mdmsv2sSvc)
 	enrichSvc := service.NewEnrichmentService(individualSvc, demandSvc, mdmsSvc, mdmsv2sSvc, idgenSvc, smsService)
 	appSvc := service.NewApplicationService(appRepo, enrichSvc, workflowIntegrator)
 	indexSvc := service.NewIndexerService(restRepo, kafkaProducer, workflowIntegrator, mdmsv2sSvc)
-	workflowSvc := service.NewWorkflowService(mdmsv2sSvc, restRepo)
+	
 	validSvc := service.NewValidateService(mdmsv2sSvc, dbConn, kafkaProducer, workflowSvc, localizationService)
 	
 

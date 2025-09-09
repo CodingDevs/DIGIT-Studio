@@ -32,15 +32,16 @@ type UpdateServiceHelper struct {
 	mdms_service MDMSV2Service
 	localizationService *LocalizationService
 	checklistService *ChecklistService
-	
+	workflowService *WorkflowService
 }
 
-func NewUpdateServiceHelper(repo *repository.PublicRepository, mdms_service MDMSV2Service, localizationService *LocalizationService, checklistService *ChecklistService) *UpdateServiceHelper {
+func NewUpdateServiceHelper(repo *repository.PublicRepository, mdms_service MDMSV2Service, localizationService *LocalizationService, checklistService *ChecklistService, workflowService *WorkflowService) *UpdateServiceHelper {
 	return &UpdateServiceHelper{
 		repo: repo,
 		mdms_service: mdms_service,
 		localizationService: localizationService,
 		checklistService: checklistService,
+		workflowService: workflowService,
 	}
 }
 
@@ -248,7 +249,22 @@ func (r *UpdateServiceHelper) workflowChanged(ctx context.Context, changeKey str
 	log.Printf("Processing workflow configuration change for service: %s, version: %d", serviceCode, version)
 	log.Printf("Change key: %s", changeKey)
 	log.Printf("Change type: %s", changeDetails.Type)
+	workflowData, ok := mdmsConfigData["workflow"].(map[string]interface{})
+	if !ok {
+		return  fmt.Errorf("no 'workflow' section in MDMS data")
+	}
 
+	businessServiceName, ok := workflowData["businessService"].(string)
+	if !ok {
+		return fmt.Errorf("invalid 'businessService' in workflow data")
+	}
+	 _,err := r.repo.HandleWorkflowDeletion(ctx, businessServiceName, req)
+	 if err != nil {	
+		log.Printf("Error handling workflow deletion: %v", err)	
+		return fmt.Errorf("failed to handle workflow deletion: %w", err)
+	 }
+	resp1, _ := r.workflowService.CreateAndValidateBusinessService(req)
+	log.Println(resp1)
 	// Add your workflow-specific logic here
 	// For example: update workflow engine, reconfigure state transitions, etc.
 
