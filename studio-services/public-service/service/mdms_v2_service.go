@@ -204,40 +204,51 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 
 	// Function to create role action mapping
 	createRoleActionMapping := func(roleCode, actionId, mappingType string) error {
-		//actionIDInt,_:= strconv.Atoi(actionId)
-		payload := model.MDMSCreateV2Request{
-			RequestInfo: apps.RequestInfo,
-			MDMS: model.Mdms{
-				TenantID:   tenantId,
-				SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
-				Data: model.MdmsRoleActionData{
-					RoleCode:   roleCode,
-					ActionID:   actionId,
-					ActionCode: "",
+    //actionIDInt,_:= strconv.Atoi(actionId)
+   
+		for attempt := 1; attempt <= 5; attempt++ {
+			payload := model.MDMSCreateV2Request{
+				RequestInfo: apps.RequestInfo,
+				MDMS: model.Mdms{
 					TenantID:   tenantId,
+					SchemaCode: "ACCESSCONTROL-ROLEACTIONS.roleactions",
+					Data: model.MdmsRoleActionData{
+						RoleCode:   roleCode,
+						ActionID:   actionId,
+						ActionCode: "",
+						TenantID:   tenantId,
+					},
+					IsActive: true,
 				},
-				IsActive: true,
-			},
-		}
-
-		log.Printf("[%s] Posting RoleActionMapping for role: %s with actionId: %s", mappingType, roleCode, actionId)
-		b, _ := json.MarshalIndent(payload, "", "  ")
-		fmt.Println("Payload:\n", string(b))
-
-		var postResp map[string]interface{}
-		err := s.restCallRepo.Post(url, payload, &postResp)
-		if err != nil {
-			if isDuplicateError(err) {
-				log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s with actionId %s", roleCode, actionId)
-				return nil
 			}
-			log.Printf("Error posting RoleActionMapping for role %s with actionId %s: %v", roleCode, actionId, err)
-			return err
-		}
 
-		respJSON, _ := json.MarshalIndent(postResp, "", "  ")
-		log.Println("Response:\n", string(respJSON))
-		return nil
+			log.Printf("[%s] Posting RoleActionMapping for role: %s with actionId: %s", mappingType, roleCode, actionId)
+			b, _ := json.MarshalIndent(payload, "", "  ")
+			fmt.Println("Payload:\n", string(b))
+
+			var postResp map[string]interface{}
+			err := s.restCallRepo.Post(url, payload, &postResp)
+			if err != nil {
+				if isDuplicateError(err) {
+					log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s with actionId %s", roleCode, actionId)
+					return nil
+				}
+				
+				// Check if it's a reference validation error and retry if not the last attempt
+				if strings.Contains(err.Error(), "REFERENCE_VALIDATION_ERR") && attempt < 5 {
+					log.Printf("Reference validation error on attempt %d for role %s with actionId %s: %v", attempt, roleCode, actionId, err)
+					continue
+				}
+				
+				log.Printf("Error posting RoleActionMapping for role %s with actionId %s: %v", roleCode, actionId, err)
+				return err
+			}
+
+			respJSON, _ := json.MarshalIndent(postResp, "", "  ")
+			log.Println("Response:\n", string(respJSON))
+			return nil
+		}
+      return nil
 	}
 
 	// Always create RoleActionMapping for STUDIO_ADMIN first
