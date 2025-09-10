@@ -308,7 +308,7 @@ func (h *UpdateServiceHelper) roleChanged(ctx context.Context, changeKey string,
 
 		return "", fmt.Errorf("could not extract action ID for URL: %s", searchUrl)
 	}
-	additionalActionId, err := getActionIdFromUrl("/public-service/v1/application/}" + req.Service.ServiceCode)
+	additionalActionId, err := getActionIdFromUrl("/public-service/v1/application/" + req.Service.ServiceCode)
 	if err != nil {
 		log.Printf("Error fetching additional action ID: %v", err)
 	} else {
@@ -349,7 +349,7 @@ func (r *UpdateServiceHelper) idgenChanged(ctx context.Context, changeKey string
 
 		}
 
-		if code, ok := idgenMap["idname"].(string); ok && code == serviceCode {
+		if code, ok := idgenMap["idname"].(string); ok {
 			filter := map[string]string{
 				"idname": code,
 			}
