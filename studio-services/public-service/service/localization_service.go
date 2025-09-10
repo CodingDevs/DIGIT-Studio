@@ -287,6 +287,7 @@ func (l *LocalizationService) BasicLocalization(data map[string]interface{}, req
 func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req model.ServiceRequest) (map[string]interface{}, error) {
 	localization := data["localization"].(map[string]interface{})
 	modules := localization["modules"].([]interface{})
+	url := os.Getenv("LOCALIZATION_SERVICE_HOST") + os.Getenv("LOCALIZATION_CONTEXT_PATH") + os.Getenv("LOCALIZATION_UPSERT_ENDPOINT")
 	module := modules[0].(string)
 
 	if modulesJSON, err := json.Marshal(modules); err == nil {
@@ -314,6 +315,7 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 		message := item["template"].(string)
 		// Replace spaces with underscores in code
 		code = strings.ReplaceAll(code, " ", "_")
+		code = strings.ToUpper(code)+ "_" + strings.ToUpper(req.Service.Module) + "_" + strings.ToUpper(req.Service.BusinessService)
 
 		// Build composite key: locale|module|code
 		uniqueKey := fmt.Sprintf("%s|%s|%s", locale, module, code)
@@ -329,6 +331,7 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 			Locale:  locale,
 		}
 		messages = append(messages, msg)
+		messages = removeDuplicateCodes(messages)
 	}
 
 	// Log messages in JSON
@@ -338,14 +341,28 @@ func (l *LocalizationService) SMSLocalization(data map[string]interface{}, req m
 		log.Printf(`{"level":"error","event":"MessagesMarshalError","error":"%s"}`, err.Error())
 	}
 
-	resp, err := l.SendLocalizationMessage(messages, req)
+	payload := model.Localization{
+		RequestInfo: req.RequestInfo,
+		TenantID:    req.Service.TenantId,
+		Messages:    messages,
+	}
+	logJSON("SMS Localization Payload", payload)
+
+	var result map[string]interface{}
+	err := l.mdms_service.restCallRepo.Post(url, payload, &result)
+	if err != nil {
+		log.Println(err.Error())
+		return result, err
+	}
+
+	log.Println(result)
 	if err != nil {
 		log.Printf(`{"level":"error","event":"SendLocalizationMessageFailed","error":"%s"}`, err.Error())
 	} else {
 		log.Printf(`{"level":"info","event":"SendLocalizationMessageSuccess"}`)
 	}
 
-	return resp, err
+	return result, err
 }
 
 func (l *LocalizationService) Localization(data map[string]interface{}, req model.ServiceRequest) error {

@@ -122,6 +122,7 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 				code, _ := itemMap["code"].(string)
 				// Replace spaces with underscores in code
 				matchedCode = strings.ReplaceAll(code, " ", "_")
+				matchedCode = strings.ToUpper(matchedCode) + "_" + strings.ToUpper(application.Application.Module) + "_" + strings.ToUpper(application.Application.BusinessService)
 				break
 			}
 		}
@@ -129,12 +130,14 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 		if matchedCode != "" {
 			break
 		}
+	
 	}
 
 	if matchedCode == "" {
 		log.Printf("No matching SMS template code found for state: %s", currentState)
 		return nil, fmt.Errorf("no matching template code found")
 	}
+	log.Printf("Matched SMS template code: %s", matchedCode)
 
 	// Fetch localized message for matchedCode
 	localizationMessage := s.localizationService.GetLocalizationMessage(
@@ -169,6 +172,7 @@ func (s *SMSService) SendSMS(application model.ApplicationRequest, tenantId stri
 		msg = strings.ReplaceAll(msg, "{PublicService.applicants[0].name}", owner.Name)
 		msg = strings.ReplaceAll(msg, "{PublicService.applicationNo}", application.Application.ApplicationNumber)
 		msg = strings.ReplaceAll(msg, "{Bill.totalAmount}", amountStr)
+		
 
 		smsRequest := sms.SMSRequest{
 			MobileNumber: strconv.FormatInt(owner.MobileNumber, 10),
