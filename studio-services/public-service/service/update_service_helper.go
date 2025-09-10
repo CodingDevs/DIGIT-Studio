@@ -26,29 +26,26 @@ type ConfigComparisonResult struct {
 	PreviousVersion int                      `json:"previousVersion"`
 }
 
-
 type UpdateServiceHelper struct {
-	repo *repository.PublicRepository
-	mdms_service MDMSV2Service
+	repo                *repository.PublicRepository
+	mdms_service        MDMSV2Service
 	localizationService *LocalizationService
-	checklistService *ChecklistService
-	workflowService *WorkflowService
+	checklistService    *ChecklistService
+	workflowService     *WorkflowService
 }
 
 func NewUpdateServiceHelper(repo *repository.PublicRepository, mdms_service MDMSV2Service, localizationService *LocalizationService, checklistService *ChecklistService, workflowService *WorkflowService) *UpdateServiceHelper {
 	return &UpdateServiceHelper{
-		repo: repo,
-		mdms_service: mdms_service,
+		repo:                repo,
+		mdms_service:        mdms_service,
 		localizationService: localizationService,
-		checklistService: checklistService,
-		workflowService: workflowService,
+		checklistService:    checklistService,
+		workflowService:     workflowService,
 	}
 }
 
-
-
 // CompareServiceConfigs - Fixed to return ConfigComparisonResult
-func (r *UpdateServiceHelper) CompareServiceConfigs(ctx context.Context, serviceCode string, version int, currentConfig map[string]interface{},req model.ServiceRequest) (ConfigComparisonResult, error) {
+func (r *UpdateServiceHelper) CompareServiceConfigs(ctx context.Context, serviceCode string, version int, currentConfig map[string]interface{}, req model.ServiceRequest) (ConfigComparisonResult, error) {
 	// Get previous version config
 	previousConfig, err := r.repo.GetServiceVersionConfig(ctx, serviceCode, version)
 	if err != nil {
@@ -238,7 +235,6 @@ func (r *UpdateServiceHelper) billChanged(ctx context.Context, changeKey string,
 	log.Printf("Change key: %s", changeKey)
 	log.Printf("Change type: %s", changeDetails.Type)
 
-
 	// Add your bill-specific logic here
 	// For example: update billing configurations, notify billing service, etc.
 
@@ -251,18 +247,18 @@ func (r *UpdateServiceHelper) workflowChanged(ctx context.Context, changeKey str
 	log.Printf("Change type: %s", changeDetails.Type)
 	workflowData, ok := mdmsConfigData["workflow"].(map[string]interface{})
 	if !ok {
-		return  fmt.Errorf("no 'workflow' section in MDMS data")
+		return fmt.Errorf("no 'workflow' section in MDMS data")
 	}
 
 	businessServiceName, ok := workflowData["businessService"].(string)
 	if !ok {
 		return fmt.Errorf("invalid 'businessService' in workflow data")
 	}
-	 _,err := r.repo.HandleWorkflowDeletion(ctx, businessServiceName, req)
-	 if err != nil {	
-		log.Printf("Error handling workflow deletion: %v", err)	
+	_, err := r.repo.HandleWorkflowDeletion(ctx, businessServiceName, req)
+	if err != nil {
+		log.Printf("Error handling workflow deletion: %v", err)
 		return fmt.Errorf("failed to handle workflow deletion: %w", err)
-	 }
+	}
 	resp1, _ := r.workflowService.CreateAndValidateBusinessService(req)
 	log.Println(resp1)
 	// Add your workflow-specific logic here
@@ -275,11 +271,10 @@ func (r *UpdateServiceHelper) notificationChanged(ctx context.Context, changeKey
 	log.Printf("Processing notification configuration change for service: %s, version: %d", serviceCode, version)
 	log.Printf("Change key: %s", changeKey)
 	log.Printf("Change type: %s", changeDetails.Type)
-    r.localizationService.SMSLocalization(mdmsConfigData,serviceRequest)
+	r.localizationService.SMSLocalization(mdmsConfigData, serviceRequest)
 	// Add your notification-specific logic here
 	// For example: update notification templates, reconfigure email/SMS settings, etc.
-	
-    
+
 	return nil
 }
 
@@ -313,12 +308,12 @@ func (h *UpdateServiceHelper) roleChanged(ctx context.Context, changeKey string,
 
 		return "", fmt.Errorf("could not extract action ID for URL: %s", searchUrl)
 	}
-	additionalActionId, err := getActionIdFromUrl("/public-service/v1/application/}"+req.Service.ServiceCode)
+	additionalActionId, err := getActionIdFromUrl("/public-service/v1/application/}" + req.Service.ServiceCode)
 	if err != nil {
 		log.Printf("Error fetching additional action ID: %v", err)
 	} else {
 		log.Printf("Fetched additional action ID: %s", additionalActionId)
-		h.mdms_service.createMDMSRoleActionMapping(req.Service.TenantId,additionalActionId,req)
+		h.mdms_service.createMDMSRoleActionMapping(req.Service.TenantId, additionalActionId, req)
 	}
 	return nil
 }
@@ -326,7 +321,7 @@ func (r *UpdateServiceHelper) checklistChanged(ctx context.Context, changeKey st
 	log.Printf("Processing checklist configuration change for service: %s, version: %d", serviceCode, version)
 	log.Printf("Change key: %s", changeKey)
 	log.Printf("Change type: %s", changeDetails.Type)
-    r.checklistService.GetChecklist(req.Service.TenantId, req.Service.Module, req.Service.BusinessService, req.RequestInfo)
+	r.checklistService.GetChecklist(req.Service.TenantId, req.Service.Module, req.Service.BusinessService, req.RequestInfo)
 	// Add your checklist-specific logic here
 	// For example: update validation rules, refresh checklist items, etc.
 
@@ -337,33 +332,38 @@ func (r *UpdateServiceHelper) idgenChanged(ctx context.Context, changeKey string
 	log.Printf("Processing ID generation configuration change for service: %s, version: %d", serviceCode, version)
 	log.Printf("Change key: %s", changeKey)
 	log.Printf("Change type: %s", changeDetails.Type)
-	
+	log.Printf("mdms type: %s", mdmsConfigData)
+
 	idgenList, ok := mdmsConfigData["idgen"].([]interface{})
 	if !ok || len(idgenList) == 0 {
 		log.Println("No idgen configuration found in MDMS data")
 		return nil
 	}
-	
+
 	for _, item := range idgenList {
+		log.Printf("Processing idgen item: %v", item)
 		idgenMap, ok := item.(map[string]interface{})
 		if !ok {
+			log.Println("Invalid idgen item format, expected map[string]interface{}")
 			continue
+
 		}
-		
+
 		if code, ok := idgenMap["idname"].(string); ok && code == serviceCode {
 			filter := map[string]string{
 				"idname": code,
 			}
-			
+
 			mdmsData, err := r.mdms_service.SearchMDMS(req.Service.TenantId, "common-masters.IdFormat", filter, req.RequestInfo)
 			if err != nil {
 				log.Printf("Error searching MDMS data: %v", err)
 				return err
 			}
-			
+			log.Printf("Fetched MDMS data: %v", mdmsData)
+
 			if mdmsData != nil {
 				log.Printf("Fetched MDMS data for service code %s: %v", serviceCode, mdmsData)
-				
+
 				// Extract the first result from mdmsData and update its data section
 				if mdmsArray, ok := mdmsData["mdms"].([]interface{}); ok && len(mdmsArray) > 0 {
 					if firstResult, ok := mdmsArray[0].(map[string]interface{}); ok {
@@ -371,21 +371,21 @@ func (r *UpdateServiceHelper) idgenChanged(ctx context.Context, changeKey string
 						if data, ok := firstResult["data"].(map[string]interface{}); ok {
 							// Update with values from mdmsConfigData
 							data["type"] = idgenMap["type"]
-							data["format"] = idgenMap["format"] 
+							data["format"] = idgenMap["format"]
 							data["idname"] = idgenMap["idname"]
-							
+
 							log.Printf("Updated data section: %v", data)
 						}
-						
+
 						log.Printf("Complete update payload: %v", firstResult)
-						
+
 						// Call UpdateMDMS function with the complete updated record
 						err := r.mdms_service.UpdateMDMS(req.Service.TenantId, "common-masters.IdFormat", firstResult, req.RequestInfo)
 						if err != nil {
 							log.Printf("Error updating MDMS data: %v", err)
 							return err
 						}
-						
+
 						log.Printf("Successfully updated MDMS data for service code: %s", serviceCode)
 					}
 				}
@@ -395,7 +395,7 @@ func (r *UpdateServiceHelper) idgenChanged(ctx context.Context, changeKey string
 			break
 		}
 	}
-	
+
 	return nil
 }
 
@@ -423,7 +423,7 @@ func (r *UpdateServiceHelper) formChanged(ctx context.Context, changeKey string,
 }
 
 // Main function to process all configuration changes
-func (r *UpdateServiceHelper) ProcessConfigurationChanges(ctx context.Context, comparisonResult ConfigComparisonResult, serviceCode string,mdmsConfigData map[string]interface{}, req model.ServiceRequest) error {
+func (r *UpdateServiceHelper) ProcessConfigurationChanges(ctx context.Context, comparisonResult ConfigComparisonResult, serviceCode string, mdmsConfigData map[string]interface{}, req model.ServiceRequest) error {
 	if !comparisonResult.HasChanges {
 		log.Printf("No configuration changes detected for service: %s", serviceCode)
 		return nil
@@ -464,15 +464,15 @@ func (r *UpdateServiceHelper) processIndividualChange(ctx context.Context, chang
 		return r.workflowChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
 	case "notification":
 		return r.notificationChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
-	case "role":
+	case "access":
 		return r.roleChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
 	case "checklist":
 		return r.checklistChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
 	case "idgen":
 		return r.idgenChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
-	case "document":
+	case "documents":
 		return r.documentChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
-	case "form":
+	case "fields":
 		return r.formChanged(ctx, changeKey, changeDetails, serviceCode, version, mdmsConfigData, req)
 	default:
 		log.Printf("No specific handler found for configuration type: %s, using generic handler", configType)
