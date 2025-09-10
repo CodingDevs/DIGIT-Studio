@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-
-
 type MDMSV2Service struct {
 	restCallRepo repository.RestCallRepository
 	db           *sql.DB
@@ -54,7 +52,7 @@ func (s *MDMSV2Service) SearchMDMS(tenantId, schemaCode string, filters map[stri
 
 func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid string, apps model.ServiceRequest) (map[string]interface{}, error) {
 	var resp map[string]interface{}
-    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
+	log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ROLEACTIONS.roleactions"
 	schemaCode := config.GetEnv("SERVICE_MODULE_NAME") + "." + config.GetEnv("SERVICE_MASTER_NAME")
 
@@ -150,8 +148,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/health-service-request/service/definition/v1/_search",
 			"/" + os.Getenv("MDMS_SEARCH_ENDPOINT"),
 			"/health-service-request/service/v1/_search",
-			"/health-service-request/service/v1/_create", 
-			"/health-service-request/service/v1/_update", 
+			"/health-service-request/service/v1/_create",
+			"/health-service-request/service/v1/_update",
 			"/inbox/v2/_search",
 			"/billing-service/bill/v2/_fetchbill",
 			"/collection-services/payments/_create",
@@ -169,7 +167,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			"/inbox/v2/_search",
 			"/boundary-service/boundary-hierarchy-definition/_search",
 			"/boundary-service/boundary-relationships/_search",
-			
+
 			// Add more URLs for viewer roles here
 		},
 	}
@@ -204,8 +202,8 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 
 	// Function to create role action mapping
 	createRoleActionMapping := func(roleCode, actionId, mappingType string) error {
-    //actionIDInt,_:= strconv.Atoi(actionId)
-   
+		//actionIDInt,_:= strconv.Atoi(actionId)
+
 		for attempt := 1; attempt <= 5; attempt++ {
 			payload := model.MDMSCreateV2Request{
 				RequestInfo: apps.RequestInfo,
@@ -233,13 +231,13 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 					log.Printf("[SKIPPED - DUPLICATE] RoleActionMapping already exists for role %s with actionId %s", roleCode, actionId)
 					return nil
 				}
-				
+
 				// Check if it's a reference validation error and retry if not the last attempt
 				if strings.Contains(err.Error(), "REFERENCE_VALIDATION_ERR") && attempt < 5 {
 					log.Printf("Reference validation error on attempt %d for role %s with actionId %s: %v", attempt, roleCode, actionId, err)
 					continue
 				}
-				
+
 				log.Printf("Error posting RoleActionMapping for role %s with actionId %s: %v", roleCode, actionId, err)
 				return err
 			}
@@ -248,7 +246,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 			log.Println("Response:\n", string(respJSON))
 			return nil
 		}
-      return nil
+		return nil
 	}
 
 	// Always create RoleActionMapping for STUDIO_ADMIN first
@@ -274,7 +272,7 @@ func (s *MDMSV2Service) createMDMSRoleActionMapping(tenantId string, actionid st
 					}
 
 					log.Printf("Extracted Action ID: %s for URL: %s", additionalActionId, searchUrl)
-					
+
 					mappingType := fmt.Sprintf("%s (URL: %s)", roleType, searchUrl)
 					if err := createRoleActionMapping(roleCode, additionalActionId, mappingType); err != nil {
 						log.Printf("Failed to create mapping for role %s with URL %s: %v", roleCode, searchUrl, err)
@@ -357,7 +355,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 	if err != nil {
 		return nil, err
 	}
-    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
+	log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + "ACCESSCONTROL-ACTIONS-TEST.actions-test"
 
 	payload := model.MDMSCreateV2Request{
@@ -371,7 +369,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 				Code:         "",
 				Name:         "create OC Application",
 				Path:         "",
-				Enabled:      false,
+				Enabled:      true,
 				DisplayName:  "Create OC Application",
 				OrderNumber:  1,
 				ServiceCode:  "public-service",
@@ -395,10 +393,62 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 
 	respJSON, _ := json.MarshalIndent(resp, "", "  ")
 	log.Println("MDMS Create ActionTest Response:\n", string(respJSON))
+
+	newUpdateID, err := s.getNextMDMSActionTestID()
+	if err != nil {
+		return nil, err
+	}
+	payloadUpdate := model.MDMSCreateV2Request{
+		RequestInfo: apps.RequestInfo,
+		MDMS: model.Mdms{
+			TenantID:   tenantId,
+			SchemaCode: "ACCESSCONTROL-ACTIONS-TEST.actions-test",
+			Data: model.MdmsActionData{
+				ID:           newUpdateID,
+				URL:          "/public-service/v1/Service/" + serviceCode,
+				Code:         "",
+				Name:         "Update  Service",
+				Path:         "",
+				Enabled:      true,
+				DisplayName:  "Update  Service",
+				OrderNumber:  1,
+				ServiceCode:  "public-service",
+				ParentModule: "",
+			},
+			IsActive: true,
+		},
+	}
+	log.Printf("Calling MDMS Create ActionTest\nURL: %s\nPayload: %+v\n", url, payload)
+
+	bUpdate, _ := json.MarshalIndent(payloadUpdate, "", "  ")
+	fmt.Println("Final Payload:\n", string(bUpdate))
+
+	var respUpdate map[string]interface{}
+	err = s.restCallRepo.Post(url, payloadUpdate, &respUpdate)
+	if err != nil {
+		log.Printf("Error calling MDMS create Update service ActionTest: %v", err)
+		return nil, err
+	}
+
+	respUpdateJSON, _ := json.MarshalIndent(respUpdate, "", "  ")
+	log.Println("MDMS Create ActionTest Update Service Response:\n", string(respUpdateJSON))
 	var roleMappingErr error
 	const attempts = 10 //we are doing this aspersister was taking sometimetopersist the above action-test data hence was getting reference doesn't exist error
 	for i := 0; i < attempts; i++ {
 		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newID, 10), apps)
+		if roleMappingErr == nil {
+			break
+		}
+		if strings.Contains(roleMappingErr.Error(), "REFERENCE_VALIDATION_ERR") && i < attempts-1 {
+			log.Println("Retrying RoleActionMapping due to REFERENCE_VALIDATION_ERR...")
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		break
+	}
+	const attempUpdates = 10
+	for i := 0; i < attempUpdates; i++ {
+		_, roleMappingErr = s.createMDMSRoleActionMapping(tenantId, strconv.FormatInt(newUpdateID, 10), apps)
 		if roleMappingErr == nil {
 			break
 		}
@@ -421,7 +471,7 @@ func (s *MDMSV2Service) createMDMSActionTest(tenantId string, serviceCode string
 func (s *MDMSV2Service) CreateMDMS(tenantId, schemaCode string, data interface{}, requestInfo model.RequestInfo) (map[string]interface{}, error) {
 
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_CREATE_ENDPOINT") + "/" + schemaCode
-    log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
+	log.Println(os.Getenv("MDMS_V2_CREATE_ENDPOINT"))
 	payload := model.MDMSCreateV2Request{
 		RequestInfo: requestInfo,
 		MDMS: model.Mdms{
@@ -448,21 +498,21 @@ func (s *MDMSV2Service) CreateMDMS(tenantId, schemaCode string, data interface{}
 func (s *MDMSV2Service) UpdateMDMS(tenantId, schemaCode string, data interface{}, requestInfo model.RequestInfo) error {
 	url := os.Getenv("MDMS_SERVICE_HOST") + os.Getenv("MDMS_V2_UPDATE_ENDPOINT") + "/" + schemaCode
 	log.Printf("MDMS Update URL: %s", url)
-	
+
 	payload := map[string]interface{}{
 		"RequestInfo": requestInfo,
 		"Mdms":        data,
 	}
-	
+
 	log.Printf("MDMS Update Payload: %+v", payload)
-	
+
 	var resp map[string]interface{}
 	err := s.restCallRepo.Post(url, payload, &resp)
 	if err != nil {
 		log.Printf("Error updating MDMS: %v", err)
 		return err
 	}
-	
+
 	log.Printf("MDMS Update Response: %+v", resp)
 	return nil
 }
