@@ -547,13 +547,72 @@
     }
   ],
   "applicant": {
+  "applicant": {
     "types": [
       "individual",
       "organisation"
     ],
     "maximum": 3,
-    "minimum": 1
-  },
+    "minimum": 1,
+    "allowLoggedInUser": true,
+    "searchby": [
+      {
+        "name": "mobilenumber",
+        "type": "string",
+        "label": "mobilenumber ",
+        "format": "text",
+        "required": false,
+        "maxLength": 128,
+        "minLength": 2,
+        "validation": {
+          "regex": "^[A-Za-z0-9 ]+$",
+          "message": "Only letters and numbers allowed"
+        },
+        "orderNumber": 3,
+        "path": "requestparam.individual.mobilenumber||requestbody.individual.mobilenumber"
+      }
+    ],
+    "individal": {
+      "properties": [
+        {
+          "name": "mobilenumber",
+          "type": "string",
+          "label": "mobilenumber ",
+          "format": "text",
+          "hidden": true,
+          "required": false,
+          "maxLength": 128,
+          "minLength": 2,
+          "validation": {
+            "regex": "^[A-Za-z0-9 ]+$",
+            "message": "Only letters and numbers allowed"
+          },
+          "orderNumber": 3,
+          "path": "requestparam.individual.mobilenumber||requestbody.individual.mobilenumber"
+        }
+      ]
+    },
+    "organisation": {
+      "properties": [
+        {
+          "name": "mobilenumber",
+          "type": "string",
+          "label": "mobilenumber ",
+          "format": "text",
+          "required": false,
+          "maxLength": 128,
+          "minLength": 2,
+          "validation": {
+            "regex": "^[A-Za-z0-9 ]+$",
+            "message": "Only letters and numbers allowed"
+          },
+          "orderNumber": 3,
+          "path": "requestparam.individual.mobilenumber||requestbody.individual.mobilenumber"
+        }
+      ]
+    }
+  }
+},
   "documents": [
     {
       "action": [
